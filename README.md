@@ -5,7 +5,7 @@ This code was developed by Yuanhao Gong during his PhD at MOSAIC Group. Please c
 ***
 Chapter **Six** in PDF={http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf}
 ***
-**source code** at {http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters}
+**source code** in **C++** and **Java** can be found at {http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters}
 ***
 FAQ:
 ====
