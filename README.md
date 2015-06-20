@@ -7,8 +7,9 @@ Chapter **Six** in PDF={http://e-collection.library.ethz.ch/eserv/eth:47737/eth-
 ***
 **source code** in **C++** and **Java** can be found at {http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters}
 ***
-FAQ:
-====
+## One example
+![image](curvatureFilters.png)
+## FAQ:
 1) Why dual mesh (DM) structure is needed?
 
 There are two reasons. First, these four sets guarantee the convergence. Second, 
