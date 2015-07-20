@@ -16,7 +16,7 @@ public:
     //merge four sets back to imgF
     void merge();
     //compute TV
-    void TV(Mat* img, Mat& T);
+    void TV(Mat& img, Mat& T);
     //compute M
     void MC(Mat& img, Mat & MC);
     //compute MC
