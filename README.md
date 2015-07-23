@@ -10,6 +10,16 @@ Chapter **Six** in **[PhD thesis](http://e-collection.library.ethz.ch/eserv/eth:
 ***
 **source code** in **C++** and **Java** can be found at **[MOSAIC](http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters)**
 ***
+##Facts
+#### 1) Computational Efficient
+These filters are **three or four order of magnitude faster** than traditional solvers.
+#### 2) Generality
+These filter solvers can handle **arbitrary imaging model**, as long as the imaging model can be evaluated(black box). 
+#### 3) Convergence
+The convergence is **theoretically guaranteed** and the numerical convergence rate is around 1.4 for natural images.
+#### 4) Easy Implementation
+These filters can be implemented in about 40 lines in Matlab and about 100 lines in C++.
+
 ## One example
 GC = Gaussian Curvature, MC = Mean Curvature, TV = Total Variation
 ![image](curvatureFilters.png)
