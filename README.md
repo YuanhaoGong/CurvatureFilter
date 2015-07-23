@@ -8,9 +8,10 @@ Gaussian Curvature Filter, Talk Slides **[PDF](GCfilter.pdf)**
 Chapter **Six** in **[PhD thesis](http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf)**
 
 ***
-**source code** in **C++** and **Java** can be found at {http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters}
+**source code** in **C++** and **Java** can be found at **[MOSAIC](http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters)**
 ***
 ## One example
+GC = Gaussian Curvature, MC = Mean Curvature, TV = Total Variation
 ![image](curvatureFilters.png)
 ## FAQ:
 1) Why dual mesh (DM) structure is needed?
