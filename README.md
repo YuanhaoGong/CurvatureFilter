@@ -3,7 +3,7 @@ This code was developed by Yuanhao Gong during his PhD at MOSAIC Group. Please c
 ***
 @phdthesis{gong:phd, title={Spectrally regularized surfaces}, author={Gong, Yuanhao}, year={2015}, school={ETH Zurich, Nr. 22616},note={http://dx.doi.org/10.3929/ethz-a-010438292}}
 ***
-Gaussian Curvature Filter, **[Talk Slides](GCfilter.pdf)**
+Gaussian Curvature Filter, **[Talk Slides](./GCfilter.pdf)**
 
 Chapter **Six** in **[PhD thesis](http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf)**
 
