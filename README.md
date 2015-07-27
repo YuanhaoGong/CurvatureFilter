@@ -7,7 +7,8 @@ Chapter **Six** in **[PhD thesis](http://e-collection.library.ethz.ch/eserv/eth:
 
 **source code** in **C++** and **Java** can also be found at **[MOSAIC](http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters)**
 ***
-##Facts
+## Why regularization should be minimized?
+![image](phs.PNG)
 #### 1) Computational Efficient
 These filters are **three or four order of magnitude faster** than traditional solvers.
 #### 2) Generality
@@ -20,6 +21,8 @@ These filters can be implemented in about 40 lines in Matlab and about 100 lines
 ## One example
 GC = Gaussian Curvature, MC = Mean Curvature, TV = Total Variation
 ![image](curvatureFilters.png)
+## Another example
+![image](denoise.PNG)
 ## FAQ:
 1) Why dual mesh (DM) structure is needed?
 
