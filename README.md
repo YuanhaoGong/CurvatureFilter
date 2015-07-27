@@ -23,6 +23,7 @@ GC = Gaussian Curvature, MC = Mean Curvature, TV = Total Variation
 ![image](curvatureFilters.png)
 ## Another example
 ![image](denoise.PNG)
+The test image can be downloaded **[here](developable.png)**
 ## FAQ:
 1) Why dual mesh (DM) structure is needed?
 
