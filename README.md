@@ -7,7 +7,7 @@ Chapter **Six** in **[PhD thesis](http://e-collection.library.ethz.ch/eserv/eth:
 
 **source code** in **C++** and **Java** can also be found at **[MOSAIC](http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters)**
 ***
-## Why regularization should be minimized?
+## Why regularization energy should be minimized?
 ![image](phs.PNG)
 #### 1) Computational Efficient
 These filters are **three or four order of magnitude faster** than traditional solvers.
