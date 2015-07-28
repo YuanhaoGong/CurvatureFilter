@@ -3,7 +3,7 @@ This code was developed by Yuanhao Gong during his PhD at MOSAIC Group. Please c
 ***
 @phdthesis{gong:phd, title={Spectrally regularized surfaces}, author={Gong, Yuanhao}, year={2015}, school={ETH Zurich, Nr. 22616},note={http://dx.doi.org/10.3929/ethz-a-010438292}}
 ***
-Chapter **Six** in **[PhD thesis](http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf)**, Gaussian Curvature Filter, **[Talk Slides](GCFilter.pdf)**
+Chapter **Six** in **[PhD thesis](http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf)** (downloaded **200+**), **[Gaussian Curvature Filter (Talk Slides)](GCFilter.pdf)**
 
 **source code** in **C++** and **Java** can also be found at **[MOSAIC](http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters)**
 ***
@@ -24,7 +24,7 @@ GC = Gaussian Curvature, MC = Mean Curvature, TV = Total Variation
 ![image](curvatureFilters.png)
 
 ![image](denoise.PNG)
-The test image can be downloaded **[here](developable.png)**
+The noise free test image can be downloaded **[here](developable.png)**
 ## FAQ:
 1) Why dual mesh (DM) structure is needed?
 
