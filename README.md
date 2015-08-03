@@ -24,7 +24,7 @@ GC = Gaussian Curvature, MC = Mean Curvature, TV = Total Variation
 ![image](images/curvatureFilters.png)
 
 ![image](images/denoise.PNG)
-The noise free test image can be downloaded **[here](developable.png)**
+The noise free test image can be downloaded **[here](images/developable.png)**
 
 ![image](images/decomposition.png)
 ## FAQ:
