@@ -1,0 +1,13 @@
+im = imread('lena.png');
+
+Iteration = 10;
+
+tic
+[result,energy]=GCFilter(im,Iteration);
+mytoc
+
+figure,imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
+title('original(left), GCFilter(mid), difference(right)')
+
+figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Gaussian Curvature Energy'),title('Energy profile')
+
