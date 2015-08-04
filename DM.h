@@ -334,7 +334,7 @@ void DM::Filter(int Type, double & time, int ItNum )
                 Local_one = &DM::DC_one; Local_two = &DM::DC_two; 
                 cout<<"DC Filter: "; break;
             }
-            case 4;
+            case 4:
             {
             	Local_one = &DM::LS_one; Local_two = &DM::LS_two;
             	cout<<"MC Filter(LeastSquare): "; break;
