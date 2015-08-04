@@ -22,7 +22,13 @@ int main(int argc, char** argv)
     DM DualMesh;
     if (argc!=4)
     {
-       cout<<"usage: main filename filterType Iterations.\n For example: ./cf lena.bmp m 30, where m means Mean Curvature Filter. \n";
+       cout<<"usage: main filename filterType Iterations.\n For example: ./cf lena.bmp m 30\n";
+       cout<<"************************************************\n";
+       cout<<"Possible Filters: t (Total Variation) \n";
+       cout<<"                  m (Mean Curvature) \n";
+       cout<<"                  g (Gaussian Curvature) \n";
+       cout<<"                  d (Difference Curvature, not ready) \n";
+       cout<<"                  b (Mean Curvature with Least Square Method) \n";
        return -1;
     }
     DualMesh.read(argv[1]);
@@ -32,6 +38,7 @@ int main(int argc, char** argv)
     if (*filterType == 't') Type = 0;
     if (*filterType == 'm') Type = 1;
     if (*filterType == 'd') Type = 3;
+    if (*filterType == 'b') Type = 4;
 
 
     DualMesh.split();

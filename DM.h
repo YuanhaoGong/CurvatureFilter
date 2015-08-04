@@ -58,11 +58,15 @@ private:
     inline void DC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
     inline void DC_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
 	
+	inline void LS_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
+	inline void LS_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
+	
 	/*************************************** Direct on imgF (no split) ***********************/
 	inline void Scheme_GC(int i, float * p_pre, float * p, float * p_nex);
 	inline void Scheme_MC(int i, float * p_pre, float * p, float * p_nex);
 	inline void Scheme_TV(int i, float * p_pre, float * p, float * p_nex);
     inline void Scheme_DC(int i, float * p_pre, float * p, float * p_nex);
+    inline void Scheme_LS(int i, float * p_pre, float * p, float * p_nex);
 };
 
 double DM::PSNR()
@@ -330,6 +334,11 @@ void DM::Filter(int Type, double & time, int ItNum )
                 Local_one = &DM::DC_one; Local_two = &DM::DC_two; 
                 cout<<"DC Filter: "; break;
             }
+            case 4;
+            {
+            	Local_one = &DM::LS_one; Local_two = &DM::LS_two;
+            	cout<<"MC Filter(LeastSquare): "; break;
+            }
     		default:
     		{
     			cout<<"The filter type is wrong. Do nothing."<<endl;
@@ -399,10 +408,14 @@ void DM::FilterNoSplit(int Type, double & time, int ItNum )
     		{
     			Local = &DM::Scheme_GC; cout<<"GC Filter: "; break;
     		}
-          case 3:
-          {
-              Local = &DM::Scheme_DC; cout<<"DC Filter: "; break;
-          }
+			case 3:
+			{
+			    Local = &DM::Scheme_DC; cout<<"DC Filter: "; break;
+			}
+			case 4:
+			{
+				Local = &DM::Scheme_LS; cout<<"MC Filter(LeastSquare): "; break;
+			}
     		default:
     		{
     			cout<<"The filter type is wrong. Do nothing."<<endl;
@@ -740,6 +753,81 @@ inline void DM::MC_two(float* __restrict p, float* __restrict p_right, float* __
      }
 }
 
+inline void DM::LS_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
+{
+	//one is for BT and WC, two is for BC and WT
+	register float dist[5];
+	for (int j = 1; j < N_half; ++j)
+     {
+     	
+		dist[4] = p[j]*2;
+		dist[0] = (p_pre[j]+p_down[j]) - dist[4];
+		dist[1] = (p_right[j-1]+p_right[j]) - dist[4];
+		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+		dist[4] *= 3.5;
+		dist[0] *= 3.5;
+
+		dist[2] = 3*(p_Corner[j] + p_rd[j-1]) - dist[4];
+		dist[3] = 3*(p_Corner[j-1] + p_rd[j]) - dist[4];
+
+
+		dist[1] = p_right[j-1] + p_pre[j] - p_Corner[j-1] + dist[2];
+		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+		dist[1] = p_right[j] + p_pre[j] - p_Corner[j] + dist[3];
+		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+		dist[1] = p_right[j] + p_down[j] - p_rd[j] + dist[2];
+		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+		dist[1] = p_right[j-1] + p_down[j]  - p_rd[j-1] + dist[3];
+		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+
+		dist[0] /= 7;
+
+		p[j] += dist[0];
+     }
+}
+
+inline void DM::LS_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
+{
+	//one is for BT and WC, two is for BC and WT
+	register float dist[5];
+	for (int j = 0; j < N_half-1; ++j)
+     {
+     	
+		dist[4] = p[j]*2;
+		dist[0] = p_pre[j]+p_down[j] - dist[4];
+		dist[1] = p_right[j]+p_right[j+1] - dist[4];
+		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+		dist[4] *= 3.5;
+		dist[0] *= 3.5;
+
+		dist[2] = 3*(p_Corner[j+1] + p_rd[j]) - dist[4];
+		dist[3] = 3*(p_Corner[j] + p_rd[j+1]) - dist[4];
+
+     	dist[0] = p_right[j] + p_pre[j] - p_Corner[j] + dist[2];
+     	if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+     	dist[0] = p_right[j+1] + p_pre[j] - p_Corner[j+1] + dist[3];
+     	if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+     	dist[0] = p_right[j+1] + p_down[j] - p_rd[j+1] + dist[2];
+     	if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+     	dist[0] = p_right[j] + p_down[j] - p_rd[j] + dist[3];
+     	if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+        
+		dist[0] /= 7;
+		
+		p[j] += dist[0];
+     }
+}
+
 inline void DM::TV_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
 {
 	register float dist[13]; // first eight are distances, the rest are temp
@@ -958,6 +1046,44 @@ inline void DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex)
 
     dist[0] /= 8.0;
     
+
+    p[i] += dist[0];
+    return;
+}
+
+inline void DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex)
+{
+    //compute the movement according to half window
+    //   f   a   b            0 1/2 0               3/7 1/7 -1/7
+    //       I   e               -1 0                    -1  1/7
+    //       c   d              1/2 0                    0   3/7
+    // 
+    float dist[4];
+    float tmp = 2*p[i];
+
+    dist[0] = p_pre[i]+p_nex[i] - tmp;
+    dist[1] = p[i-1] + p[i+1] - tmp;
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+    tmp *= 3.5;
+    dist[0] *= 3.5;
+
+    dist[2] = 3*(p_pre[i+1] + p_nex[i-1]) - tmp;
+    dist[3] = 3*(p_pre[i-1] + p_nex[i+1]) - tmp;
+
+    dist[1] = p_pre[i] - p_pre[i-1] +  p[i-1] + dist[2];
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+    dist[1] = p_pre[i] - p_pre[i+1] + p[i+1] + dist[3];
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+    dist[1] = p_nex[i] - p_nex[i-1] + p[i-1] + dist[3];
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+    dist[1] = p_nex[i]  - p_nex[i+1] + p[i+1] + dist[2];
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+    dist[0] /= 7;
 
     p[i] += dist[0];
     return;
