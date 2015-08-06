@@ -10,18 +10,14 @@ Chapter **Six** in **[PhD thesis](http://e-collection.library.ethz.ch/eserv/eth:
 ## Why regularization energy should be minimized?
 ![image](images/phs.PNG)
 ## Features
-#### 1) Computational Efficient:
+#### 1) Computational Efficient ![image](images/fast.jpg) :
 These filters are **three or four order of magnitude faster** than traditional solvers. 
-![image](images/fast.jpg)    
-#### 2) Generality:
+#### 2) Generality ![image](images/box.png) :
 These filter solvers can handle **arbitrary imaging model**, as long as the imaging model can be evaluated(black box).
-![image](images/box.png)
-#### 3) Convergence:
+#### 3) Convergence ![image](images/theory.png):
 The convergence is **theoretically guaranteed** and the numerical convergence rate is around 1.4 for natural images.
-![image](images/theory.png)
-#### 4) Easy Implementation:
+#### 4) Easy Implementation ![image](images/easy.png) :
 These filters can be implemented in about 40 lines in Matlab and about 100 lines in C++. 
-![image](images/easy.png) 
 
 ## Examples
 GC = Gaussian Curvature, MC = Mean Curvature, TV = Total Variation
