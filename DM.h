@@ -764,6 +764,10 @@ inline void DM::LS_one(float* __restrict p, float* __restrict p_right, float* __
 		dist[0] = (p_pre[j]+p_down[j]) - dist[4];
 		dist[1] = (p_right[j-1]+p_right[j]) - dist[4];
 		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+		dist[1] = (p_Corner[j-1]+p_rd[j]) - dist[4];
+		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+		dist[1] = (p_Corner[j]+p_rd[j-1]) - dist[4];
+		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
 		dist[4] *= 3.5;
 		dist[0] *= 3.5;
@@ -801,6 +805,10 @@ inline void DM::LS_two(float* __restrict p, float* __restrict p_right, float* __
 		dist[4] = p[j]*2;
 		dist[0] = p_pre[j]+p_down[j] - dist[4];
 		dist[1] = p_right[j]+p_right[j+1] - dist[4];
+		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+		dist[1] = p_Corner[j]+p_rd[j+1] - dist[4];
+		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+		dist[1] = p_Corner[j+1]+p_rd[j] - dist[4];
 		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
 		dist[4] *= 3.5;
@@ -1063,6 +1071,10 @@ inline void DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex)
 
     dist[0] = p_pre[i]+p_nex[i] - tmp;
     dist[1] = p[i-1] + p[i+1] - tmp;
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    dist[1] = p_pre[i-1] + p_nex[i+1] - tmp;
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    dist[1] = p_nex[i-1] + p_pre[i+1] - tmp;
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
     tmp *= 3.5;
