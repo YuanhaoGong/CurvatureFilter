@@ -28,7 +28,7 @@ int main(int argc, char** argv)
        cout<<"                  m (Mean Curvature) \n";
        cout<<"                  g (Gaussian Curvature) \n";
        cout<<"                  d (Difference Curvature, not ready) \n";
-       cout<<"                  b (Mean Curvature with Least Square Method) \n";
+       cout<<"                  b (Bernstein Filter) \n";
        return -1;
     }
     DualMesh.read(argv[1]);
