@@ -26,12 +26,12 @@ dist = zeros(size(BT_pre,1),8);
 dist(:,1) = im(BT_pre) + im(BT_nex) - BT2; dist(:,2) = im(BT_lef) + im(BT_rig) - BT2;
 dist(:,3) = im(BT_lu) + im(BT_rd) - BT2; dist(:,4) = im(BT_ld) + im(BT_ru) - BT2;
 
-tmp1 = 3*(im(BT_ld) + im(BT_ru)); tmp2 = 3*(im(BT_lu) + im(BT_rd));
+tmp1 = 3*(im(BT_ld) + im(BT_ru)) - BT3; tmp2 = 3*(im(BT_lu) + im(BT_rd)) - BT3;
 
-dist(:,5) = im(BT_pre) + im(BT_lef) - im(BT_lu) + tmp1 - BT3; 
-dist(:,6) = im(BT_pre) + im(BT_rig) - im(BT_ru) + tmp2 - BT3;
-dist(:,7) = im(BT_nex) + im(BT_lef)- im(BT_ld) + tmp2 - BT3; 
-dist(:,8) = im(BT_nex) + im(BT_rig) - im(BT_rd) +tmp1- BT3;
+dist(:,5) = im(BT_pre) + im(BT_lef) - im(BT_lu) + tmp1; 
+dist(:,6) = im(BT_pre) + im(BT_rig) - im(BT_ru) + tmp2;
+dist(:,7) = im(BT_nex) + im(BT_lef)- im(BT_ld) + tmp2; 
+dist(:,8) = im(BT_nex) + im(BT_rig) - im(BT_rd) +tmp1;
 
 dist(:,1:4) = dist(:,1:4)/2; dist(:,5:8) = dist(:,5:8)/7; %% minimal projection
 dist= dist'; tmp = abs(dist); [v,ind] = min(tmp);
