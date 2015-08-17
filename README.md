@@ -6,6 +6,12 @@ This code was developed by Yuanhao Gong during his PhD at MOSAIC Group. Please c
 Chapter **Six** in **[PhD thesis](http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf)** (downloaded **200+** since June, 2015), Gaussian Curvature Filter (Talk Slides): **[Dropbox](https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0)** or **[Baidu](http://pan.baidu.com/s/1gd4Km1H)**, **source code** in **C++** and **Java** can also be found at **[MOSAIC](http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters)**
 ***
 ![image](images/phs.PNG)
+## Running Time (10 iterations on 512X512 Lena image)
+| Filter       | Bilateral Filter | Guided Filter | Guided Filter | MC Filter | GC Filter | MC Filter | GC Filter| Bernstein Filter |
+| ------------- |:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|
+| Language      | C++ | Matlab | C++ | Matlab | Matlab | C++ | C++| C++|
+| Milliseconds      | 103 | 514 | 130 | 21 | 20 | 12 | 11| 8|
+
 ## Features
 #### 1) Computational Efficient ![image](images/fast.jpg) :
 These filters are **three or four order of magnitude faster** than traditional solvers. 
