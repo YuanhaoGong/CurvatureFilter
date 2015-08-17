@@ -14,7 +14,7 @@ Chapter **Six** in **[PhD thesis](http://e-collection.library.ethz.ch/eserv/eth:
 
 ## Features
 #### 1) Computational Efficient ![image](images/fast.jpg) :
-These filters are **three or four order of magnitude faster** than traditional solvers. 
+These filters are **three or four order of magnitude faster** than traditional solvers, such as mean curvature flow. 
 #### 2) Generality ![image](images/box.png) :
 These filter solvers can handle **arbitrary imaging model**, as long as the imaging model can be evaluated(black box).
 #### 3) Convergence ![image](images/theory.png):
