@@ -9,7 +9,7 @@ Chapter **Six** in **[PhD thesis](http://e-collection.library.ethz.ch/eserv/eth:
 ## Running Time (10 iterations on 512X512 Lena image)
 | Filter       | Bilateral Filter | Guided Filter | Guided Filter | MC Filter | MC Filter | GC Filter | GC Filter| Bernstein Filter |
 | ------------- |:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|
-| Language      | C++ | Matlab | C++ | Matlab | C++ | Matlab | C++| C++|
+| Lang.      | C++ | Matlab | C++ | Matlab | C++ | Matlab | C++| C++|
 | MilliSec.      | 103 | 514 | 130 | 21 | 12 | 20 | 11| 8|
 
 Matlab version is R2015a and GCC version is 5.1. All tests are on a Thinkpad machine T410 with i7 core CPU.
