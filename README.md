@@ -7,11 +7,12 @@ Chapter **Six** in **[PhD thesis](http://e-collection.library.ethz.ch/eserv/eth:
 ***
 ![image](images/phs.PNG)
 ## Running Time (10 iterations on 512X512 Lena image)
-| Filter       | Bilateral Filter | Guided Filter | Guided Filter | MC Filter | GC Filter | MC Filter | GC Filter| Bernstein Filter |
+| Filter       | Bilateral Filter | Guided Filter | Guided Filter | MC Filter | MC Filter | GC Filter | GC Filter| Bernstein Filter |
 | ------------- |:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|
-| Language      | C++ | Matlab | C++ | Matlab | Matlab | C++ | C++| C++|
-| Milliseconds      | 103 | 514 | 130 | 21 | 20 | 12 | 11| 8|
+| Language      | C++ | Matlab | C++ | Matlab | C++ | Matlab | C++| C++|
+| MilliSec.      | 103 | 514 | 130 | 21 | 12 | 20 | 11| 8|
 
+Matlab version is R2015a and GCC version is 5.1. All tests are on a Thinkpad machine T410 with i7 core CPU.
 ## Features
 #### 1) Computational Efficient ![image](images/fast.jpg) :
 These filters are **three or four order of magnitude faster** than traditional solvers, such as mean curvature flow. 
