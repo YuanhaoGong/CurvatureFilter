@@ -253,7 +253,7 @@ void DM::GC(Mat & imgF, Mat &GC)
 
             num = Ixx*Iyy - Ixy*Ixy;
             den = (1.0 + Ix*Ix + Iy*Iy);
-            den = pow(den, 1.5);
+            den = pow(den, 1.5f);
             p_d[j] = num/den;
         }   
     }
