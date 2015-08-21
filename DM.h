@@ -1064,7 +1064,7 @@ inline void DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex)
     //compute the movement according to half window
     //   f   a   b            0 1/2 0               3/7 1/7 -1/7
     //       I   e               -1 0                    -1  1/7
-    //       c   d              1/2 0                    0   3/7
+    //       c   d              1/2 0                        3/7
     // 
     float dist[4];
     float tmp = 2*p[i];
@@ -1076,7 +1076,9 @@ inline void DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex)
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
     dist[1] = p_nex[i-1] + p_pre[i+1] - tmp;
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    
 
+    
     tmp *= 3.5;
     dist[0] *= 3.5;
 
