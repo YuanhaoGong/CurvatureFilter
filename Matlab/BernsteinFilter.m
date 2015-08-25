@@ -21,17 +21,19 @@ for i = 1:ItNum
     r = SimpleUpdate(r,WT,WT_pre,WT_nex,WT_lef,WT_rig,WT_lu,WT_ld,WT_ru,WT_rd);
 end
 function res = SimpleUpdate(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd)
-res = im; BT8 = 8*im(BT); 
-dist = zeros(size(BT_pre,1),4);
-tmp1 = 2.5*(im(BT_pre) + im(BT_nex)) - BT8;
-tmp2 = 2.5*(im(BT_lef) + im(BT_rig)) - BT8;
+res = im; BT2 = 2*im(BT); BT3 = im(BT);
+dist = zeros(size(BT_pre,1),8);
+dist(:,1) = im(BT_pre) + im(BT_nex) - BT2; dist(:,2) = im(BT_lef) + im(BT_rig) - BT2;
+dist(:,3) = im(BT_lu) + im(BT_rd) - BT2; dist(:,4) = im(BT_ld) + im(BT_ru) - BT2;
 
-dist(:,1) = tmp1  + 5*im(BT_rig) - im(BT_ru) - im(BT_rd);
-dist(:,2) = tmp1  + 5*im(BT_lef) - im(BT_lu) - im(BT_ld);
-dist(:,3) = tmp2  + 5*im(BT_pre) - im(BT_lu) - im(BT_ru);
-dist(:,4) = tmp2  + 5*im(BT_nex) - im(BT_ld) - im(BT_rd);
+tmp1 = 3*(im(BT_ld) + im(BT_ru)) - BT3; tmp2 = 3*(im(BT_lu) + im(BT_rd)) - BT3;
 
-dist(:,1:4) = dist(:,1:4)/8; %% minimal projection
+dist(:,5) = im(BT_pre) + im(BT_lef) - im(BT_lu) + tmp1; 
+dist(:,6) = im(BT_pre) + im(BT_rig) - im(BT_ru) + tmp2;
+dist(:,7) = im(BT_nex) + im(BT_lef)- im(BT_ld) + tmp2; 
+dist(:,8) = im(BT_nex) + im(BT_rig) - im(BT_rd) +tmp1;
+
+dist(:,1:4) = dist(:,1:4)/2; dist(:,5:8) = dist(:,5:8)/7; %% minimal projection
 dist= dist'; tmp = abs(dist); [v,ind] = min(tmp);
 tmp = sub2ind(size(dist),ind',(1:size(dist,2))');
 res(BT) = res(BT) + dist(tmp);

@@ -1,6 +1,6 @@
 im = imread('lena.png');
 
-Iteration = 10;
+Iteration = 30;
 
 tic
 [result,energy]=GCFilter(im,Iteration);
@@ -18,7 +18,7 @@ figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Gaussian Curvatur
 %% ************************* mean curvature *********************************************
 im = imread('lena.png');
 
-Iteration = 10;
+Iteration = 30;
 
 tic
 [result,energy]=MCFilter(im,Iteration);
