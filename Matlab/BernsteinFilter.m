@@ -1,4 +1,4 @@
-function [r, Energy] = MCFilter(im, ItNum)
+function [r, Energy] = BernsteinFilter(im, ItNum)
 im = double(im); [m,n]=size(im); Energy = zeros(ItNum,1); r = im;
 %% four types of pixels %B = black, W = white, C = circle, T = triangle
 [BC_row,BC_col]=meshgrid(2:2:m-1,2:2:n-1);[BT_row,BT_col]=meshgrid(3:2:m-1,3:2:n-1);
