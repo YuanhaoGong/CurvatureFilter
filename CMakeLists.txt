@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project( CF )
 find_package( OpenCV REQUIRED )
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING "set build type to release")
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 add_executable( CF main.cpp )
 target_link_libraries( CF ${OpenCV_LIBS} )
