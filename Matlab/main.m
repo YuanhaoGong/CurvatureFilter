@@ -32,3 +32,21 @@ figure,imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorba
 title('original(left), MCFilter(mid), difference(right)')
 
 figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Mean Curvature Energy'),title('Energy profile')
+
+%% ************************* Bernstein Filter also minimizes mean curvature *********************************************
+im = imread('lena.png');
+
+Iteration = 30;
+
+tic
+[result,energy]=BernsteinFilter(im,Iteration);
+mytime = toc;
+
+%% show the running time and the result
+mystr = strcat('performance: ', num2str(mytime/Iteration),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
+disp(mystr)
+
+figure,imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
+title('original(left), BFilter(mid), difference(right)')
+
+figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Mean Curvature Energy'),title('Energy profile')
