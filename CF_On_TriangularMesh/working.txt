@@ -1,0 +1,1 @@
+The Gaussian curvature filter can be extended onto triangular mesh, as I showed in the end of my PhD thesis. However, more comparision with GC flow has to be done.
