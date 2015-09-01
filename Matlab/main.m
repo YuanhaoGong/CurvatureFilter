@@ -2,6 +2,8 @@ im = imread('lena.png');
 
 Iteration = 30;
 
+disp('** running time includes the time for computing energy. **')
+
 tic
 [result,energy]=GCFilter(im,Iteration);
 mytime = toc;
