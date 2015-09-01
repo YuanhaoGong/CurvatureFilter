@@ -27,7 +27,7 @@ int main(int argc, char** argv)
        cout<<"Possible Filters: t (Total Variation) \n";
        cout<<"                  m (Mean Curvature) \n";
        cout<<"                  g (Gaussian Curvature) \n";
-       cout<<"                  d (Difference Curvature, not ready) \n";
+       cout<<"                  d (Difference Curvature) \n";
        cout<<"                  b (Bernstein Filter) \n";
        return -1;
     }
