@@ -910,90 +910,50 @@ inline void DM::TV_two(float* __restrict p, float* __restrict p_right, float* __
 
 inline void DM::DC_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
 {
-    register float dist[10];
-    register float maxValue[2];
+    register float dist[4];
+    register float weight = -0.2256;
     
     for (int j = 1; j < N_half; ++j)
      {
-        dist[0] = 2*p[j];
-        dist[1] = (p_pre[j]+p_down[j]) - dist[0];
-        dist[2] = (p_right[j-1]+p_right[j]) - dist[0];
-        dist[3] = (p_Corner[j-1]+p_rd[j]) - dist[0];
-        dist[4] = (p_Corner[j]+p_rd[j-1]) - dist[0];
-
-        dist[5] = 3*p[j];
-        dist[6] = (p_Corner[j-1] + p_pre[j] + p_right[j-1]) - dist[5];
-        dist[7] = (p_Corner[j] + p_pre[j] + p_right[j]) - dist[5];
-        dist[8] = (p_right[j-1] + p_rd[j-1] + p_down[j]) - dist[5];
-        dist[9] = (p_right[j] + p_down[j] + p_rd[j]) - dist[5];
+        dist[1] = (p_pre[j]+p_down[j])/2 - p[j];
+        dist[2] = (p_right[j-1]+p_right[j])/2 - p[j];
         
-        maxValue[0] = dist[1];
-        maxValue[1] = dist[6];
-        for (int i = 2; i < 5; ++i)
-        {
-            if (dist[i] < dist[1]) dist[1] = dist[i];
-            if (dist[i] > maxValue[0]) maxValue[0] = dist[i];
-            if (dist[i+5] < dist[6]) dist[6] = dist[i+5];
-            if (dist[i+5] > maxValue[1]) maxValue[1] = dist[i+5];
-        }
-        //minimal
-        dist[1] /= 2;
-        dist[6] /= 3;
-        if (dist[6] < dist[1]) dist[1] = dist[6];
-        //maximal
-        maxValue[0] /= 4; //we only need half value
-        maxValue[1] /= 6;
-        if (maxValue[1]>maxValue[0]) maxValue[0] = maxValue[1];
+        dist[0] = dist[1] + (p_rd[j] + p_Corner[j] - 2*p_right[j])*weight;
+        dist[3] = dist[1] + (p_rd[j-1] + p_Corner[j-1] - 2*p_right[j-1])*weight;
+        if(fabsf(dist[3]) < fabsf(dist[0])) dist[0] = dist[3];
 
-        dist[1] += maxValue[0];
-        dist[1] /= 2;
+        dist[3] = dist[2] + (p_Corner[j-1] + p_Corner[j] - 2*p_pre[j])*weight;
+        if(fabsf(dist[3]) < fabsf(dist[0])) dist[0] = dist[3];
 
-        p[j] += dist[1];
+        dist[3] = dist[2] + (p_rd[j-1] + p_rd[j] - 2*p_down[j])*weight;
+        if(fabsf(dist[3]) < fabsf(dist[0])) dist[0] = dist[3];
+
+        p[j] += dist[0];
      }
 }
 
 inline void DM::DC_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
 {
-    register float dist[10];
-    register float maxValue[2];
+    register float dist[4];
+    register float weight = -0.2256;
 
     for (int j = 0; j < N_half-1; ++j)
      {
-        dist[0] = 2*p[j];
-        dist[1] = (p_pre[j]+p_down[j]) - dist[0];
-        dist[2] = (p_right[j]+p_right[j+1]) - dist[0];
-        dist[3] = (p_Corner[j]+p_rd[j+1]) - dist[0];
-        dist[4] = (p_Corner[j+1]+p_rd[j]) - dist[0];
+        dist[1] = (p_pre[j]+p_down[j])/2 - p[j];
+        dist[2] = (p_right[j]+p_right[j+1])/2 - p[j];
         
+        dist[0] = dist[1] + (p_Corner[j+1] + p_rd[j+1] - 2*p_right[j+1])*weight;
+        dist[3] = dist[1] + (p_Corner[j] + p_rd[j] - 2*p_right[j])*weight;
+        if(fabsf(dist[3]) < fabsf(dist[0])) dist[0] = dist[3];
 
-        dist[5] = 3*p[j];
-        dist[6] = (p_Corner[j] + p_pre[j] + p_right[j]) - dist[5];
-        dist[7] = (p_Corner[j+1] + p_pre[j] + p_right[j+1]) - dist[5];
-        dist[8] = (p_right[j] + p_rd[j] + p_down[j]) - dist[5];
-        dist[9] = (p_right[j+1] + p_down[j] + p_rd[j+1]) - dist[5];
-        
-        maxValue[0] = dist[1];
-        maxValue[1] = dist[6];
-        for (int i = 2; i < 5; ++i)
-        {
-            if (dist[i] < dist[1]) dist[1] = dist[i];
-            if (dist[i] > maxValue[0]) maxValue[0] = dist[i];
-            if (dist[i+5] < dist[6]) dist[6] = dist[i+5];
-            if (dist[i+5] > maxValue[1]) maxValue[1] = dist[i+5];
-        }
-        //minimal
-        dist[1] /= 2;
-        dist[6] /= 3;
-        if (dist[6] < dist[1]) dist[1] = dist[6];
-        //maximal
-        maxValue[0] /= 4; //we only need half value
-        maxValue[1] /= 6;
-        if (maxValue[1]>maxValue[0]) maxValue[0] = maxValue[1];
-        
-        dist[1] += maxValue[0];
-        dist[1] /= 2;
+        dist[3] = dist[2] + (p_Corner[j] + p_Corner[j+1] - 2*p_pre[j])*weight;
+        if(fabsf(dist[3]) < fabsf(dist[0])) dist[0] = dist[3];
 
-        p[j] += dist[1];
+        dist[3] = dist[2] + (p_rd[j] + p_rd[j+1] - 2*p_down[j])*weight;
+        if(fabsf(dist[3]) < fabsf(dist[0])) dist[0] = dist[3];
+
+
+        p[j] += dist[0];
      }
 }
 
@@ -1141,45 +1101,18 @@ inline void DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
 
 inline void DM::Scheme_DC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex)
 {
-    float dist[4];
-    float maxValue;
+   float dist[2];
+    float weight = -0.2256;
 
-    dist[2] = 5*p[i];
-    dist[0] = p_pre[i]+ p_pre[i+1]+p[i+1]+p_nex[i] + p_nex[i+1] - dist[2];
-    maxValue = dist[0];
+    dist[0] = (p_pre[i] + p_nex[i])/2 + (p_pre[i+1] + p_nex[i+1] - 2*p[i+1])*weight - p[i];
+    dist[1] = (p_pre[i] + p_nex[i])/2 + (p_pre[i-1] + p_nex[i-1] - 2*p[i-1])*weight - p[i];
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-    dist[1] = p_pre[i]+p[i-1]+p_nex[i] + p_pre[i-1] + p_nex[i-1] - dist[2];
-    if (dist[1] < dist[0]) dist[0] = dist[1];
-    if (dist[1] > maxValue) maxValue = dist[1];
-    
-    dist[1] = p[i-1]+p[i+1]+p_nex[i] + p_nex[i-1] + p_nex[i+1] - dist[2];
-    if (dist[1] < dist[0]) dist[0] = dist[1];
-    if (dist[1] > maxValue) maxValue = dist[1];
+    dist[1] = (p[i-1] + p[i+1])/2 + (p_pre[i-1] + p_pre[i+1] - 2*p_pre[i])*weight - p[i];
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-    dist[1]  = p[i-1]+p[i+1]+p_pre[i] + p_pre[i-1] + p_pre[i+1] - dist[2];
-    if (dist[1] < dist[0]) dist[0] = dist[1];
-    if (dist[1] > maxValue) maxValue = dist[1];
-    
-    
-    //diag
-    dist[1] = p_pre[i-1]+p_pre[i] + p_pre[i+1] + p[i-1] + p_nex[i-1]- dist[2];
-    if (dist[1] < dist[0]) dist[0] = dist[1];
-    if (dist[1] > maxValue) maxValue = dist[1];
+    dist[1] = (p[i-1] + p[i+1])/2 + (p_nex[i-1] + p_nex[i+1] - 2*p_nex[i])*weight - p[i];
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-    dist[1] = p_pre[i-1]+p_pre[i] + p_pre[i+1] + p[i+1] + p_nex[i+1]- dist[2];
-    if (dist[1] < dist[0]) dist[0] = dist[1];
-    if (dist[1] > maxValue) maxValue = dist[1];
-
-    dist[1] = p_nex[i-1]+p_nex[i] + p_nex[i+1] + p[i-1] + p_pre[i-1]- dist[2];
-    if (dist[1] < dist[0]) dist[0] = dist[1];
-    if (dist[1] > maxValue) maxValue = dist[1];
-
-    dist[1] = p_nex[i-1]+p_nex[i] + p_nex[i+1] + p[i+1] + p_pre[i+1]- dist[2];
-    if (dist[1] < dist[0]) dist[0] = dist[1];
-    if (dist[1] > maxValue) maxValue = dist[1];
-
-    maxValue += dist[0];
-
-    
-    p[i] += (maxValue/10);
+    p[i] += dist[0];
 }
