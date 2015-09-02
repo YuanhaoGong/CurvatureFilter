@@ -5,6 +5,8 @@ This code was developed by Yuanhao Gong during his PhD at MOSAIC Group. Please c
 ***
 Chapter **Six** in **[PhD thesis](http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf)** (downloaded **200+** since June, 2015), Gaussian Curvature Filter (Talk Slides): **[Dropbox](https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0)** or **[Baidu](http://pan.baidu.com/s/1gd4Km1H)**, (如果你懂中文的话)**[中文介绍](http://pan.baidu.com/s/1ntGfGQ9)**, **source code** in **C++** and **Java** can also be found at **[MOSAIC](http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters)**
 
+The kernels summary and one example how to get the kernel can be found **[here](CF_Kernels.pdf)**
+
 **[Curvature Filter Online Forum](https://groups.google.com/forum/?hl=en#!forum/curvaturefilter)**
 ***
 ![image](images/phs.PNG)
