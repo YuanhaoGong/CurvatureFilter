@@ -3,7 +3,7 @@ This code was developed by Yuanhao Gong during his PhD at MOSAIC Group. Please c
 ***
 @phdthesis{gong:phd, title={Spectrally regularized surfaces}, author={Gong, Yuanhao}, year={2015}, school={ETH Zurich, Nr. 22616},note={http://dx.doi.org/10.3929/ethz-a-010438292}}
 ***
-Chapter **Six** in **<a href="http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf" target="_blank">PhD thesis</a>** (downloaded **700+** since June, 2015), Gaussian Curvature Filter (Talk Slides): **<a href="https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0" target="_blank">Dropbox</a>** or **<a href="http://pan.baidu.com/s/1gd4Km1H" target="_blank">Baidu</a>**, **<a href="http://pan.baidu.com/s/1ntGfGQ9" target="_blank">简单的中文介绍</a>**, **source code** in **C++** and **Java** can also be found at **<a href="http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters", target="_blank">MOSAIC</a>**
+Chapter **Six** in **<a href="http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf" target="_blank">PhD thesis</a>** (downloaded **700+** since June, 2015), Gaussian Curvature Filter (Talk Slides): **<a href="https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0" target="_blank">Dropbox</a>** or **<a href="http://pan.baidu.com/s/1gd4Km1H" target="_blank">Baidu</a>**, **<a href="http://www.zhihu.com/question/35499791" target="_blank">知乎上的介绍</a>**, **<a href="http://pan.baidu.com/s/1ntGfGQ9" target="_blank">简单的中文介绍</a>**, **source code** in **C++** and **Java** can also be found at **<a href="http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters", target="_blank">MOSAIC</a>**
 
 The kernels summary and one example how to get the kernel can be found **[here](CF_Kernels.pdf)**
 
