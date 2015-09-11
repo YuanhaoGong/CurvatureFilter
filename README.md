@@ -27,13 +27,14 @@ The convergence is **theoretically guaranteed** and the numerical convergence ra
 #### 4) Easy Implementation ![image](images/easy.png) :
 These filters can be implemented in about 40 lines in Matlab and about 100 lines in C++. 
 
-## Examples
+## Example Applications
+### Smoothing
 GC = Gaussian Curvature, MC = Mean Curvature, TV = Total Variation
 ![image](images/curvatureFilters.png)
-
+### Denoising
 ![image](images/denoise.PNG)
 The noise free test image can be downloaded **[here](images/developable.png)**
-
+### Cartoon Texture Decomposition
 ![image](images/decomposition.png)
 ## FAQ:
 1) Why dual mesh (DM) structure is needed?
