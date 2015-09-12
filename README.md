@@ -12,7 +12,13 @@ The kernels summary and one example how to get the kernel can be found **[here](
 ## Curvature filters minimize the regularization energy
 Traditional solvers, such as gradient descent or Euler Lagrange Euqation, start at the total energy and use diffusion scheme to carry out the minimization. When the initial condition is the original image, the data fitting energy always increase while the regularization energy always reduces during the optimization. As illustrated in the below figure, regularization energy must be the dominant part since the total energy has to decrease. Therefore, **Curvature filters focus on minimize the regularization term,** whose minimizers are already known. For example, if the regularization is Gaussian curvature, the developable surfaces minimize this energy. Therefore, in curvature filter, developable surfaces are used to approximate the data. **As long as the decreased amount in the regularization part is larger than the increased amount in the data fitting energy, the total energy is reduced.**
 ![image](images/phs.PNG)
+## Running Time (10 iterations on 512X512 Lena image)
+| Filter       | Bilateral Filter | Guided Filter | Guided Filter | MC Filter | MC Filter | GC Filter | GC Filter| Bernstein Filter |
+| ------------- |:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|
+| Lang.      | C++ | Matlab | C++ | Matlab | C++ | Matlab | C++| C++|
+| MilliSec.      | 103 | 514 | 130 | 21 | 12 | 20 | 11| 8|
 
+Matlab version is R2015a and GCC version is 5.1. All tests are on a Thinkpad T410 with i7 core CPU.
 ***
 ## Features
 #### 1) Computational Efficient ![image](images/fast.jpg) :
@@ -23,14 +29,6 @@ These filter solvers can handle **arbitrary imaging model**, as long as the imag
 The convergence is **theoretically guaranteed** and the numerical convergence rate is around 1.4 for natural images.
 #### 4) Easy Implementation ![image](images/easy.png) :
 These filters can be implemented in about 40 lines in Matlab and about 100 lines in C++. 
-
-## Running Time (10 iterations on 512X512 Lena image)
-| Filter       | Bilateral Filter | Guided Filter | Guided Filter | MC Filter | MC Filter | GC Filter | GC Filter| Bernstein Filter |
-| ------------- |:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|
-| Lang.      | C++ | Matlab | C++ | Matlab | C++ | Matlab | C++| C++|
-| MilliSec.      | 103 | 514 | 130 | 21 | 12 | 20 | 11| 8|
-
-Matlab version is R2015a and GCC version is 5.1. All tests are on a Thinkpad T410 with i7 core CPU.
 
 ***
 ## Example Applications
