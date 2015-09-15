@@ -1,5 +1,5 @@
 function [r, Energy] = BernsteinFilter(im, ItNum)
-im = double(im); [m,n]=size(im); Energy = zeros(ItNum,1); r = im;
+im = single(im); [m,n]=size(im); Energy = zeros(ItNum,1); r = im;
 %% four types of pixels %B = black, W = white, C = circle, T = triangle
 [BC_row,BC_col]=meshgrid(2:2:m-1,2:2:n-1);[BT_row,BT_col]=meshgrid(3:2:m-1,3:2:n-1);
 [WC_row,WC_col]=meshgrid(2:2:m-1,3:2:n-1);[WT_row,WT_col]=meshgrid(3:2:m-1,2:2:n-1);
@@ -22,7 +22,7 @@ for i = 1:ItNum
 end
 function res = SimpleUpdate(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd)
 res = im; BT2 = 2*im(BT); BT3 = im(BT);
-dist = zeros(size(BT_pre,1),8);
+dist = zeros(size(BT_pre,1),8,'single');
 dist(:,1) = im(BT_pre) + im(BT_nex) - BT2; dist(:,2) = im(BT_lef) + im(BT_rig) - BT2;
 dist(:,3) = im(BT_lu) + im(BT_rd) - BT2; dist(:,4) = im(BT_ld) + im(BT_ru) - BT2;
 

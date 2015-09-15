@@ -1,5 +1,5 @@
 function [r, Energy] = MCFilter(im, ItNum)
-im = double(im); [m,n]=size(im); Energy = zeros(ItNum,1); r = im;
+im = single(im); [m,n]=size(im); Energy = zeros(ItNum,1); r = im;
 %% four types of pixels %B = black, W = white, C = circle, T = triangle
 [BC_row,BC_col]=meshgrid(2:2:m-1,2:2:n-1);[BT_row,BT_col]=meshgrid(3:2:m-1,3:2:n-1);
 [WC_row,WC_col]=meshgrid(2:2:m-1,3:2:n-1);[WT_row,WT_col]=meshgrid(3:2:m-1,2:2:n-1);
@@ -22,7 +22,7 @@ for i = 1:ItNum
 end
 function res = SimpleUpdate(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd)
 res = im; BT8 = 8*im(BT); 
-dist = zeros(size(BT_pre,1),4);
+dist = zeros(size(BT_pre,1),4,'single');
 tmp1 = 2.5*(im(BT_pre) + im(BT_nex)) - BT8;
 tmp2 = 2.5*(im(BT_lef) + im(BT_rig)) - BT8;
 
