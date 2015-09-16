@@ -40,6 +40,8 @@ GC = Gaussian Curvature, MC = Mean Curvature, TV = Total Variation
 The noise free test image can be downloaded **[here](images/developable.png)**
 ### 3) Cartoon Texture Decomposition
 ![image](images/decomposition.png)
+### 4) Multi Resolution Analysis
+![image](images/scaleSpace.png)
 
 ***
 ## FAQ:
