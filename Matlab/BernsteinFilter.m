@@ -21,7 +21,7 @@ for i = 1:ItNum
     r = SimpleUpdate(r,WT,WT_pre,WT_nex,WT_lef,WT_rig,WT_lu,WT_ld,WT_ru,WT_rd);
 end
 function res = SimpleUpdate(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd)
-res = im; BT2 = 2*im(BT); BT3 = im(BT);
+res = im; BT2 = 2*im(BT); BT3 = 7*im(BT);
 dist = zeros(size(BT_pre,1),8,'single');
 dist(:,1) = im(BT_pre) + im(BT_nex) - BT2; dist(:,2) = im(BT_lef) + im(BT_rig) - BT2;
 dist(:,3) = im(BT_lu) + im(BT_rd) - BT2; dist(:,4) = im(BT_ld) + im(BT_ru) - BT2;
