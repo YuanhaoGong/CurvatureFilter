@@ -16,25 +16,25 @@ public:
     //merge four sets back to imgF
     void merge();
     //compute TV
-    void TV(Mat& img, Mat& T);
+    void TV(Mat & img, Mat & T);
     //compute M
-    void MC(Mat& img, Mat & MC);
+    void MC(Mat & img, Mat & MC);
     //compute MC
-    void GC(Mat& img, Mat & GC);
+    void GC(Mat & img, Mat & GC);
     //compute energy for given TV, MC, or GC image
-    double energy(Mat & img);
+    double energy(Mat& img);
+    //compute data fitting energy between image and imgF
+    double DataFitEnergy(Mat& tmp, double order);
     //PSNR
     double PSNR();
     double PSNR(const Mat& I1, const Mat& I2);
-    /******************* filter solvers for the variaitonal models *****************************/
+    /******************* filters *****************************/
     // Type=0, TV; Type=1, MC; Type=2, GC; (Type=3, DC, experimental);
     void Filter(int Type, double & time, int ItNum = 10);//with split
     void FilterNoSplit(int Type, double & time, int ItNum = 10);//direct on imgF 
-    /*************************** two simple applications **************************************/
-    //take the BT image as input and estimate the orignal image
-    void SuperResolution(int Type, double & time, int ItNum = 10);
-    //inpaint, only deal with one pixel corruption
-    void Inpaint(Mat& mask, int Type, double& time, int ItNum=10);
+    /******************* generic solver for variational models *****************************/
+    void Solver(int Type, double & time, int ItNum,  float lambda = 2, float DataFitOrder = 1);
+
 private:
     //padded original, tmp, result
     Mat image, imgF, result;
@@ -43,6 +43,8 @@ private:
     int M, N, M_orig, N_orig, M_half, N_half;
     //six pointers
     float* p, *p_right, *p_down, *p_rd, *p_pre, *p_Corner;
+    //pointer to the data
+    const float* p_data;
 private:
 	/*************************************** Split into 4 sets *********************************/
 	//one is for BT and WC, two is for BC and WT
@@ -62,11 +64,11 @@ private:
 	inline void LS_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
 	
 	/*************************************** Direct on imgF (no split) ***********************/
-	inline void Scheme_GC(int i, float * p_pre, float * p, float * p_nex);
-	inline void Scheme_MC(int i, float * p_pre, float * p, float * p_nex);
-	inline void Scheme_TV(int i, float * p_pre, float * p, float * p_nex);
-    inline void Scheme_DC(int i, float * p_pre, float * p, float * p_nex);
-    inline void Scheme_LS(int i, float * p_pre, float * p, float * p_nex);
+	inline float Scheme_GC(int i, float * p_pre, float * p, float * p_nex);
+	inline float Scheme_MC(int i, float * p_pre, float * p, float * p_nex);
+	inline float Scheme_TV(int i, float * p_pre, float * p, float * p_nex);
+    inline float Scheme_DC(int i, float * p_pre, float * p, float * p_nex);
+    inline float Scheme_LS(int i, float * p_pre, float * p, float * p_nex);
 };
 
 double DM::PSNR()
@@ -186,7 +188,7 @@ void DM::write(const char* FileName)
 }
 
 //compute Total Variation
-void TV(Mat& imgF, Mat& T)
+void DM::TV(Mat & imgF, Mat & T)
 {
     T = Mat::zeros(imgF.rows, imgF.cols, CV_32FC1);
     float * p_row, *pn_row;
@@ -259,11 +261,20 @@ void DM::GC(Mat & imgF, Mat &GC)
     }
 }
 
-//compute the energy
+//compute the curvature energy
 double DM::energy(Mat &img)
 {
     Scalar tmp = sum(cv::abs(img));
     return tmp(0);
+}
+
+//compute the energy between image and imgF
+double DM::DataFitEnergy(Mat & tmp, double order)
+{
+    tmp = abs(image - imgF);
+    pow(tmp, order, tmp);
+    Scalar tmp2 = sum(tmp);
+    return tmp2(0);
 }
 
 //split the image into four sets
@@ -345,6 +356,7 @@ void DM::Filter(int Type, double & time, int ItNum )
     			return;
     		}
     }
+    float d;
     Tstart = clock();
     for(int it=0;it<ItNum;++it)
     {
@@ -392,7 +404,7 @@ void DM::FilterNoSplit(int Type, double & time, int ItNum )
 {
     clock_t Tstart, Tend;
 
-    void (DM::* Local)(int i, float* p_pre, float* p, float* p_nex);
+    float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex);
 
     switch(Type)
     {
@@ -423,6 +435,7 @@ void DM::FilterNoSplit(int Type, double & time, int ItNum )
     		}
     }
     Tstart = clock();
+    float d;
     for(int it=0;it<ItNum;++it)
     {
         //black circle
@@ -433,7 +446,8 @@ void DM::FilterNoSplit(int Type, double & time, int ItNum )
             p_down = imgF.ptr<float>(i+1);
             for (int j = 1; j < N-1; ++j, ++j)
             {
-                (this->*Local)(j,p_pre,p,p_down);
+                d = (this->*Local)(j,p_pre,p,p_down);
+                p[j] += d;
             }
         }
 
@@ -445,7 +459,8 @@ void DM::FilterNoSplit(int Type, double & time, int ItNum )
             p_down = imgF.ptr<float>(i+1);
             for (int j = 2; j < N-1; ++j, ++j)
             {
-                (this->*Local)(j,p_pre,p,p_down);
+                d = (this->*Local)(j,p_pre,p,p_down);
+                p[j] += d;
             }
         }
 
@@ -457,7 +472,8 @@ void DM::FilterNoSplit(int Type, double & time, int ItNum )
             p_down = imgF.ptr<float>(i+1);
             for (int j = 2; j < N-1; ++j, ++j)
             {
-                (this->*Local)(j,p_pre,p,p_down);
+                d = (this->*Local)(j,p_pre,p,p_down);
+                p[j] += d;
             }
         }
 
@@ -469,7 +485,8 @@ void DM::FilterNoSplit(int Type, double & time, int ItNum )
             p_down = imgF.ptr<float>(i+1);
             for (int j = 1; j < N-1; ++j, ++j)
             {
-                (this->*Local)(j,p_pre,p,p_down);
+                d = (this->*Local)(j,p_pre,p,p_down);
+                p[j] += d;
             }
         }
     }
@@ -477,163 +494,144 @@ void DM::FilterNoSplit(int Type, double & time, int ItNum )
     time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
 }
 
-//use only BT to estimate the image
-void DM::SuperResolution(int Type, double & time, int ItNum )
+//generic filter solver for variational model |U - I|^DataFitOrder + lambda * Regularization
+//the DataFitOrder can be fractional such as 1.5, which is not possible for other solvers.
+void DM::Solver(int Type, double & time, int ItNum, float lambda, float DataFitOrder)
 {
-	//set the other three images to zero, except the boarder
-    WT(Range(1,WT.rows-2), Range(1,WT.cols-2)) = Scalar(0);
-    WC(Range(1,WT.rows-2), Range(1,WT.cols-2)) = Scalar(0);
-    BC(Range(1,WT.rows-2), Range(1,WT.cols-2)) = Scalar(0);
-
     clock_t Tstart, Tend;
+    float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex);
+    void (DM::* curvature_compute)(Mat& img, Mat& curv);
 
-    void (DM::* Local_one)(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
-    void (DM::* Local_two)(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
+    Mat curvature = Mat::zeros(M, N, CV_32FC1);
+    Mat dataFit = Mat::zeros(M, N, CV_32FC1);
+    std::vector<float> energyRecord;
+
+    std::cout<<"Solver with Lambda = "<<lambda<<" and data fit order = "<<DataFitOrder<<endl;
 
     switch(Type)
     {
-    		case 0:
-    		{
-    			Local_one = &DM::TV_one; Local_two = &DM::TV_two; 
-    			cout<<"TV Filter: "; break;
-    		}
-    		case 1:
-    		{
-    			Local_one = &DM::MC_one; Local_two = &DM::MC_two; 
-    			cout<<"MC Filter: "; break;
-    		}
-    		case 2:
-    		{
-    			Local_one = &DM::GC_one; Local_two = &DM::GC_two; 
-    			cout<<"GC Filter: "; break;
-    		}
-    		default:
-    		{
-    			cout<<"The filter type is wrong. Do nothing."<<endl;
-    			return;
-    		}
+            case 0:
+            {
+                Local = &DM::Scheme_TV; cout<<"TV Filter: "; 
+                curvature_compute = &DM::TV; break;
+            }
+            case 1:
+            {
+                Local = &DM::Scheme_MC; cout<<"MC Filter: "; 
+                curvature_compute = &DM::MC; break;
+            }
+            case 2:
+            {
+                Local = &DM::Scheme_GC; cout<<"GC Filter: "; 
+                curvature_compute = &DM::GC; break;
+            }
+            case 3:
+            {
+              Local = &DM::Scheme_DC; cout<<"DC Filter: "; 
+                curvature_compute = &DM::GC; break;
+            }
+            case 4:
+            {
+              Local = &DM::Scheme_LS; cout<<"MC Filter(LeastSquare): "; 
+                curvature_compute = &DM::MC; break;
+            }
+            default:
+            {
+                cout<<"The filter type is wrong. Do nothing."<<endl;
+                return;
+            }
     }
-    Tstart = clock();
-    for(int it=0;it<ItNum;++it)
-    {
-        //BC
-        for (int i = 1; i < M_half-1; ++i)
-        {
-                p = BC.ptr<float>(i); p_right = WC.ptr<float>(i);
-                p_down = WT.ptr<float>(i+1); p_rd = BT.ptr<float>(i+1); 
-                p_pre = WT.ptr<float>(i); p_Corner = BT.ptr<float>(i);
-                (this->*Local_two)(p, p_right, p_down, p_rd, p_pre, p_Corner);
-        }
-    	//BT (BT is ignored because it is the down sampling)
-
-        //WC
-        for (int i = 1; i < M_half-1; ++i)
-        {
-        		p = WC.ptr<float>(i); p_right = BC.ptr<float>(i);
-        		p_down = BT.ptr<float>(i+1); p_rd = WT.ptr<float>(i+1); 
-        		p_pre = BT.ptr<float>(i); p_Corner = WT.ptr<float>(i);
-        		(this->*Local_one)(p, p_right, p_down, p_rd, p_pre, p_Corner);
-        }
-
-        //WT
-        for (int i = 1; i < M_half-1; ++i)
-        {
-        		p = WT.ptr<float>(i); p_right = BT.ptr<float>(i);
-        		p_down = BC.ptr<float>(i); p_rd = WC.ptr<float>(i); 
-        		p_pre = BC.ptr<float>(i-1); p_Corner = WC.ptr<float>(i-1);
-        		(this->*Local_two)(p, p_right, p_down, p_rd, p_pre, p_Corner);
-        }
-
-        
-    }
-    Tend = clock() - Tstart;   
-    time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
-
-}
-
-//perform without split, be aware that only one pixel damage is considered
-void DM::Inpaint(Mat& mask, int Type, double & time, int ItNum )
-{
-    clock_t Tstart, Tend;
-
-    void (DM::* Local)(int i, float* p_pre, float* p, float* p_nex);
-
-    switch(Type)
-    {
-    		case 0:
-    		{
-    			Local = &DM::Scheme_TV; cout<<"TV Filter: "; break;
-    		}
-    		case 1:
-    		{
-    			Local = &DM::Scheme_MC; cout<<"MC Filter: "; break;
-    		}
-    		case 2:
-    		{
-    			Local = &DM::Scheme_GC; cout<<"GC Filter: "; break;
-    		}
-    		default:
-    		{
-    			cout<<"The filter type is wrong. Do nothing."<<endl;
-    			return;
-    		}
-    }
-    unsigned char* p_mask;
+    
+    float d, energy_increase, tmp;
 
     Tstart = clock();
     for(int it=0;it<ItNum;++it)
     {
+        (this->*curvature_compute)(imgF, curvature);
+
+        dataFit = imgF - image;
+
+        energyRecord.push_back(lambda*energy(curvature)+DataFitEnergy(dataFit,DataFitOrder));
         //black circle
         for (int i = 1; i < M-1; ++i,++i)
         {
-            p_mask = mask.ptr<unsigned char>(i);
             p = imgF.ptr<float>(i);
             p_pre = imgF.ptr<float>(i-1);
             p_down = imgF.ptr<float>(i+1);
+            p_data = image.ptr<float>(i);
             for (int j = 1; j < N-1; ++j, ++j)
             {
-                if (p_mask[j]) (this->*Local)(j,p_pre,p,p_down);
+                d = (this->*Local)(j,p_pre,p,p_down);
+                tmp = fabsf(p[j] - p_data[j]);
+                energy_increase = pow(tmp + d, DataFitOrder) - pow(tmp, DataFitOrder);
+                if (energy_increase < lambda*abs(d)) p[j] += d;
             }
         }
+
         //black triangle
         for (int i = 2; i < M-1; ++i,++i)
         {
-        	p_mask = mask.ptr<unsigned char>(i);
             p = imgF.ptr<float>(i);
             p_pre = imgF.ptr<float>(i-1);
             p_down = imgF.ptr<float>(i+1);
+            p_data = image.ptr<float>(i);
             for (int j = 2; j < N-1; ++j, ++j)
             {
-                if (p_mask[j]) (this->*Local)(j,p_pre,p,p_down);
+                d = (this->*Local)(j,p_pre,p,p_down);
+                tmp = fabsf(p[j] - p_data[j]);
+                energy_increase = pow(tmp + d, DataFitOrder) - pow(tmp, DataFitOrder);
+                if (energy_increase < lambda*abs(d)) p[j] += d;
             }
         }
+
         //white circle
         for (int i = 1; i < M-1; ++i,++i)
         {
-        	p_mask = mask.ptr<unsigned char>(i);
             p = imgF.ptr<float>(i);
             p_pre = imgF.ptr<float>(i-1);
             p_down = imgF.ptr<float>(i+1);
+            p_data = image.ptr<float>(i);
             for (int j = 2; j < N-1; ++j, ++j)
             {
-                if (p_mask[j]) (this->*Local)(j,p_pre,p,p_down);
+                d = (this->*Local)(j,p_pre,p,p_down);
+                tmp = fabsf(p[j] - p_data[j]);
+                energy_increase = pow(tmp + d, DataFitOrder) - pow(tmp, DataFitOrder);
+                if (energy_increase < lambda*abs(d)) p[j] += d;
             }
         }
+
         //white triangle
         for (int i = 2; i < M-1; ++i,++i)
         {
-        	p_mask = mask.ptr<unsigned char>(i);
             p = imgF.ptr<float>(i);
             p_pre = imgF.ptr<float>(i-1);
             p_down = imgF.ptr<float>(i+1);
+            p_data = image.ptr<float>(i);
             for (int j = 1; j < N-1; ++j, ++j)
             {
-                if (p_mask[j]) (this->*Local)(j,p_pre,p,p_down);
+                d = (this->*Local)(j,p_pre,p,p_down);
+                tmp = fabsf(p[j] - p_data[j]);
+                energy_increase = pow(tmp + d, DataFitOrder) - pow(tmp, DataFitOrder);
+                if (energy_increase < lambda*abs(d)) p[j] += d;
             }
         }
     }
     Tend = clock() - Tstart;   
     time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
+
+    (this->*curvature_compute)(imgF, curvature);
+    dataFit = imgF - image;
+    energyRecord.push_back(lambda*energy(curvature)+DataFitEnergy(dataFit,DataFitOrder));
+
+    //output the total energy profile
+    ofstream energyProfile;
+    energyProfile.open ("TotalEnergy.txt");
+    for (int i = 0; i < ItNum; ++i)
+    {
+    energyProfile<<i<<" "<<energyRecord[i]<<endl;
+    }
+    energyProfile<<ItNum<<" "<<energyRecord[ItNum];
+    energyProfile.close();
 }
 
 //*************************** Do NOT change anything! *****************************//
@@ -961,7 +959,7 @@ inline void DM::DC_two(float* __restrict p, float* __restrict p_right, float* __
 /********************** scheme at each pixel ************************/
 /********************** only for noSplit case ***********************/
 /********************************************************************/
-inline void DM::Scheme_GC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex)
+inline float DM::Scheme_GC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex)
 {
 	float dist[4];
     dist[2] = 2*p[i];
@@ -990,10 +988,10 @@ inline void DM::Scheme_GC(int i, float * __restrict p_pre, float * __restrict p,
 
     if (fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
     
-    p[i] += dist[0];
+    return dist[0];
 }
 
-inline void DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex)
+inline float DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex)
 {
     //compute the movement according to half window
     //       a   b
@@ -1014,12 +1012,10 @@ inline void DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex)
 
     dist[0] /= 8.0;
     
-
-    p[i] += dist[0];
-    return;
+    return dist[0];
 }
 
-inline void DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex)
+inline float DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex)
 {
     //compute the movement according to half window
     //   f   a   b            0 1/2 0               3/7 1/7 -1/7
@@ -1059,11 +1055,10 @@ inline void DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex)
 
     dist[0] /= 7;
 
-    p[i] += dist[0];
-    return;
+    return dist[0];
 }
 
-inline void DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
+inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
 {
     //       a   b
     //       I   e
@@ -1094,14 +1089,12 @@ inline void DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
 
 
     dist[0]/=5.0;
-    p[i] += dist[0];
-
-    return;
+    return dist[0];
 }
 
-inline void DM::Scheme_DC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex)
+inline float DM::Scheme_DC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex)
 {
-   float dist[2];
+    float dist[2];
     float weight = -0.225603;
 
     dist[0] = (p_pre[i] + p_nex[i])/2 + (p_pre[i+1] + p_nex[i+1] - 2*p[i+1])*weight - p[i];
@@ -1114,5 +1107,5 @@ inline void DM::Scheme_DC(int i, float * __restrict p_pre, float * __restrict p,
     dist[1] = (p[i-1] + p[i+1])/2 + (p_nex[i-1] + p_nex[i+1] - 2*p_nex[i])*weight - p[i];
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-    p[i] += dist[0];
+    return dist[0];
 }
