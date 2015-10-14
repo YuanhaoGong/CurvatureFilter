@@ -13,8 +13,8 @@ using namespace std;
 //default filter and iteration number
 int ItNum = 10;
 int Type = 2;
-float lambda = 1;
-float DataFitOrder = 1;
+float lambda = 1.0f;
+float DataFitOrder = 1.0f;
 
 #include "DM.h"
 
@@ -30,7 +30,7 @@ int main(int argc, char** argv)
     	cout<<" --------------------------------------------------------------- \n\n";
        cout<<"usage: main imageName filterType Iterations.\n For example: ./cf lena.bmp m 30\n";
        cout<<"             or              "<<endl;
-       cout<<"usage: main imageName filterType Iterations lambda DataFitOrder.\n For example: ./cf lena.bmp m 30 0.2 2\n";
+       cout<<"usage: main imageName filterType MaxItNum lambda DataFitOrder.\n For example: ./cf lena.bmp m 30 1.2 1.5\n";
        cout<<"************************************************\n";
        cout<<"Possible Filter Type: t (Total Variation) \n";
        cout<<"                      m (Mean Curvature) \n";

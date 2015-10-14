@@ -33,7 +33,7 @@ public:
     void Filter(int Type, double & time, int ItNum = 10);//with split
     void FilterNoSplit(int Type, double & time, int ItNum = 10);//direct on imgF 
     /******************* generic solver for variational models *****************************/
-    void Solver(int Type, double & time, int ItNum,  float lambda = 2, float DataFitOrder = 1);
+    void Solver(int Type, double & time, int MaxItNum,  float lambda = 2, float DataFitOrder = 1);
 
 private:
     //padded original, tmp, result
@@ -190,7 +190,6 @@ void DM::write(const char* FileName)
 //compute Total Variation
 void DM::TV(Mat & imgF, Mat & T)
 {
-    T = Mat::zeros(imgF.rows, imgF.cols, CV_32FC1);
     float * p_row, *pn_row;
     float * p_t;
     for(int i = 1; i < imgF.rows-1; i++)
@@ -226,7 +225,7 @@ void DM::MC(Mat& imgF, Mat & MC)
             Iyy = pn_row[j] -2*p_row[j] + pp_row[j];
             
             num = Ixx + Iyy;
-            den = (1.0 + Ix*Ix + Iy*Iy);
+            den = (1.0f + Ix*Ix + Iy*Iy);
             p_d[j] = num/den;
         }   
     }
@@ -254,8 +253,8 @@ void DM::GC(Mat & imgF, Mat &GC)
             Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])/4;
 
             num = Ixx*Iyy - Ixy*Ixy;
-            den = (1.0 + Ix*Ix + Iy*Iy);
-            den = pow(den, 1.5f);
+            den = (1.0f + Ix*Ix + Iy*Iy);
+            den = powf(den, 1.5f);
             p_d[j] = num/den;
         }   
     }
@@ -356,7 +355,7 @@ void DM::Filter(int Type, double & time, int ItNum )
     			return;
     		}
     }
-    float d;
+
     Tstart = clock();
     for(int it=0;it<ItNum;++it)
     {
@@ -496,7 +495,7 @@ void DM::FilterNoSplit(int Type, double & time, int ItNum )
 
 //generic filter solver for variational model |U - I|^DataFitOrder + lambda * Regularization
 //the DataFitOrder can be fractional such as 1.5, which is not possible for other solvers.
-void DM::Solver(int Type, double & time, int ItNum, float lambda, float DataFitOrder)
+void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataFitOrder)
 {
     clock_t Tstart, Tend;
     float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex);
@@ -504,9 +503,11 @@ void DM::Solver(int Type, double & time, int ItNum, float lambda, float DataFitO
 
     Mat curvature = Mat::zeros(M, N, CV_32FC1);
     Mat dataFit = Mat::zeros(M, N, CV_32FC1);
-    std::vector<float> energyRecord;
+    std::vector<double> energyRecord;
 
-    std::cout<<"Solver with Lambda = "<<lambda<<" and data fit order = "<<DataFitOrder<<endl;
+    std::cout<<"********************************************"<<endl;
+    std::cout<<"*** Filter Solver for Variational Models ***\n    Lambda = "<<lambda<<" and DataFitOrder = "<<DataFitOrder<<endl;
+    std::cout<<"********************************************"<<endl;
 
     switch(Type)
     {
@@ -543,15 +544,18 @@ void DM::Solver(int Type, double & time, int ItNum, float lambda, float DataFitO
     }
     
     float d, energy_increase, tmp;
+    int count = 0;
 
     Tstart = clock();
-    for(int it=0;it<ItNum;++it)
+    for(int it=0;it<MaxItNum;++it)
     {
         (this->*curvature_compute)(imgF, curvature);
 
         dataFit = imgF - image;
-
         energyRecord.push_back(lambda*energy(curvature)+DataFitEnergy(dataFit,DataFitOrder));
+        //if the energy starts to increase, stop the loop
+        if(count>1 && energyRecord[it] > energyRecord[it-1]) break;
+
         //black circle
         for (int i = 1; i < M-1; ++i,++i)
         {
@@ -563,7 +567,7 @@ void DM::Solver(int Type, double & time, int ItNum, float lambda, float DataFitO
             {
                 d = (this->*Local)(j,p_pre,p,p_down);
                 tmp = fabsf(p[j] - p_data[j]);
-                energy_increase = pow(tmp + d, DataFitOrder) - pow(tmp, DataFitOrder);
+                energy_increase = powf(tmp + d, DataFitOrder) - powf(tmp, DataFitOrder);
                 if (energy_increase < lambda*abs(d)) p[j] += d;
             }
         }
@@ -579,7 +583,7 @@ void DM::Solver(int Type, double & time, int ItNum, float lambda, float DataFitO
             {
                 d = (this->*Local)(j,p_pre,p,p_down);
                 tmp = fabsf(p[j] - p_data[j]);
-                energy_increase = pow(tmp + d, DataFitOrder) - pow(tmp, DataFitOrder);
+                energy_increase = powf(tmp + d, DataFitOrder) - powf(tmp, DataFitOrder);
                 if (energy_increase < lambda*abs(d)) p[j] += d;
             }
         }
@@ -595,7 +599,7 @@ void DM::Solver(int Type, double & time, int ItNum, float lambda, float DataFitO
             {
                 d = (this->*Local)(j,p_pre,p,p_down);
                 tmp = fabsf(p[j] - p_data[j]);
-                energy_increase = pow(tmp + d, DataFitOrder) - pow(tmp, DataFitOrder);
+                energy_increase = powf(tmp + d, DataFitOrder) - powf(tmp, DataFitOrder);
                 if (energy_increase < lambda*abs(d)) p[j] += d;
             }
         }
@@ -611,10 +615,11 @@ void DM::Solver(int Type, double & time, int ItNum, float lambda, float DataFitO
             {
                 d = (this->*Local)(j,p_pre,p,p_down);
                 tmp = fabsf(p[j] - p_data[j]);
-                energy_increase = pow(tmp + d, DataFitOrder) - pow(tmp, DataFitOrder);
+                energy_increase = powf(tmp + d, DataFitOrder) - powf(tmp, DataFitOrder);
                 if (energy_increase < lambda*abs(d)) p[j] += d;
             }
         }
+        count++;
     }
     Tend = clock() - Tstart;   
     time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
@@ -626,11 +631,10 @@ void DM::Solver(int Type, double & time, int ItNum, float lambda, float DataFitO
     //output the total energy profile
     ofstream energyProfile;
     energyProfile.open ("TotalEnergy.txt");
-    for (int i = 0; i < ItNum; ++i)
+    for (int i = 0; i <= count; ++i)
     {
     energyProfile<<i<<" "<<energyRecord[i]<<endl;
     }
-    energyProfile<<ItNum<<" "<<energyRecord[ItNum];
     energyProfile.close();
 }
 
@@ -707,8 +711,8 @@ inline void DM::MC_one(float* __restrict p, float* __restrict p_right, float* __
      {
      	
 		dist[4] = p[j]*8;
-		dist[5] = (p_pre[j]+p_down[j])*2.5 - dist[4];
-		dist[6] = (p_right[j-1]+p_right[j])*2.5 - dist[4];
+		dist[5] = (p_pre[j]+p_down[j])*2.5f - dist[4];
+		dist[6] = (p_right[j-1]+p_right[j])*2.5f - dist[4];
 
 		dist[0] = dist[5] + p_right[j]*5 -p_Corner[j]-p_rd[j];
 		dist[1] = dist[5] + p_right[j-1]*5 -p_Corner[j-1]-p_rd[j-1];
@@ -732,8 +736,8 @@ inline void DM::MC_two(float* __restrict p, float* __restrict p_right, float* __
      {
      	
 		dist[4] = p[j]*8;
-		dist[5] = (p_pre[j]+p_down[j])*2.5 - dist[4];
-		dist[6] = (p_right[j]+p_right[j+1])*2.5 - dist[4];
+		dist[5] = (p_pre[j]+p_down[j])*2.5f - dist[4];
+		dist[6] = (p_right[j]+p_right[j+1])*2.5f - dist[4];
 
 
      	dist[0] = dist[5] + p_right[j]*5 -p_Corner[j]-p_rd[j];
@@ -909,7 +913,7 @@ inline void DM::TV_two(float* __restrict p, float* __restrict p_right, float* __
 inline void DM::DC_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
 {
     register float dist[4];
-    register float weight = -0.225603;
+    register float weight = -0.225603f;
     
     for (int j = 1; j < N_half; ++j)
      {
@@ -933,7 +937,7 @@ inline void DM::DC_one(float* __restrict p, float* __restrict p_right, float* __
 inline void DM::DC_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
 {
     register float dist[4];
-    register float weight = -0.225603;
+    register float weight = -0.225603f;
 
     for (int j = 0; j < N_half-1; ++j)
      {
@@ -1001,16 +1005,16 @@ inline float DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex)
 	float dist[2];
     float tmp = 8*p[i];
 
-    dist[0] = 2.5*(p_pre[i]+p_nex[i]) + 5*p[i+1] - p_pre[i+1] - p_nex[i+1] - tmp;
-    dist[1] = 2.5*(p_pre[i]+p_nex[i]) + 5*p[i-1] - p_pre[i-1] - p_nex[i-1] - tmp;
+    dist[0] = 2.5f*(p_pre[i]+p_nex[i]) + 5*p[i+1] - p_pre[i+1] - p_nex[i+1] - tmp;
+    dist[1] = 2.5f*(p_pre[i]+p_nex[i]) + 5*p[i-1] - p_pre[i-1] - p_nex[i-1] - tmp;
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-    dist[1] = 2.5*(p[i-1]+p[i+1]) + 5*p_nex[i] - p_nex[i-1] - p_nex[i+1] - tmp;
+    dist[1] = 2.5f*(p[i-1]+p[i+1]) + 5*p_nex[i] - p_nex[i-1] - p_nex[i+1] - tmp;
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-    dist[1] = 2.5*(p[i-1]+p[i+1]) + 5*p_pre[i]- p_pre[i-1] - p_pre[i+1] - tmp;
+    dist[1] = 2.5f*(p[i-1]+p[i+1]) + 5*p_pre[i]- p_pre[i-1] - p_pre[i+1] - tmp;
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-    dist[0] /= 8.0;
+    dist[0] /= 8.0f;
     
     return dist[0];
 }
@@ -1095,7 +1099,7 @@ inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
 inline float DM::Scheme_DC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex)
 {
     float dist[2];
-    float weight = -0.225603;
+    float weight = -0.225603f;
 
     dist[0] = (p_pre[i] + p_nex[i])/2 + (p_pre[i+1] + p_nex[i+1] - 2*p[i+1])*weight - p[i];
     dist[1] = (p_pre[i] + p_nex[i])/2 + (p_pre[i-1] + p_nex[i-1] - 2*p[i-1])*weight - p[i];
