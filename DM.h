@@ -190,18 +190,34 @@ void DM::write(const char* FileName)
 //compute Total Variation
 void DM::TV(Mat & imgF, Mat & T)
 {
-    float * p_row, *pn_row;
-    float * p_t;
-    for(int i = 1; i < imgF.rows-1; i++)
-    {
-        p_row = imgF.ptr<float>(i);
-        pn_row = imgF.ptr<float>(i+1);
-        p_t = T.ptr<float>(i);
-        for(int j = 1; j < imgF.cols-1; j++)
-        {
-            p_t[j] = fabsf(p_row[j+1] - p_row[j]) + fabsf(pn_row[j] - p_row[j]);
-        }   
-    }
+    float * p_row, * pn_row, * p_t;
+	if (true) //the switch between TVL1 and TVL2
+	{
+		for(int i = 1; i < imgF.rows-1; i++)
+		{
+			p_row = imgF.ptr<float>(i);
+			pn_row = imgF.ptr<float>(i+1);
+			p_t = T.ptr<float>(i);
+			for(int j = 1; j < imgF.cols-1; j++)
+			{
+				p_t[j] = fabsf(p_row[j+1] - p_row[j]) + fabsf(pn_row[j] - p_row[j]);
+			}   
+		}
+	}else //TVL2
+	{
+		float gx, gy;
+		for(int i = 1; i < imgF.rows-1; i++)
+		{
+			p_row = imgF.ptr<float>(i);
+			pn_row = imgF.ptr<float>(i+1);
+			p_t = T.ptr<float>(i);
+			for(int j = 1; j < imgF.cols-1; j++)
+			{
+				gx = p_row[j+1] - p_row[j]; gy = pn_row[j] - p_row[j];
+				p_t[j] = sqrt(gx*gx + gy*gy);
+			}   
+		}
+	}
 }
 
 //compute Mean Curvature
@@ -513,7 +529,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
     {
             case 0:
             {
-                Local = &DM::Scheme_TV; cout<<"TV Filter: "; 
+                Local = &DM::Scheme_TV; cout<<"TV Filter:(TVL1 by default) "; 
                 curvature_compute = &DM::TV; break;
             }
             case 1:
