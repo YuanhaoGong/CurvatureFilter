@@ -8,17 +8,37 @@ year={2015},
 school={ETH Zurich, Nr. 22616},
 note={http://dx.doi.org/10.3929/ethz-a-010438292}}
 ```
-Chapter **Six** in **<a href="http://dx.doi.org/10.3929/ethz-a-010438292" target="_blank">PhD thesis</a>** (downloaded **900+** since June, 2015), Gaussian Curvature Filter (Talk Slides): **<a href="https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0" target="_blank">Dropbox</a>** or **<a href="http://pan.baidu.com/s/1gd4Km1H" target="_blank">Baidu</a>**, **source code** in **C++** and **Java** can also be found at **<a href="http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters", target="_blank">MOSAIC</a>**
 
-The kernels summary and one example how to get the kernel can be found **[here](CF_Kernels.pdf)**
+* PhD thesis (contains the theorectical formulation of these filters):
 
-For discussion and troubleshooting: **<a href="https://groups.google.com/forum/?hl=en#!forum/curvaturefilter" target="_blank">Curvature Filter Online Forum</a>**
+    **<a href="http://dx.doi.org/10.3929/ethz-a-010438292" target="_blank">PhD thesis</a>** (refer to Chapter 6)
 
-Discussion in Chinese Q&A website:
-**<a href="http://www.zhihu.com/question/35499791" target="_blank">知乎上的介绍</a>**
+* C++ and Java source code:
 
-Simple presentation slides in Chinese (for those who prefer Chinese):
-**<a href="http://pan.baidu.com/s/1ntGfGQ9" target="_blank">简单的中文介绍</a>**
+    <http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters>
+    
+* Presentation slides about Gaussian Curvature Filter:
+
+    **<a href="https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0" target="_blank">Dropbox</a>**
+    
+    **<a href="http://pan.baidu.com/s/1gd4Km1H" target="_blank">Baidu</a>**
+
+
+* The kernels summary and example:
+    
+    **[Curvature Filter Kernels](CF_Kernels.pdf)**
+
+* For discussion and troubleshooting:
+
+    **<a href="https://groups.google.com/forum/?hl=en#!forum/curvaturefilter" target="_blank">Curvature Filter Online Forum</a>**
+
+* Discussion in Chinese Q&A website:
+
+    **<a href="http://www.zhihu.com/question/35499791" target="_blank">知乎上的介绍</a>**
+
+* Simple presentation slides in Chinese (for those who prefer Chinese):
+
+    **<a href="http://pan.baidu.com/s/1ntGfGQ9" target="_blank">简单的中文介绍</a>**
 
 ## Curvature filters minimize the regularization energy
 Traditional solvers, such as gradient descent or Euler Lagrange Euqation, start at the total energy and use diffusion scheme to carry out the minimization. When the initial condition is the original image, the data fitting energy always increase while the regularization energy always reduces during the optimization. As illustrated in the below figure, regularization energy must be the dominant part since the total energy has to decrease. Therefore, **Curvature filters focus on minimize the regularization term,** whose minimizers are already known. For example, if the regularization is Gaussian curvature, the developable surfaces minimize this energy. Therefore, in curvature filter, developable surfaces are used to approximate the data. **As long as the decreased amount in the regularization part is larger than the increased amount in the data fitting energy, the total energy is reduced.**
