@@ -648,7 +648,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
 
     //output the total energy profile
     ofstream energyProfile;
-    energyProfile.open ("TotalEnergy.txt");
+    energyProfile.open ("Energy_total.txt");
     for (int i = 0; i <= count; ++i)
     {
     energyProfile<<i<<" "<<energyRecord[i]<<endl;
