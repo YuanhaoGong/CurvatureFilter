@@ -1,3 +1,18 @@
+/*=========================================================================
+ *
+ *                           Curvature Filter 
+ *
+ **************************************************************************  
+ 
+            @phdthesis{gong:phd, 
+             title={Spectrally regularized surfaces}, 
+             author={Gong, Yuanhao}, 
+             year={2015}, 
+             school={ETH Zurich, Nr. 22616},
+             note={http://dx.doi.org/10.3929/ethz-a-010438292}}
+
+ *=========================================================================*/
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -71,8 +86,8 @@ int main(int argc, char** argv)
     
     if (argc==6)
     {
-            //filter solver for the variational models
-            DualMesh.read(argv[1]);
+        //filter solver for the variational models
+        DualMesh.read(argv[1]);
 	    DualMesh.Solver(Type, mytime, ItNum, lambda, DataFitOrder);
 	    cout<<"runtime is "<<mytime<<" milliseconds."<<endl;
 	    DualMesh.write("CF_Solver.png");
