@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 2.8)
+set(CMAKE_CONFIGURATION_TYPES Release)
+project( CF )
+find_package( ITK REQUIRED )
+include( ${ITK_USE_FILE} )
+add_executable( CF main.cxx )
+target_link_libraries( CF ${ITK_LIBRARIES} )
+set(CMAKE_BUILD_TYPE Release)
