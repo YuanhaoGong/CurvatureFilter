@@ -1,3 +1,18 @@
+/*=========================================================================
+ *
+ *                           Curvature Filter 
+ *
+ **************************************************************************  
+ 
+            @phdthesis{gong:phd, 
+             title={Spectrally regularized surfaces}, 
+             author={Gong, Yuanhao}, 
+             year={2015}, 
+             school={ETH Zurich, Nr. 22616},
+             note={http://dx.doi.org/10.3929/ethz-a-010438292}}
+
+ *=========================================================================*/
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -24,10 +39,10 @@ int main(int argc, char** argv)
     DM DualMesh;
     if ((argc!=4) && (argc!=6))
     {
-    	cout<<endl;
-    	cout<<" -------------------- Curvature Filter ------------------------- "<<endl;
-    	cout<<" Please cite Yuanhao's PhD thesis and related papers. Thank you! "<<endl;
-    	cout<<" --------------------------------------------------------------- \n\n";
+       cout<<endl;
+       cout<<" -------------------- Curvature Filter ------------------------- "<<endl;
+       cout<<" Please cite Yuanhao's PhD thesis and related papers. Thank you! "<<endl;
+       cout<<" --------------------------------------------------------------- \n\n";
        cout<<"usage: main imageName filterType Iterations.\n For example: ./cf lena.bmp m 30\n";
        cout<<"             or              "<<endl;
        cout<<"usage: main imageName filterType MaxItNum lambda DataFitOrder.\n For example: ./cf lena.bmp m 30 1.2 1.5\n";
@@ -71,8 +86,8 @@ int main(int argc, char** argv)
     
     if (argc==6)
     {
-		//filter solver for the variational models
-		DualMesh.read(argv[1]);
+        //filter solver for the variational models
+        DualMesh.read(argv[1]);
 	    DualMesh.Solver(Type, mytime, ItNum, lambda, DataFitOrder);
 	    cout<<"runtime is "<<mytime<<" milliseconds."<<endl;
 	    DualMesh.write("CF_Solver.png");

@@ -1,3 +1,18 @@
+/*=========================================================================
+ *
+ *                           Curvature Filter 
+ *
+ **************************************************************************  
+ 
+            @phdthesis{gong:phd, 
+             title={Spectrally regularized surfaces}, 
+             author={Gong, Yuanhao}, 
+             year={2015}, 
+             school={ETH Zurich, Nr. 22616},
+             note={http://dx.doi.org/10.3929/ethz-a-010438292}}
+
+ *=========================================================================*/
+
 //Dual Mesh sctructure
 class DM
 {
@@ -363,7 +378,7 @@ void DM::Filter(int Type, double & time, int ItNum )
             case 4:
             {
             	Local_one = &DM::LS_one; Local_two = &DM::LS_two;
-            	cout<<"MC Filter(LeastSquare): "; break;
+            	cout<<"Bernstein Filter: "; break;
             }
     		default:
     		{
@@ -441,7 +456,7 @@ void DM::FilterNoSplit(int Type, double & time, int ItNum )
 			}
 			case 4:
 			{
-				Local = &DM::Scheme_LS; cout<<"MC Filter(LeastSquare): "; break;
+				Local = &DM::Scheme_LS; cout<<"Bernstein Filter: "; break;
 			}
     		default:
     		{
@@ -549,7 +564,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
             }
             case 4:
             {
-              Local = &DM::Scheme_LS; cout<<"MC Filter(LeastSquare): "; 
+              Local = &DM::Scheme_LS; cout<<"Bernstein Filter: "; 
                 curvature_compute = &DM::MC; break;
             }
             default:
@@ -584,7 +599,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
                 d = (this->*Local)(j,p_pre,p,p_down);
                 tmp = fabsf(p[j] - p_data[j]);
                 energy_increase = powf(tmp + d, DataFitOrder) - powf(tmp, DataFitOrder);
-                if (energy_increase < lambda*abs(d)) p[j] += d;
+                if (energy_increase <= lambda*abs(d)) p[j] += d;
             }
         }
 
@@ -600,7 +615,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
                 d = (this->*Local)(j,p_pre,p,p_down);
                 tmp = fabsf(p[j] - p_data[j]);
                 energy_increase = powf(tmp + d, DataFitOrder) - powf(tmp, DataFitOrder);
-                if (energy_increase < lambda*abs(d)) p[j] += d;
+                if (energy_increase <= lambda*abs(d)) p[j] += d;
             }
         }
 
@@ -616,7 +631,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
                 d = (this->*Local)(j,p_pre,p,p_down);
                 tmp = fabsf(p[j] - p_data[j]);
                 energy_increase = powf(tmp + d, DataFitOrder) - powf(tmp, DataFitOrder);
-                if (energy_increase < lambda*abs(d)) p[j] += d;
+                if (energy_increase <= lambda*abs(d)) p[j] += d;
             }
         }
 
@@ -632,7 +647,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
                 d = (this->*Local)(j,p_pre,p,p_down);
                 tmp = fabsf(p[j] - p_data[j]);
                 energy_increase = powf(tmp + d, DataFitOrder) - powf(tmp, DataFitOrder);
-                if (energy_increase < lambda*abs(d)) p[j] += d;
+                if (energy_increase <= lambda*abs(d)) p[j] += d;
             }
         }
         count++;
@@ -640,13 +655,15 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
     Tend = clock() - Tstart;   
     time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
 
+	cout<<"stop after "<<count<<" Iterations and ";
+
     (this->*curvature_compute)(imgF, curvature);
     dataFit = imgF - image;
     energyRecord.push_back(lambda*energy(curvature)+DataFitEnergy(dataFit,DataFitOrder));
 
     //output the total energy profile
     ofstream energyProfile;
-    energyProfile.open ("TotalEnergy.txt");
+    energyProfile.open ("Energy_total.txt");
     for (int i = 0; i <= count; ++i)
     {
     energyProfile<<i<<" "<<energyRecord[i]<<endl;

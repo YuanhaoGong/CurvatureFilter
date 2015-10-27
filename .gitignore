@@ -1,2 +1,6 @@
+<<<<<<< HEAD
 .ipynb_checkpoints
 *.pyc
+=======
+.ipynb_checkpoints 
+>>>>>>> refs/remotes/origin/master
