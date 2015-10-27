@@ -1,3 +1,18 @@
+/*=========================================================================
+ *
+ *                           Curvature Filter 
+ *
+ **************************************************************************  
+ 
+            @phdthesis{gong:phd, 
+             title={Spectrally regularized surfaces}, 
+             author={Gong, Yuanhao}, 
+             year={2015}, 
+             school={ETH Zurich, Nr. 22616},
+             note={http://dx.doi.org/10.3929/ethz-a-010438292}}
+
+ *=========================================================================*/
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
