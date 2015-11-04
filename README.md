@@ -1,4 +1,4 @@
-## Curvature filters are efficient solvers for variational models.
+### Curvature filters are efficient solvers for variational models.
 Curvature filter was developed by Yuanhao Gong during his PhD at MOSAIC Group. Please cite Yuanhao's PhD thesis if you use curvature filter in your work. Thank you!
 ***
 ```text
