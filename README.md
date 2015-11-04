@@ -1,4 +1,4 @@
-# Curvature filters are efficient solvers for variational models.
+## Curvature filters are efficient solvers for variational models.
 Curvature filter was developed by Yuanhao Gong during his PhD at MOSAIC Group. Please cite Yuanhao's PhD thesis if you use curvature filter in your work. Thank you!
 ***
 ```text
@@ -14,7 +14,8 @@ Chapter **Six** in **<a href="http://e-collection.library.ethz.ch/eserv/eth:4773
 
 The kernels summary and one example how to get the kernel can be found **[here](CF_Kernels.pdf)**
 
-**<a href="https://groups.google.com/forum/?hl=en#!forum/curvaturefilter" target="_blank">Curvature Filter Online Forum</a>**, **<a href="http://www.zhihu.com/question/35499791" target="_blank">知乎上的介绍</a>**, **<a href="http://pan.baidu.com/s/1ntGfGQ9" target="_blank">简单的中文介绍</a>**
+**<a href="https://groups.google.com/forum/?hl=en#!forum/curvaturefilter" target="_blank">Curvature Filter Online Forum</a>**, a very short introduction in Chinese: **<a href="http://www.zhihu.com/question/35499791" target="_blank">Zhihu</a>**
+
 ***
 ## Curvature filters minimize the regularization energy
 
@@ -30,7 +31,7 @@ Therefore, **Curvature filters focus on minimize the regularization term,** whos
 | Lang.      | C++ | Matlab | C++ | Matlab | C++ | Matlab | C++| C++|
 | MilliSec.      | 103 | 514 | 130 | 21 | 12 | 20 | 11| 8|
 
-Matlab version is R2015a and GCC version is 5.1. All tests are on a Thinkpad T410 with i7 core CPU.
+Matlab version is R2015a and GCC version is 5.1. All tests are on a Thinkpad T410 with i7-620M core CPU (2.6GHz). We take the time for 100 iterations and divide it by 10. On average, curvature filters take 1 millisecond per iteration.
 ***
 ## Features
 #### 1) Computational Efficient ![image](images/fast.jpg) :
