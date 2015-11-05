@@ -48,7 +48,9 @@ These filters can be implemented in about 40 lines in Matlab and about 100 lines
 ### 1) Only minimize the regularization 
 GC = Gaussian Curvature, MC = Mean Curvature, TV = Total Variation
 ![image](images/curvatureFilters.png)
-### 2) Minimize the total variational model, showing the line profiles
+### 2) Minimize a variational model, showing the line profile
+We show three lines' profiles during minimizing a mean curvature regularized model (MC filter used). 
+
 | ![ image](images/Lena_three_lines.png)      | ![image ](images/MC_line1_small.gif) |
 | ------------- |:-------------:|
 | ![image ](images/MC_line2_small.gif)      | ![image ](images/MC_line3_small.gif) |
