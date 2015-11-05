@@ -34,14 +34,10 @@ Therefore, **Curvature filters focus on minimizing the regularization term,** wh
 Matlab version is R2015a and GCC version is 5.1. All tests are on a Thinkpad T410 with i7-620M core CPU (2.6GHz). We take the time for 100 iterations and divide it by 10. On average, curvature filters take 1 millisecond per iteration.
 ***
 ## Features
-#### 1) Computational Efficient ![image](images/fast.jpg) :
-These filters are **three or four order of magnitude faster** than traditional solvers, such as mean curvature flow. 
-#### 2) Generality ![image](images/box.png) :
-These filter solvers can handle **arbitrary imaging model**, as long as the imaging model can be evaluated(black box).
-#### 3) Convergence ![image](images/theory.png):
-The convergence is **theoretically guaranteed** and the numerical convergence rate is around 1.4 for natural images.
-#### 4) Easy Implementation ![image](images/easy.png) :
-These filters can be implemented in about 40 lines in Matlab and about 100 lines in C++. 
+| Theoretical  | Practical |
+| ------------- |:-------------:|
+| **Generality**: handle arbitrary data fitting term ![ image ](images/box.png) | **Efficient**: three or four order of magnitude faster than traditional solvers ![ image ](images/fast.jpg) |
+| **Convergence**: theoretically guaranteed ![ image ](images/theory.png) | **Implementation**: 40 lines in Matlab and 100 lines in C++ ![ image ](images/easy.png) |
 
 ***
 ## Example Applications
