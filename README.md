@@ -10,14 +10,14 @@ school={ETH Zurich, Nr. 22616},
 note={http://dx.doi.org/10.3929/ethz-a-010438292}}
 ```
 ***
-Chapter **Six** in **<a href="http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf" target="_blank">PhD thesis</a>** (downloaded **1000+** since June, 2015), Gaussian Curvature Filter (Talk Slides): **<a href="https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0" target="_blank">Dropbox</a>** or **<a href="http://pan.baidu.com/s/1gd4Km1H" target="_blank">Baidu</a>**, **source code** in **C++** and **Java** can also be found at **<a href="http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters", target="_blank">MOSAIC</a>**
+Chapter **Six** in **<a href="http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf" target="_blank">PhD thesis</a>** (downloaded **1000+** since June, 2015), Gaussian Curvature Filter (Talk Slides): **<a href="https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0" target="_blank">Dropbox</a>** or **<a href="http://pan.baidu.com/s/1gd4Km1H" target="_blank">Baidu</a>**, **source code** in **C++** and **Java** can also be found at **<a href="http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters", target="_blank">MOSAIC group</a>**(:de:)
 
 The kernels summary and one example how to get the kernel can be found **[here](CF_Kernels.pdf)**
 
-**<a href="https://groups.google.com/forum/?hl=en#!forum/curvaturefilter" target="_blank">Curvature Filter Online Forum</a>**, a very short introduction in Chinese: **<a href="http://www.zhihu.com/question/35499791" target="_blank">Zhihu</a>**
+**<a href="https://groups.google.com/forum/?hl=en#!forum/curvaturefilter" target="_blank">Curvature Filter Online Forum</a>**, a very short introduction in Chinese: **<a href="http://www.zhihu.com/question/35499791" target="_blank">Zhihu</a>**(:cn:)
 
 ***
-## Curvature filters minimize the regularization energy
+## Curvature filters' philosophy 
 
 Traditional solvers, such as gradient descent or Euler Lagrange Euqation, start at the total energy and use diffusion scheme to carry out the minimization. When the initial condition is the original image, the data fitting energy always increase while the regularization energy always reduces during the optimization, as illustrated in the below figure. Thus, regularization energy must be the dominant part since the total energy has to decrease. 
 
@@ -45,15 +45,20 @@ These filters can be implemented in about 40 lines in Matlab and about 100 lines
 
 ***
 ## Example Applications
-### 1) Smoothing
+### 1) Only minimize the regularization 
 GC = Gaussian Curvature, MC = Mean Curvature, TV = Total Variation
 ![image](images/curvatureFilters.png)
-### 2) Denoising
+### 2) Minimize the total variational model, showing the line profiles
+| ![ image](images/Lena_three_lines.png)      | ![image ](images/MC_line1_small.gif) |
+| ------------- |:-------------:|
+| ![image ](images/MC_line2_small.gif)      | ![image ](images/MC_line3_small.gif) |
+
+### 3) Denoising
 ![image](images/denoise.PNG)
 The noise free test image can be downloaded **[here](images/developable.png)**
-### 3) Cartoon Texture Decomposition
+### 4) Cartoon Texture Decomposition
 ![image](images/decomposition.png)
-### 4) Multi Resolution Analysis
+### 5) Multi Resolution Analysis
 ![image](images/scaleSpace.png)
 
 ***
