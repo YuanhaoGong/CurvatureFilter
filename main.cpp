@@ -67,8 +67,8 @@ int main(int argc, char** argv)
 
     if (argc==6)
     {
-    	lambda = atof(argv[4]);
-    	DataFitOrder = atof(argv[5]);
+    	lambda = (float)atof(argv[4]);
+    	DataFitOrder = (float)atof(argv[5]);
     }
 
     DualMesh.split();

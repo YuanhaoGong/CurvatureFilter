@@ -141,8 +141,8 @@ void DM::read(const char* FileName)
     tmp2 /=255;
     M_orig = tmp2.rows;
     N_orig = tmp2.cols;
-    M = ceil(M_orig/2.0)*2;
-    N = ceil(N_orig/2.0)*2;
+    M = (int)ceil(M_orig/2.0)*2;
+    N = (int)ceil(N_orig/2.0)*2;
     M_half = M/2;
     N_half = N/2;
 
@@ -168,8 +168,8 @@ void DM::set(Mat& file)
     tmp2 /=255;
     M_orig = tmp2.rows;
     N_orig = tmp2.cols;
-    M = ceil(M_orig/2.0)*2;
-    N = ceil(N_orig/2.0)*2;
+    M = (int)ceil(M_orig/2.0)*2;
+    N = (int)ceil(N_orig/2.0)*2;
     M_half = M/2;
     N_half = N/2;
 
