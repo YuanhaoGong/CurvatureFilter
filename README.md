@@ -38,7 +38,7 @@ Matlab version is R2015a and GCC version is 5.1. All tests are on a Thinkpad T41
 | ------------- |:-------------:|
 | **Generality**: handle arbitrary data fitting term ![ image ](images/box.png) | **Efficient**: three or four order of magnitude faster ![ image ](images/fast.jpg) |
 | **Convergence**: theoretically guaranteed ![ image ](images/theory.png) | **Implementation**: 40 lines in Matlab ![ image ](images/easy.png) |
-
+![ image ](images/role.png)
 ***
 ## Example Applications
 ### 1) Only minimize the regularization 
