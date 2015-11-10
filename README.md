@@ -25,6 +25,9 @@ Therefore, **Curvature filters focus on minimizing the regularization term,** wh
 
 ![image](images/phs.PNG)
 ***
+## The role of curvature filters
+Curvature filters link the variational models with image filters. Meanwhile, they consider high performance computing. ![ image ](images/role.png)
+***
 ## Running Time (10 iterations on 512X512 Lena image)
 | Filter       | Bilateral Filter | Guided Filter | Guided Filter | MC Filter | MC Filter | GC Filter | GC Filter| Bernstein Filter |
 | ------------- |:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|
@@ -38,7 +41,7 @@ Matlab version is R2015a and GCC version is 5.1. All tests are on a Thinkpad T41
 | ------------- |:-------------:|
 | **Generality**: handle arbitrary data fitting term ![ image ](images/box.png) | **Efficient**: three or four order of magnitude faster ![ image ](images/fast.jpg) |
 | **Convergence**: theoretically guaranteed ![ image ](images/theory.png) | **Implementation**: 40 lines in Matlab ![ image ](images/easy.png) |
-![ image ](images/role.png)
+
 ***
 ## Example Applications
 ### 1) Only minimize the regularization 
