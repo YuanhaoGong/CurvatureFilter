@@ -98,22 +98,22 @@ figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('TV Energy'),title
 %
 %% ************************************************************************
 
-% im = imread('lena.png');
-% 
-% MaxIteration = 60;
-% DataFitOrder = 1;
-% Lambda = 50;
-% FilterType = 0;
-% 
-% tic
-% [result,energy]=Solver(im, FilterType, DataFitOrder, Lambda, MaxIteration);
-% mytime = toc;
-% 
-% %% show the running time and the result
-% mystr = strcat('solver performance: ', num2str(mytime/MaxIteration),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
-% disp(mystr)
-% 
-% figure,imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
-% title('original(left), Result(mid), difference(right)')
-% 
-% figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Total Energy'),title('Energy profile')
+im = imread('lena.png');
+
+MaxIteration = 60;
+DataFitOrder = 1.3; %fractional order
+Lambda = 3;
+FilterType = 0;
+
+tic
+[result,energy]=Solver(im, FilterType, DataFitOrder, Lambda, MaxIteration);
+mytime = toc;
+
+%% show the running time and the result
+mystr = strcat('solver performance: ', num2str(mytime/MaxIteration),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
+disp(mystr)
+
+figure,imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
+title('original(left), Result(mid), difference(right)')
+
+figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Total Energy'),title('Energy profile')
