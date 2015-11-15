@@ -49,8 +49,8 @@ int main(int argc, char** argv)
        cout<<"************************************************\n";
        cout<<"Possible Filter Type: t (Total Variation) \n";
        cout<<"                      m (Mean Curvature) \n";
-       cout<<"                      g (Gaussian Curvature) \n";
        cout<<"                      d (Difference Curvature) \n";
+       cout<<"                      g (Gaussian Curvature) \n";
        cout<<"                      b (Bernstein Filter) \n";
        return -1;
     }
@@ -88,11 +88,10 @@ int main(int argc, char** argv)
     {
         //filter solver for the variational models
         DualMesh.read(argv[1]);
-	    DualMesh.Solver(Type, mytime, ItNum, lambda, DataFitOrder);
-	    cout<<"runtime is "<<mytime<<" milliseconds."<<endl;
-	    DualMesh.write("CF_Solver.png");
+	DualMesh.Solver(Type, mytime, ItNum, lambda, DataFitOrder);
+	cout<<"runtime is "<<mytime<<" milliseconds."<<endl;
+	DualMesh.write("CF_Solver.png");
     }
-    
     return 0;
 }
 
