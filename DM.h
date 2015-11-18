@@ -534,7 +534,8 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
 
     Mat curvature = Mat::zeros(M, N, CV_32FC1);
     Mat dataFit = Mat::zeros(M, N, CV_32FC1);
-    std::vector<double> energyRecord;
+    std::vector<double> energyRecord_DataFit;
+    std::vector<double> energyRecord_Curvature;
 
     std::cout<<"********************************************"<<endl;
     std::cout<<"*** Filter Solver for Variational Models ***\n    Lambda = "<<lambda<<" and DataFitOrder = "<<DataFitOrder<<endl;
@@ -581,11 +582,12 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
     for(int it=0;it<MaxItNum;++it)
     {
         (this->*curvature_compute)(imgF, curvature);
+        energyRecord_Curvature.push_back(lambda*energy(curvature));
 
         dataFit = imgF - image;
-        energyRecord.push_back(lambda*energy(curvature)+DataFitEnergy(dataFit,DataFitOrder));
+        energyRecord_DataFit.push_back(DataFitEnergy(dataFit,DataFitOrder));
         //if the energy starts to increase, stop the loop
-        if(count>1 && energyRecord[it] > energyRecord[it-1]) break;
+        if(count>1 && (energyRecord_DataFit[it] + energyRecord_Curvature[it] > energyRecord_DataFit[it-1] + energyRecord_Curvature[it-1])) break;
 
         //black circle
         for (int i = 1; i < M-1; ++i,++i)
@@ -663,14 +665,15 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
 
     (this->*curvature_compute)(imgF, curvature);
     dataFit = imgF - image;
-    energyRecord.push_back(lambda*energy(curvature)+DataFitEnergy(dataFit,DataFitOrder));
+    energyRecord_Curvature.push_back(lambda*energy(curvature));
+    energyRecord_DataFit.push_back(DataFitEnergy(dataFit,DataFitOrder));
 
     //output the total energy profile
     ofstream energyProfile;
-    energyProfile.open ("Energy_total.txt");
+    energyProfile.open ("Energy.txt");
     for (int i = 0; i <= count; ++i)
     {
-    energyProfile<<i<<" "<<energyRecord[i]<<endl;
+    energyProfile<<i<<" "<<energyRecord_DataFit[i] + energyRecord_Curvature[i]<<" "<<energyRecord_DataFit[i]<<" "<<energyRecord_Curvature[i]<<endl;
     }
     energyProfile.close();
 }

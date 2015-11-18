@@ -116,4 +116,7 @@ disp(mystr)
 figure,imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
 title('original(left), Result(mid), difference(right)')
 
-figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Total Energy'),title('Energy profile')
+x=0:size(energy,1)-1; x=x';
+figure,plot(x,energy(:,1),'linewidth',4),xlabel('Iteration'), ylabel('Energy'),title('Energy profile'),hold on
+plot(x,energy(:,2),'linewidth',4),plot(x,energy(:,3),'linewidth',4), legend('Total Energy','DataFit Energy','Regularization Energy','location','west')
+legend('boxoff')

@@ -29,7 +29,7 @@ switch FilterType
    otherwise
       disp('Filter Type is not correct.'), return;
 end
-im = single(im); im_orig = im; result = im; [m,n]=size(im); Energy = zeros(MaxItNum,1); 
+im = single(im); im_orig = im; result = im; [m,n]=size(im); Energy = zeros(MaxItNum,3); 
 %% four types of pixels %B = black, W = white, C = circle, T = triangle
 [BC_row,BC_col]=meshgrid(2:2:m-1,2:2:n-1);[BT_row,BT_col]=meshgrid(3:2:m-1,3:2:n-1);
 [WC_row,WC_col]=meshgrid(2:2:m-1,3:2:n-1);[WT_row,WT_col]=meshgrid(3:2:m-1,2:2:n-1);
@@ -45,9 +45,9 @@ WT_pre = WT -1;WT_nex = WT +1;WT_lef = WT -m;WT_rig = WT +m;WT_lu = WT-1-m;WT_ru
 %% dual Mesh optimization
 for i = 1:MaxItNum
     %compute total energy
-    energy_data = sum(sum((abs(result - im_orig)).^DataFitOrder));
-    energy_curv = mycurv(result); Energy(i) = energy_data + Lambda*energy_curv;
-    if (i>1) && Energy(i) > Energy(i-1) % if the energy start to increase
+    Energy(i,2) = sum(sum((abs(result - im_orig)).^DataFitOrder));
+    Energy(i,3) = Lambda*mycurv(result); Energy(i,1) = Energy(i,2) + Energy(i,3);
+    if (i>1) && Energy(i,1) > Energy(i-1,1) % if the energy start to increase
         break;
     end
     result = myfun(result,BC,BC_pre,BC_nex,BC_lef,BC_rig,BC_lu,BC_ld,BC_ru,BC_rd, im_orig, DataFitOrder, Lambda);
@@ -55,7 +55,7 @@ for i = 1:MaxItNum
     result = myfun(result,WC,WC_pre,WC_nex,WC_lef,WC_rig,WC_lu,WC_ld,WC_ru,WC_rd, im_orig, DataFitOrder, Lambda);
     result = myfun(result,WT,WT_pre,WT_nex,WT_lef,WT_rig,WT_lu,WT_ld,WT_ru,WT_rd, im_orig, DataFitOrder, Lambda);
 end
-Energy = Energy(1:i);
+Energy = Energy(1:i,:);
 
 %% %%%%%%%%%%%%%%%%%%%% three projection operaters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function result = proj_TV(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd, im_orig, DataFitOrder, Lambda)
