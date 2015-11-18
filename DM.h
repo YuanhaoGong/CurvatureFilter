@@ -574,7 +574,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
             }
     }
     
-    float d, energy_increase, tmp;
+    float d, energy_increase, dist_orig, dist_proj_orig;
     int count = 0;
 
     Tstart = clock();
@@ -597,8 +597,9 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
             for (int j = 1; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down);
-                tmp = fabsf(p[j] - p_data[j]);
-                energy_increase = powf(tmp + d, DataFitOrder) - powf(tmp, DataFitOrder);
+                dist_orig = fabsf(p[j] - p_data[j]);
+                dist_proj_orig = fabsf(p[j] + d - p_data[j]);
+                energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
                 if (energy_increase <= lambda*abs(d)) p[j] += d;
             }
         }
@@ -613,8 +614,9 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
             for (int j = 2; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down);
-                tmp = fabsf(p[j] - p_data[j]);
-                energy_increase = powf(tmp + d, DataFitOrder) - powf(tmp, DataFitOrder);
+                dist_orig = fabsf(p[j] - p_data[j]);
+                dist_proj_orig = fabsf(p[j] + d - p_data[j]);
+                energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
                 if (energy_increase <= lambda*abs(d)) p[j] += d;
             }
         }
@@ -629,8 +631,9 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
             for (int j = 2; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down);
-                tmp = fabsf(p[j] - p_data[j]);
-                energy_increase = powf(tmp + d, DataFitOrder) - powf(tmp, DataFitOrder);
+                dist_orig = fabsf(p[j] - p_data[j]);
+                dist_proj_orig = fabsf(p[j] + d - p_data[j]);
+                energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
                 if (energy_increase <= lambda*abs(d)) p[j] += d;
             }
         }
@@ -645,8 +648,9 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
             for (int j = 1; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down);
-                tmp = fabsf(p[j] - p_data[j]);
-                energy_increase = powf(tmp + d, DataFitOrder) - powf(tmp, DataFitOrder);
+                dist_orig = fabsf(p[j] - p_data[j]);
+                dist_proj_orig = fabsf(p[j] + d - p_data[j]);
+                energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
                 if (energy_increase <= lambda*abs(d)) p[j] += d;
             }
         }

@@ -64,28 +64,27 @@ int main(int argc, char** argv)
     if (*filterType == 'b') Type = 4;
 
     ItNum = atoi(argv[3]);
+	double mytime;
 
-    if (argc==6)
+    if (argc==4)
     {
-    	lambda = (float)atof(argv[4]);
-    	DataFitOrder = (float)atof(argv[5]);
+      DualMesh.split();
+      DualMesh.Filter(Type, mytime, ItNum);
+      cout<<"runtime is "<<mytime<<" milliseconds."<<endl;
+
+      DualMesh.merge();
+      DualMesh.write();
+
+      DualMesh.read(argv[1]);
+      DualMesh.FilterNoSplit(Type, mytime, ItNum);
+      cout<<"runtime (noSplit) is "<<mytime<<" milliseconds."<<endl;
+      DualMesh.write("CF_NoSplit_result.png");
     }
-
-    DualMesh.split();
-    double mytime;
-    DualMesh.Filter(Type, mytime, ItNum);
-    cout<<"runtime is "<<mytime<<" milliseconds."<<endl;
-
-    DualMesh.merge();
-    DualMesh.write();
-
-    DualMesh.read(argv[1]);
-    DualMesh.FilterNoSplit(Type, mytime, ItNum);
-    cout<<"runtime (noSplit) is "<<mytime<<" milliseconds."<<endl;
-    DualMesh.write("CF_NoSplit_result.png");
     
     if (argc==6)
     {
+      lambda = (float)atof(argv[4]);
+      DataFitOrder = (float)atof(argv[5]);
         //filter solver for the variational models
         DualMesh.read(argv[1]);
 	DualMesh.Solver(Type, mytime, ItNum, lambda, DataFitOrder);
