@@ -64,8 +64,9 @@ int main(int argc, char** argv)
     if (*filterType == 'b') Type = 4;
 
     ItNum = atoi(argv[3]);
-	double mytime;
-
+    double mytime;
+    
+    //just smooth the image by the filter
     if (argc==4)
     {
       DualMesh.split();
@@ -81,6 +82,7 @@ int main(int argc, char** argv)
       DualMesh.write("CF_NoSplit_result.png");
     }
     
+    //solve a variational model
     if (argc==6)
     {
       lambda = (float)atof(argv[4]);
