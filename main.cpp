@@ -32,12 +32,17 @@ float lambda = 1.0f;
 float DataFitOrder = 1.0f;
 
 #include "DM.h"
+//If use these filters to solve a complex data fitting term, define the data fitting as the blackbox function
+float BlackBox(int row, int col, Mat& U, Mat & img_orig, float & d)
+{
+    return fabs(U.at<float>(row,col)+d - img_orig.at<float>(row,col));
+}
 
 int main(int argc, char** argv)
 {
     
     DM DualMesh;
-    if ((argc!=4) && (argc!=6))
+    if ((argc<4) || (argc>6))
     {
        cout<<endl;
        cout<<" -------------------- Curvature Filter ------------------------- "<<endl;
@@ -81,18 +86,32 @@ int main(int argc, char** argv)
       cout<<"runtime (noSplit) is "<<mytime<<" milliseconds."<<endl;
       DualMesh.write("CF_NoSplit_result.png");
     }
+
+    //solve a variational model (data fitting term is blackbox)
+    if (argc==5)
+    {
+      lambda = (float)atof(argv[4]);
+     
+      DualMesh.read(argv[1]);
+      DualMesh.BlackBoxSolver(Type, mytime, ItNum, lambda, BlackBox);
+      cout<<"runtime is "<<mytime<<" milliseconds."<<endl;
+      DualMesh.write("CF_BlackBox.png");
+
+    }
     
     //solve a variational model
     if (argc==6)
     {
-      lambda = (float)atof(argv[4]);
-      DataFitOrder = (float)atof(argv[5]);
-        //filter solver for the variational models
-        DualMesh.read(argv[1]);
-	DualMesh.Solver(Type, mytime, ItNum, lambda, DataFitOrder);
-	cout<<"runtime is "<<mytime<<" milliseconds."<<endl;
-	DualMesh.write("CF_Solver.png");
+		lambda = (float)atof(argv[4]);
+		DataFitOrder = (float)atof(argv[5]);
+		//filter solver for the variational models
+		DualMesh.read(argv[1]);
+		DualMesh.Solver(Type, mytime, ItNum, lambda, DataFitOrder);
+		cout<<"runtime is "<<mytime<<" milliseconds."<<endl;
+		DualMesh.write("CF_Solver.png");
     }
+
+
     return 0;
 }
 

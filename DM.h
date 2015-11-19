@@ -48,7 +48,10 @@ public:
     void Filter(int Type, double & time, int ItNum = 10);//with split
     void FilterNoSplit(int Type, double & time, int ItNum = 10);//direct on imgF 
     /******************* generic solver for variational models *****************************/
+    //solve |U - I|^DataFitOrder + lambda * |curvature(U)|
     void Solver(int Type, double & time, int MaxItNum,  float lambda = 2, float DataFitOrder = 1);
+    //solve BlackBox(U,I) + lambda * |curvature(U)|
+    void BlackBoxSolver(int Type, double & time, int MaxItNum, float lambda, float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d));
 
 private:
     //padded original, tmp, result
@@ -671,12 +674,164 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
     //output the total energy profile
     ofstream energyProfile;
     energyProfile.open ("Energy.txt");
+    energyProfile<<"### Iteration TotalEnergy DataFitEnergy RegularizationEnergy"<<endl;
     for (int i = 0; i <= count; ++i)
     {
     energyProfile<<i<<" "<<energyRecord_DataFit[i] + energyRecord_Curvature[i]<<" "<<energyRecord_DataFit[i]<<" "<<energyRecord_Curvature[i]<<endl;
     }
     energyProfile.close();
 }
+
+
+//solve BlackBox() + lambda * |curvature(U)|
+ void DM::BlackBoxSolver(int Type, double & time, int MaxItNum, float lambda, float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d))
+ {
+ 	clock_t Tstart, Tend;
+    float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex);
+    void (DM::* curvature_compute)(Mat& img, Mat& curv);
+
+    Mat curvature = Mat::zeros(M, N, CV_32FC1);
+    Mat dataFit = Mat::zeros(M, N, CV_32FC1);
+    std::vector<double> energyRecord_DataFit;
+    std::vector<double> energyRecord_Curvature;
+
+    std::cout<<"********************************************"<<endl;
+    std::cout<<"*** Filter Solver for Variational Models ***\n    Lambda = "<<lambda<<endl;
+    std::cout<<"********************************************"<<endl;
+
+    switch(Type)
+    {
+            case 0:
+            {
+                Local = &DM::Scheme_TV; cout<<"TV Filter:(TVL1 by default) "; 
+                curvature_compute = &DM::TV; break;
+            }
+            case 1:
+            {
+                Local = &DM::Scheme_MC; cout<<"MC Filter: "; 
+                curvature_compute = &DM::MC; break;
+            }
+            case 2:
+            {
+                Local = &DM::Scheme_GC; cout<<"GC Filter: "; 
+                curvature_compute = &DM::GC; break;
+            }
+            case 3:
+            {
+              Local = &DM::Scheme_DC; cout<<"DC Filter: "; 
+                curvature_compute = &DM::GC; break;
+            }
+            case 4:
+            {
+              Local = &DM::Scheme_LS; cout<<"Bernstein Filter: "; 
+                curvature_compute = &DM::MC; break;
+            }
+            default:
+            {
+                cout<<"The filter type is wrong. Do nothing."<<endl;
+                return;
+            }
+    }
+    
+    float d, energy_increase, dist_orig, dist_proj_orig;
+    int count = 0; float zero = 0.0f;
+
+    Tstart = clock();
+    for(int it=0;it<MaxItNum;++it)
+    {
+        (this->*curvature_compute)(imgF, curvature);
+        energyRecord_Curvature.push_back(lambda*energy(curvature));
+
+        for (int i = 1; i < M-1; ++i)
+        	for (int j = 1; j < N-1; ++j)
+        	{
+        		dataFit.at<float>(i,j) = BlackBox(i,j, imgF, image,zero);
+        	}
+    	Scalar tmp_scalar = sum(dataFit);
+        energyRecord_DataFit.push_back(tmp_scalar(0));
+        //if the energy starts to increase, stop the loop
+        if(count>1 && (energyRecord_DataFit[it] + energyRecord_Curvature[it] > energyRecord_DataFit[it-1] + energyRecord_Curvature[it-1])) break;
+
+        //black circle
+        for (int i = 1; i < M-1; ++i,++i)
+        {
+            p = imgF.ptr<float>(i);
+            p_pre = imgF.ptr<float>(i-1);
+            p_down = imgF.ptr<float>(i+1);
+            for (int j = 1; j < N-1; ++j, ++j)
+            {
+                d = (this->*Local)(j,p_pre,p,p_down);
+                dist_orig = BlackBox(i,j,imgF,image,zero);
+                dist_proj_orig = BlackBox(i,j,imgF,image,d);
+                energy_increase = dist_proj_orig - dist_orig;
+                if (energy_increase <= lambda*abs(d)) p[j] += d;
+            }
+        }
+
+        //black triangle
+        for (int i = 2; i < M-1; ++i,++i)
+        {
+            p = imgF.ptr<float>(i);
+            p_pre = imgF.ptr<float>(i-1);
+            p_down = imgF.ptr<float>(i+1);
+            for (int j = 2; j < N-1; ++j, ++j)
+            {
+                d = (this->*Local)(j,p_pre,p,p_down);
+                dist_orig = BlackBox(i,j,imgF,image,zero);
+                dist_proj_orig = BlackBox(i,j,imgF,image,d);
+                energy_increase = dist_proj_orig - dist_orig;
+                if (energy_increase <= lambda*abs(d)) p[j] += d;
+            }
+        }
+
+        //white circle
+        for (int i = 1; i < M-1; ++i,++i)
+        {
+            p = imgF.ptr<float>(i);
+            p_pre = imgF.ptr<float>(i-1);
+            p_down = imgF.ptr<float>(i+1);
+            for (int j = 2; j < N-1; ++j, ++j)
+            {
+                d = (this->*Local)(j,p_pre,p,p_down);
+                dist_orig = BlackBox(i,j,imgF,image,zero);
+                dist_proj_orig = BlackBox(i,j,imgF,image,d);
+                energy_increase = dist_proj_orig - dist_orig;
+                if (energy_increase <= lambda*abs(d)) p[j] += d;
+            }
+        }
+
+        //white triangle
+        for (int i = 2; i < M-1; ++i,++i)
+        {
+            p = imgF.ptr<float>(i);
+            p_pre = imgF.ptr<float>(i-1);
+            p_down = imgF.ptr<float>(i+1);
+            for (int j = 1; j < N-1; ++j, ++j)
+            {
+                d = (this->*Local)(j,p_pre,p,p_down);
+                dist_orig = BlackBox(i,j,imgF,image,zero);
+                dist_proj_orig = BlackBox(i,j,imgF,image,d);
+                energy_increase = dist_proj_orig - dist_orig;
+                if (energy_increase <= lambda*abs(d)) p[j] += d;
+            }
+        }
+        count++;
+    }
+    Tend = clock() - Tstart;   
+    time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
+
+	cout<<"stop after "<<count<<" Iterations and ";
+
+    //output the total energy profile
+    ofstream energyProfile;
+    energyProfile.open ("Energy.txt");
+    energyProfile<<"### Iteration TotalEnergy DataFitEnergy RegularizationEnergy"<<endl;
+    for (int i = 0; i <= count; ++i)
+    {
+    energyProfile<<i<<" "<<energyRecord_DataFit[i] + energyRecord_Curvature[i]<<" "<<energyRecord_DataFit[i]<<" "<<energyRecord_Curvature[i]<<endl;
+    }
+    energyProfile.close();
+ }
 
 //*************************** Do NOT change anything! *****************************//
 //************************* these filters are optimized ***************************//
