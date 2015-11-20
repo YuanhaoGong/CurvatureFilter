@@ -60,17 +60,19 @@ Energy = Energy(1:i,:);
 
 %% %%%%%%%%%%%%%%%%%%%% three projection operaters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function result = proj_TV(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd)
-BT5 = 5*im(BT); dist = zeros(size(BT_pre,1),8,'single');
-dist(:,1) = im(BT_pre) + im(BT_nex) + im(BT_lu) + im(BT_lef) + im(BT_ld) - BT5; 
-dist(:,2) = im(BT_pre) + im(BT_nex) + im(BT_ru) + im(BT_rig) + im(BT_rd) - BT5;
-dist(:,3) = im(BT_lef) + im(BT_rig) + im(BT_lu) + im(BT_pre) + im(BT_ru) - BT5; 
-dist(:,4) = im(BT_lef) + im(BT_rig) + im(BT_ld) + im(BT_nex) + im(BT_rd) - BT5; 
-dist(:,5) = im(BT_pre) + im(BT_lef) + im(BT_lu) + im(BT_ru) + im(BT_ld) - BT5; 
-dist(:,6) = im(BT_pre) + im(BT_rig) + im(BT_ru) + im(BT_lu) + im(BT_rd) - BT5;
-dist(:,7) = im(BT_nex) + im(BT_lef) + im(BT_ld) + im(BT_lu) + im(BT_rd) - BT5; 
-dist(:,8) = im(BT_nex) + im(BT_rig) + im(BT_rd) + im(BT_ld) + im(BT_ru) - BT5;
-
-dist = dist/5; %% minimal projection
+dist = zeros(size(BT_pre,1),8,'single');
+all = im(BT_lu) + im(BT_pre) + im(BT_ru) + im(BT_lef) + im(BT_rig) + im(BT_ld) + im(BT_nex) + im(BT_rd) - 5*im(BT);
+dist(:,1) = all - im(BT_ru) - im(BT_rig) - im(BT_rd); 
+dist(:,2) = all - im(BT_lu) - im(BT_lef) - im(BT_ld);
+dist(:,3) = all - im(BT_lu) - im(BT_pre) - im(BT_ru); 
+dist(:,4) = all - im(BT_ld) - im(BT_nex) - im(BT_rd);
+%diag
+dist(:,5) = all - im(BT_pre) - im(BT_ru) - im(BT_rig);
+dist(:,6) = all - im(BT_rig) - im(BT_rd) - im(BT_nex);
+dist(:,7) = all - im(BT_nex) - im(BT_ld) - im(BT_lef); 
+dist(:,8) = all - im(BT_lef) - im(BT_lu) - im(BT_pre);
+dist = dist/5; 
+% minimal projection
 dist= dist'; tmp = abs(dist); [v,ind] = min(tmp);
 tmp = sub2ind(size(dist),ind',(1:size(dist,2))');
 

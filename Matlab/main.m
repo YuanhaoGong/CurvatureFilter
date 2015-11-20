@@ -31,9 +31,8 @@ mytime = toc;
 mystr = strcat('GC filter performance: ', num2str(mytime/Iteration),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
 disp(mystr)
 
-figure,imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
+figure, imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
 title('original(left), GCFilter(mid), difference(right)')
-
 figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Gaussian Curvature Energy'),title('Energy profile')
 
 %% ************************* mean curvature *********************************************
@@ -50,9 +49,8 @@ mytime = toc;
 mystr = strcat('MC filter performance: ', num2str(mytime/Iteration),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
 disp(mystr)
 
-figure,imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
+figure, imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
 title('original(left), MCFilter(mid), difference(right)')
-
 figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Mean Curvature Energy'),title('Energy profile')
 
 %% ************************* Bernstein Filter also minimizes mean curvature *********************************************
@@ -69,9 +67,8 @@ mytime = toc;
 mystr = strcat('BF filter performance: ', num2str(mytime/Iteration),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
 disp(mystr)
 
-figure,imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
+figure, imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
 title('original(left), BFilter(mid), difference(right)')
-
 figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Mean Curvature Energy'),title('Energy profile')
 
 %% ************************* TV Filter minimizes Total Variation *********************************************
@@ -88,9 +85,8 @@ mytime = toc;
 mystr = strcat('TV filter performance: ', num2str(mytime/Iteration),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
 disp(mystr)
 
-figure,imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
+figure, imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
 title('original(left), TVFilter(mid), difference(right)')
-
 figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('TV Energy'),title('Energy profile')
 
 
