@@ -1264,6 +1264,7 @@ inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
     //       c   d
     // return (a+b+c+d+e)/5.0;
 	float dist[2];
+	 //old fashion, need 5*8 times plus or minus
     float tmp = 5*p[i];
 
     dist[0] = p_pre[i]+ p_pre[i+1]+p[i+1]+p_nex[i] + p_nex[i+1] - tmp;
@@ -1285,8 +1286,28 @@ inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
     dist[1] = p_nex[i-1]+p_nex[i] + p_nex[i+1] + p[i+1] + p_pre[i+1]- tmp;
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-
-
+    
+    /*
+    //only need 8 + 8*3 = 32 times plut or minus, but slower than above code on my MacBook
+    //this leads to a new idea that using box filter for TV filter to further reduce computation
+    float all = p_pre[i-1] + p_pre[i] + p_pre[i+1] + p[i-1] + p[i+1] + p_nex[i-1] + p_nex[i] + p_nex[i+1] - 5*p[i];
+    dist[0] = all - p_pre[i+1] - p[i+1] - p_nex[i+1];
+    dist[1] = all - p_pre[i-1] - p[i-1] - p_nex[i-1];
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    dist[1] = all - p_pre[i-1] - p_pre[i] - p_pre[i+1];
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    dist[1] = all - p_nex[i-1] - p_nex[i] - p_nex[i+1];
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    //diag
+    dist[1] = all - p_pre[i-1] - p_pre[i] - p[i-1];
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    dist[1] = all - p_pre[i] - p_pre[i+1] - p[i+1];
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    dist[1] = all - p_nex[i] - p_nex[i+1] - p[i+1];
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    dist[1] = all - p_nex[i-1] - p_nex[i] - p[i-1];
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    */
     dist[0]/=5.0;
     return dist[0];
 }
