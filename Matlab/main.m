@@ -18,12 +18,13 @@
 %% ************************* Gaussian curvature *********************************************
 im = imread('lena.png');
 
+FilterType = 2;
 Iteration = 60;
 
 disp('** running time includes the time for computing energy. **')
 
 tic
-[result,energy]=GCFilter(im,Iteration);
+[result,energy]=CF(im,FilterType, Iteration);
 mytime = toc;
 
 %% show the running time and the result
@@ -38,10 +39,11 @@ figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Gaussian Curvatur
 %% ************************* mean curvature *********************************************
 im = imread('lena.png');
 
+FilterType = 1;
 Iteration = 60;
 
 tic
-[result,energy]=MCFilter(im,Iteration);
+[result,energy]=CF(im,FilterType,Iteration);
 mytime = toc;
 
 %% show the running time and the result
@@ -56,10 +58,11 @@ figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Mean Curvature En
 %% ************************* Bernstein Filter also minimizes mean curvature *********************************************
 im = imread('lena.png');
 
+FilterType = 4;
 Iteration = 60;
 
 tic
-[result,energy]=BernsteinFilter(im,Iteration);
+[result,energy]=CF(im, FilterType, Iteration);
 mytime = toc;
 
 %% show the running time and the result
@@ -74,10 +77,11 @@ figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Mean Curvature En
 %% ************************* TV Filter minimizes Total Variation *********************************************
 im = imread('lena.png');
 
+FilterType = 0;
 Iteration = 60;
 
 tic
-[result,energy]=TVFilter(im,Iteration);
+[result,energy]=CF(im, FilterType, Iteration);
 mytime = toc;
 
 %% show the running time and the result
