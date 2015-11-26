@@ -45,13 +45,15 @@ public:
     double PSNR(const Mat& I1, const Mat& I2);
     /******************* filters *****************************/
     // Type=0, TV; Type=1, MC; Type=2, GC; (Type=3, DC, experimental);
-    void Filter(int Type, double & time, int ItNum = 10);//with split
-    void FilterNoSplit(int Type, double & time, int ItNum = 10);//direct on imgF 
+	// the stepsize parameter is in (0,1]:smaller means more iterations, but reaches lower energy level; larger means less iterations, but converges at higher energy level
+	//////////////////////////////////////////////////////////
+    void Filter(int Type, double & time, int ItNum = 10, float stepsize=1);//with split
+    void FilterNoSplit(int Type, double & time, int ItNum = 10, float stepsize=1);//direct on imgF 
     /******************* generic solver for variational models *****************************/
     //solve |U - I|^DataFitOrder + lambda * |curvature(U)|
-    void Solver(int Type, double & time, int MaxItNum,  float lambda = 2, float DataFitOrder = 1);
+    void Solver(int Type, double & time, int MaxItNum,  float lambda = 2, float DataFitOrder = 1, float stepsize=1);
     //solve BlackBox(U,I) + lambda * |curvature(U)|
-    void BlackBoxSolver(int Type, double & time, int MaxItNum, float lambda, float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d));
+    void BlackBoxSolver(int Type, double & time, int MaxItNum, float lambda, float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d),float stepsize=1);
 
 private:
     //padded original, tmp, result
@@ -66,20 +68,20 @@ private:
 private:
 	/*************************************** Split into 4 sets *********************************/
 	//one is for BT and WC, two is for BC and WT
-	inline void GC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
-	inline void GC_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
+	inline void GC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, float& stepsize);
+	inline void GC_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, float& stepsize);
 	
-	inline void MC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
-	inline void MC_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
+	inline void MC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, float& stepsize);
+	inline void MC_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, float& stepsize);
 	
-	inline void TV_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
-	inline void TV_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
+	inline void TV_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, float& stepsize);
+	inline void TV_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, float& stepsize);
 
-    inline void DC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
-    inline void DC_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
+    inline void DC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, float& stepsize);
+    inline void DC_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, float& stepsize);
 	
-	inline void LS_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
-	inline void LS_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
+	inline void LS_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, float& stepsize);
+	inline void LS_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, float& stepsize);
 	
 	/*************************************** Direct on imgF (no split) ***********************/
 	inline float Scheme_GC(int i, float * p_pre, float * p, float * p_nex);
@@ -349,12 +351,12 @@ void DM::merge()
     }
 }
 
-void DM::Filter(int Type, double & time, int ItNum )
+void DM::Filter(int Type, double & time, int ItNum, float stepsize)
 {
     clock_t Tstart, Tend;
 
-    void (DM::* Local_one)(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
-    void (DM::* Local_two)(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner);
+    void (DM::* Local_one)(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, float& stepsize);
+    void (DM::* Local_two)(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, float& stepsize);
 
     switch(Type)
     {
@@ -399,7 +401,7 @@ void DM::Filter(int Type, double & time, int ItNum )
                 p = BC.ptr<float>(i); p_right = WC.ptr<float>(i);
                 p_down = WT.ptr<float>(i+1); p_rd = BT.ptr<float>(i+1); 
                 p_pre = WT.ptr<float>(i); p_Corner = BT.ptr<float>(i);
-                (this->*Local_two)(p, p_right, p_down, p_rd, p_pre, p_Corner);
+                (this->*Local_two)(p, p_right, p_down, p_rd, p_pre, p_Corner, stepsize);
         }
         //BT
         for (int i = 1; i < M_half; ++i)
@@ -407,7 +409,7 @@ void DM::Filter(int Type, double & time, int ItNum )
                 p = BT.ptr<float>(i); p_right = WT.ptr<float>(i);
                 p_down = WC.ptr<float>(i); p_rd = BC.ptr<float>(i); 
                 p_pre = WC.ptr<float>(i-1); p_Corner = BC.ptr<float>(i-1);
-                (this->*Local_one)(p, p_right, p_down, p_rd, p_pre, p_Corner);
+                (this->*Local_one)(p, p_right, p_down, p_rd, p_pre, p_Corner, stepsize);
         }
         //WC
         for (int i = 0; i < M_half-1; ++i)
@@ -415,7 +417,7 @@ void DM::Filter(int Type, double & time, int ItNum )
                 p = WC.ptr<float>(i); p_right = BC.ptr<float>(i);
                 p_down = BT.ptr<float>(i+1); p_rd = WT.ptr<float>(i+1); 
                 p_pre = BT.ptr<float>(i); p_Corner = WT.ptr<float>(i);
-                (this->*Local_one)(p, p_right, p_down, p_rd, p_pre, p_Corner);
+                (this->*Local_one)(p, p_right, p_down, p_rd, p_pre, p_Corner, stepsize);
         }
     	//WT
         for (int i = 1; i < M_half; ++i)
@@ -423,7 +425,7 @@ void DM::Filter(int Type, double & time, int ItNum )
                 p = WT.ptr<float>(i); p_right = BT.ptr<float>(i);
                 p_down = BC.ptr<float>(i); p_rd = WC.ptr<float>(i); 
                 p_pre = BC.ptr<float>(i-1); p_Corner = WC.ptr<float>(i-1);
-                (this->*Local_two)(p, p_right, p_down, p_rd, p_pre, p_Corner);
+                (this->*Local_two)(p, p_right, p_down, p_rd, p_pre, p_Corner, stepsize);
         }
         
     }
@@ -433,7 +435,7 @@ void DM::Filter(int Type, double & time, int ItNum )
 
 //this nosplit is very useful for tasks like deconvolution, where the four sets need to be merged 
 //every iteration if we use the split scheme.
-void DM::FilterNoSplit(int Type, double & time, int ItNum )
+void DM::FilterNoSplit(int Type, double & time, int ItNum, float stepsize)
 {
     clock_t Tstart, Tend;
 
@@ -480,7 +482,7 @@ void DM::FilterNoSplit(int Type, double & time, int ItNum )
             for (int j = 1; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down);
-                p[j] += d;
+                p[j] += (stepsize*d);
             }
         }
 
@@ -493,7 +495,7 @@ void DM::FilterNoSplit(int Type, double & time, int ItNum )
             for (int j = 2; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down);
-                p[j] += d;
+                p[j] += (stepsize*d);
             }
         }
 
@@ -506,7 +508,7 @@ void DM::FilterNoSplit(int Type, double & time, int ItNum )
             for (int j = 2; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down);
-                p[j] += d;
+                p[j] += (stepsize*d);
             }
         }
 
@@ -519,7 +521,7 @@ void DM::FilterNoSplit(int Type, double & time, int ItNum )
             for (int j = 1; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down);
-                p[j] += d;
+                p[j] += (stepsize*d);
             }
         }
     }
@@ -529,7 +531,7 @@ void DM::FilterNoSplit(int Type, double & time, int ItNum )
 
 //generic filter solver for variational model |U - I|^DataFitOrder + lambda * Regularization
 //the DataFitOrder can be fractional such as 1.5, which is not possible for other solvers.
-void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataFitOrder)
+void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataFitOrder, float stepsize)
 {
     clock_t Tstart, Tend;
     float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex);
@@ -601,7 +603,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
             p_data = image.ptr<float>(i);
             for (int j = 1; j < N-1; ++j, ++j)
             {
-                d = (this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
                 dist_orig = fabsf(p[j] - p_data[j]);
                 dist_proj_orig = fabsf(p[j] + d - p_data[j]);
                 energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
@@ -618,7 +620,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
             p_data = image.ptr<float>(i);
             for (int j = 2; j < N-1; ++j, ++j)
             {
-                d = (this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
                 dist_orig = fabsf(p[j] - p_data[j]);
                 dist_proj_orig = fabsf(p[j] + d - p_data[j]);
                 energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
@@ -635,7 +637,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
             p_data = image.ptr<float>(i);
             for (int j = 2; j < N-1; ++j, ++j)
             {
-                d = (this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
                 dist_orig = fabsf(p[j] - p_data[j]);
                 dist_proj_orig = fabsf(p[j] + d - p_data[j]);
                 energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
@@ -652,7 +654,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
             p_data = image.ptr<float>(i);
             for (int j = 1; j < N-1; ++j, ++j)
             {
-                d = (this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
                 dist_orig = fabsf(p[j] - p_data[j]);
                 dist_proj_orig = fabsf(p[j] + d - p_data[j]);
                 energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
@@ -684,7 +686,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
 
 
 //solve BlackBox() + lambda * |curvature(U)|
- void DM::BlackBoxSolver(int Type, double & time, int MaxItNum, float lambda, float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d))
+ void DM::BlackBoxSolver(int Type, double & time, int MaxItNum, float lambda, float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d), float stepsize)
  {
  	clock_t Tstart, Tend;
     float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex);
@@ -760,7 +762,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
             p_down = imgF.ptr<float>(i+1);
             for (int j = 1; j < N-1; ++j, ++j)
             {
-                d = (this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
                 dist_orig = BlackBox(i,j,imgF,image,zero);
                 dist_proj_orig = BlackBox(i,j,imgF,image,d);
                 energy_increase = dist_proj_orig - dist_orig;
@@ -776,7 +778,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
             p_down = imgF.ptr<float>(i+1);
             for (int j = 2; j < N-1; ++j, ++j)
             {
-                d = (this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
                 dist_orig = BlackBox(i,j,imgF,image,zero);
                 dist_proj_orig = BlackBox(i,j,imgF,image,d);
                 energy_increase = dist_proj_orig - dist_orig;
@@ -792,7 +794,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
             p_down = imgF.ptr<float>(i+1);
             for (int j = 2; j < N-1; ++j, ++j)
             {
-                d = (this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
                 dist_orig = BlackBox(i,j,imgF,image,zero);
                 dist_proj_orig = BlackBox(i,j,imgF,image,d);
                 energy_increase = dist_proj_orig - dist_orig;
@@ -808,7 +810,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
             p_down = imgF.ptr<float>(i+1);
             for (int j = 1; j < N-1; ++j, ++j)
             {
-                d = (this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
                 dist_orig = BlackBox(i,j,imgF,image,zero);
                 dist_proj_orig = BlackBox(i,j,imgF,image,d);
                 energy_increase = dist_proj_orig - dist_orig;
@@ -837,7 +839,7 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
 //************************* these filters are optimized ***************************//
 //********** contact Yuanhao Gong if you need to change anything ******************//
 //*************************** gongyuanhao@gmail.com *******************************//
-inline void DM::GC_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
+inline void DM::GC_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
 	register float dist[10];
 	for (int j = 1; j < N_half; ++j)
@@ -864,11 +866,11 @@ inline void DM::GC_one(float* __restrict p, float* __restrict p_right, float* __
 		dist[6] /= 3;
 		if (fabsf(dist[6])<fabsf(dist[1])) dist[1] = dist[6];
 
-		p[j] += dist[1];
+		p[j] += (stepsize*dist[1]);
      }
 }
 
-inline void DM::GC_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
+inline void DM::GC_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
 	register float dist[10];
 	for (int j = 0; j < N_half-1; ++j)
@@ -895,11 +897,11 @@ inline void DM::GC_two(float* __restrict p, float* __restrict p_right, float* __
 		dist[6] /= 3;
 		if (fabsf(dist[6])<fabsf(dist[1])) dist[1] = dist[6];
 
-		p[j] += dist[1];
+		p[j] += (stepsize*dist[1]);
      }
 }
 
-inline void DM::MC_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
+inline void DM::MC_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
 	register float dist[8];
 	for (int j = 1; j < N_half; ++j)
@@ -920,11 +922,11 @@ inline void DM::MC_one(float* __restrict p, float* __restrict p_right, float* __
 
 		dist[0] /= 8;
 
-		p[j] += dist[0];
+		p[j] += (stepsize*dist[0]);
      }
 }
 
-inline void DM::MC_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
+inline void DM::MC_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
 	register float dist[8];
 	for (int j = 0; j < N_half-1; ++j)
@@ -946,11 +948,11 @@ inline void DM::MC_two(float* __restrict p, float* __restrict p_right, float* __
         
 		dist[0] /= 8;
 		
-		p[j] += dist[0];
+		p[j] += (stepsize*dist[0]);
      }
 }
 
-inline void DM::LS_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
+inline void DM::LS_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
 	//one is for BT and WC, two is for BC and WT
 	register float dist[5];
@@ -988,11 +990,11 @@ inline void DM::LS_one(float* __restrict p, float* __restrict p_right, float* __
 
 		dist[0] /= 7;
 
-		p[j] += dist[0];
+		p[j] += (stepsize*dist[0]);
      }
 }
 
-inline void DM::LS_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
+inline void DM::LS_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
 	//one is for BT and WC, two is for BC and WT
 	register float dist[5];
@@ -1029,11 +1031,11 @@ inline void DM::LS_two(float* __restrict p, float* __restrict p_right, float* __
         
 		dist[0] /= 7;
 		
-		p[j] += dist[0];
+		p[j] += (stepsize*dist[0]);
      }
 }
 
-inline void DM::TV_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
+inline void DM::TV_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
 	register float dist[13]; // first eight are distances, the rest are temp
 	for (int j = 1; j < N_half; ++j)
@@ -1065,11 +1067,11 @@ inline void DM::TV_one(float* __restrict p, float* __restrict p_right, float* __
 		if (fabsf(dist[4])<fabsf(dist[0])) dist[0] = dist[4];
 
 		dist[0] /= 5;
-		p[j] += dist[0];
+		p[j] += (stepsize*dist[0]);
      }
 }
 
-inline void DM::TV_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
+inline void DM::TV_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
 	register float dist[13]; // first eight are distances, the rest are temp
 	for (int j = 0; j < N_half-1; ++j)
@@ -1100,12 +1102,12 @@ inline void DM::TV_two(float* __restrict p, float* __restrict p_right, float* __
         
 
 		dist[0] /= 5;
-		p[j] += dist[0];
+		p[j] += (stepsize*dist[0]);
      }
 }
 
 
-inline void DM::DC_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
+inline void DM::DC_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
     register float dist[4];
     register float weight = -0.225603f;
@@ -1125,11 +1127,11 @@ inline void DM::DC_one(float* __restrict p, float* __restrict p_right, float* __
         dist[3] = dist[2] + (p_rd[j-1] + p_rd[j] - 2*p_down[j])*weight;
         if(fabsf(dist[3]) < fabsf(dist[0])) dist[0] = dist[3];
 
-        p[j] += dist[0];
+        p[j] += (stepsize*dist[0]);
      }
 }
 
-inline void DM::DC_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner)
+inline void DM::DC_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
     register float dist[4];
     register float weight = -0.225603f;
@@ -1150,7 +1152,7 @@ inline void DM::DC_two(float* __restrict p, float* __restrict p_right, float* __
         if(fabsf(dist[3]) < fabsf(dist[0])) dist[0] = dist[3];
 
 
-        p[j] += dist[0];
+        p[j] += (stepsize*dist[0]);
      }
 }
 

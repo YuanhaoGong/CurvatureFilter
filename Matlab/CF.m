@@ -1,4 +1,4 @@
-function [result, Energy] = CF(im, FilterType, ItNum)
+function [result, Energy] = CF(im, FilterType, ItNum, step)
 % =========================================================================
 % 
 %                           Curvature Filter 
@@ -15,7 +15,12 @@ function [result, Energy] = CF(im, FilterType, ItNum)
 % =========================================================================
 % FilterType: 0(Total Variation), 1(Mean Curvature), 2(Gaussian Curvature)
 %             4(Bernstein Filter)
-
+if (nargin~=3) && (nargin~=4)
+    disp('Input are not correct.'), return;
+end
+if nargin==3
+    step = 1;
+end
 if (size(im,3)>1)
     disp('This only works for gray scale image.'), return;
 end
@@ -51,35 +56,33 @@ for i = 1:ItNum
     if (i>1) && Energy(i,1) > Energy(i-1,1) % if the energy start to increase
         break;
     end
-    result = myfun(result,BC,BC_pre,BC_nex,BC_lef,BC_rig,BC_lu,BC_ld,BC_ru,BC_rd);
-    result = myfun(result,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd);
-    result = myfun(result,WC,WC_pre,WC_nex,WC_lef,WC_rig,WC_lu,WC_ld,WC_ru,WC_rd);
-    result = myfun(result,WT,WT_pre,WT_nex,WT_lef,WT_rig,WT_lu,WT_ld,WT_ru,WT_rd);
+    result = myfun(result,BC,BC_pre,BC_nex,BC_lef,BC_rig,BC_lu,BC_ld,BC_ru,BC_rd,step);
+    result = myfun(result,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step);
+    result = myfun(result,WC,WC_pre,WC_nex,WC_lef,WC_rig,WC_lu,WC_ld,WC_ru,WC_rd,step);
+    result = myfun(result,WT,WT_pre,WT_nex,WT_lef,WT_rig,WT_lu,WT_ld,WT_ru,WT_rd,step);
 end
 Energy = Energy(1:i,:);
 
 %% %%%%%%%%%%%%%%%%%%%% three projection operaters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function result = proj_TV(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd)
-dist = zeros(size(BT_pre,1),8,'single');
-all = im(BT_lu) + im(BT_pre) + im(BT_ru) + im(BT_lef) + im(BT_rig) + im(BT_ld) + im(BT_nex) + im(BT_rd) - 5*im(BT);
-dist(:,1) = all - im(BT_ru) - im(BT_rig) - im(BT_rd); 
-dist(:,2) = all - im(BT_lu) - im(BT_lef) - im(BT_ld);
-dist(:,3) = all - im(BT_lu) - im(BT_pre) - im(BT_ru); 
-dist(:,4) = all - im(BT_ld) - im(BT_nex) - im(BT_rd);
-%diag
-dist(:,5) = all - im(BT_pre) - im(BT_ru) - im(BT_rig);
-dist(:,6) = all - im(BT_rig) - im(BT_rd) - im(BT_nex);
-dist(:,7) = all - im(BT_nex) - im(BT_ld) - im(BT_lef); 
-dist(:,8) = all - im(BT_lef) - im(BT_lu) - im(BT_pre);
-dist = dist/5; 
-% minimal projection
+function result = proj_TV(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
+BT5 = 5*im(BT); dist = zeros(size(BT_pre,1),8,'single');
+dist(:,1) = im(BT_pre) + im(BT_nex) + im(BT_lu) + im(BT_lef) + im(BT_ld) - BT5; 
+dist(:,2) = im(BT_pre) + im(BT_nex) + im(BT_ru) + im(BT_rig) + im(BT_rd) - BT5;
+dist(:,3) = im(BT_lef) + im(BT_rig) + im(BT_lu) + im(BT_pre) + im(BT_ru) - BT5; 
+dist(:,4) = im(BT_lef) + im(BT_rig) + im(BT_ld) + im(BT_nex) + im(BT_rd) - BT5; 
+dist(:,5) = im(BT_pre) + im(BT_lef) + im(BT_lu) + im(BT_ru) + im(BT_ld) - BT5; 
+dist(:,6) = im(BT_pre) + im(BT_rig) + im(BT_ru) + im(BT_lu) + im(BT_rd) - BT5;
+dist(:,7) = im(BT_nex) + im(BT_lef) + im(BT_ld) + im(BT_lu) + im(BT_rd) - BT5; 
+dist(:,8) = im(BT_nex) + im(BT_rig) + im(BT_rd) + im(BT_ld) + im(BT_ru) - BT5;
+
+dist = dist/5; %% minimal projection
 dist= dist'; tmp = abs(dist); [v,ind] = min(tmp);
 tmp = sub2ind(size(dist),ind',(1:size(dist,2))');
 
 result = im;
-result(BT) = im(BT) + dist(tmp);
+result(BT) = im(BT) + step*dist(tmp);
 
-function res = proj_MC(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd)
+function res = proj_MC(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
 res = im; BT8 = 8*im(BT); 
 dist = zeros(size(BT_pre,1),4,'single');
 tmp1 = 2.5*(im(BT_pre) + im(BT_nex)) - BT8;
@@ -94,9 +97,9 @@ dist(:,1:4) = dist(:,1:4)/8; %% minimal projection
 dist= dist'; tmp = abs(dist); [v,ind] = min(tmp);
 tmp = sub2ind(size(dist),ind',(1:size(dist,2))');
 
-res(BT) = im(BT) + dist(tmp);
+res(BT) = im(BT) + step*dist(tmp);
 
-function res = proj_GC(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd)
+function res = proj_GC(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
 res = im; BT2 = 2*im(BT); BT3 = 3*im(BT);
 dist = zeros(size(BT_pre,1),8,'single');
 dist(:,1) = im(BT_pre) + im(BT_nex) - BT2; dist(:,2) = im(BT_lef) + im(BT_rig) - BT2;
@@ -109,9 +112,9 @@ dist(:,1:4) = dist(:,1:4)/2; dist(:,5:8) = dist(:,5:8)/3; %% minimal projection
 dist= dist'; tmp = abs(dist); [v,ind] = min(tmp);
 tmp = sub2ind(size(dist),ind',(1:size(dist,2))');
 
-res(BT) = im(BT) + dist(tmp);
+res(BT) = im(BT) + step * dist(tmp);
 
-function res = proj_BF(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd)
+function res = proj_BF(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
 res = im; BT2 = 2*im(BT); BT3 = 7*im(BT);
 dist = zeros(size(BT_pre,1),8,'single');
 dist(:,1) = im(BT_pre) + im(BT_nex) - BT2; dist(:,2) = im(BT_lef) + im(BT_rig) - BT2;
@@ -127,7 +130,7 @@ dist(:,8) = im(BT_nex) + im(BT_rig) - im(BT_rd) +tmp1;
 dist(:,1:4) = dist(:,1:4)/2; dist(:,5:8) = dist(:,5:8)/7; %% minimal projection
 dist= dist'; tmp = abs(dist); [v,ind] = min(tmp);
 tmp = sub2ind(size(dist),ind',(1:size(dist,2))');
-res(BT) = res(BT) + dist(tmp);
+res(BT) = res(BT) + step*dist(tmp);
 %% %%%%%%%%%%%%%%%%%%%% three curvature energy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function en = curv_TV(im)
 t = single(im);[gx,gy]=gradient(t); g = abs(gx) + abs(gy);
