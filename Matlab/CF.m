@@ -14,7 +14,7 @@ function [result, Energy] = CF(im, FilterType, ItNum, step)
 % 
 % =========================================================================
 % FilterType: 0(Total Variation), 1(Mean Curvature), 2(Gaussian Curvature)
-%             4(Bernstein Filter)
+%             4(Bernstein Filter), 5(Fast TV Filter)
 if (nargin~=3) && (nargin~=4)
     disp('Input are not correct.'), return;
 end
@@ -33,6 +33,8 @@ switch FilterType
         myfun = @proj_GC; mycurv = @curv_GC;
     case 4
         myfun = @proj_BF; mycurv = @curv_MC;
+    case 5
+        [result, Energy] = TVFilterFast(im, ItNum, step); return;
    otherwise
       disp('Filter Type is not correct.'), return;
 end
@@ -62,8 +64,8 @@ for i = 1:ItNum
 end
 Energy = Energy(1:i,:);
 %% %%%%%%%%%%%%%%%%%%%% three projection operaters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function result = proj_TV(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
-result = im; BT5 = 5*im(BT); dist = zeros(size(BT_pre,1),8,'single');
+function res = proj_TV(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
+res = im; BT5 = 5*im(BT); dist = zeros(size(BT_pre,1),8,'single');
 dist(:,1) = im(BT_pre) + im(BT_nex) + im(BT_lu) + im(BT_lef) + im(BT_ld) - BT5; 
 dist(:,2) = im(BT_pre) + im(BT_nex) + im(BT_ru) + im(BT_rig) + im(BT_rd) - BT5;
 dist(:,3) = im(BT_lef) + im(BT_rig) + im(BT_lu) + im(BT_pre) + im(BT_ru) - BT5; 
@@ -73,9 +75,9 @@ dist(:,6) = im(BT_pre) + im(BT_rig) + im(BT_ru) + im(BT_lu) + im(BT_rd) - BT5;
 dist(:,7) = im(BT_nex) + im(BT_lef) + im(BT_ld) + im(BT_lu) + im(BT_rd) - BT5; 
 dist(:,8) = im(BT_nex) + im(BT_rig) + im(BT_rd) + im(BT_ld) + im(BT_ru) - BT5;
 dist = dist/5; %% minimal projection
-dist= dist'; tmp = abs(dist); [v,ind] = min(tmp);
-tmp = sub2ind(size(dist),ind',(1:size(dist,2))');
-result(BT) = im(BT) + step*dist(tmp);
+tmp = abs(dist); [v,ind] = min(tmp,[],2);
+tmp = sub2ind(size(dist),(1:size(dist,1))',ind);
+tmp = dist(tmp); res(BT) = res(BT) + step*tmp;
 
 function res = proj_MC(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
 res = im; BT8 = 8*im(BT); dist = zeros(size(BT_pre,1),4,'single');
@@ -86,9 +88,9 @@ dist(:,2) = tmp1  + 5*im(BT_lef) - im(BT_lu) - im(BT_ld);
 dist(:,3) = tmp2  + 5*im(BT_pre) - im(BT_lu) - im(BT_ru);
 dist(:,4) = tmp2  + 5*im(BT_nex) - im(BT_ld) - im(BT_rd);
 dist(:,1:4) = dist(:,1:4)/8; %% minimal projection
-dist= dist'; tmp = abs(dist); [v,ind] = min(tmp);
-tmp = sub2ind(size(dist),ind',(1:size(dist,2))');
-res(BT) = im(BT) + step*dist(tmp);
+tmp = abs(dist); [v,ind] = min(tmp,[],2);
+tmp = sub2ind(size(dist),(1:size(dist,1))',ind);
+tmp = dist(tmp); res(BT) = res(BT) + step*tmp;
 
 function res = proj_GC(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
 res = im; BT2 = 2*im(BT); BT3 = 3*im(BT);dist = zeros(size(BT_pre,1),8,'single');
@@ -97,9 +99,9 @@ dist(:,3) = im(BT_lu) + im(BT_rd) - BT2; dist(:,4) = im(BT_ld) + im(BT_ru) - BT2
 dist(:,5) = im(BT_pre) + im(BT_lef) + im(BT_lu) - BT3; dist(:,6) = im(BT_pre) + im(BT_rig) + im(BT_ru) - BT3;
 dist(:,7) = im(BT_nex) + im(BT_lef) + im(BT_ld) - BT3; dist(:,8) = im(BT_nex) + im(BT_rig) + im(BT_rd) - BT3;
 dist(:,1:4) = dist(:,1:4)/2; dist(:,5:8) = dist(:,5:8)/3; %% minimal projection
-dist= dist'; tmp = abs(dist); [v,ind] = min(tmp);
-tmp = sub2ind(size(dist),ind',(1:size(dist,2))');
-res(BT) = im(BT) + step * dist(tmp);
+tmp = abs(dist); [v,ind] = min(tmp,[],2);
+tmp = sub2ind(size(dist),(1:size(dist,1))',ind);
+tmp = dist(tmp); res(BT) = res(BT) + step*tmp;
 
 function res = proj_BF(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
 res = im; BT2 = 2*im(BT); BT3 = 7*im(BT); dist = zeros(size(BT_pre,1),8,'single');
@@ -111,9 +113,9 @@ dist(:,6) = im(BT_pre) + im(BT_rig) - im(BT_ru) + tmp2;
 dist(:,7) = im(BT_nex) + im(BT_lef)- im(BT_ld) + tmp2; 
 dist(:,8) = im(BT_nex) + im(BT_rig) - im(BT_rd) +tmp1;
 dist(:,1:4) = dist(:,1:4)/2; dist(:,5:8) = dist(:,5:8)/7; %% minimal projection
-dist= dist'; tmp = abs(dist); [v,ind] = min(tmp);
-tmp = sub2ind(size(dist),ind',(1:size(dist,2))');
-res(BT) = res(BT) + step*dist(tmp);
+tmp = abs(dist); [v,ind] = min(tmp,[],2);
+tmp = sub2ind(size(dist),(1:size(dist,1))',ind);
+tmp = dist(tmp); res(BT) = res(BT) + step*tmp;
 
 %% %%%%%%%%%%%%%%%%%%%% three curvature energy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function en = curv_TV(im)
@@ -126,3 +128,75 @@ en = sum(abs(g(:)));
 function en = curv_GC(im)
 t = single(im);[gx,gy]=gradient(t);[gxx,gxy]=gradient(gx);[gyx,gyy]=gradient(gy);
 g = (gxx.*gyy-gxy.*gyx)./((1+gx.^2+gy.^2).^1.5); en = sum(abs(g(:)));
+
+%% %%%%%%%%%%%%%%%%%%%%%%% Fast TV Filter %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [result, Energy] = TVFilterFast(im, ItNum, step)
+%%% this is the fast TV filter based on box filter to remove the overlapped
+%%% computation.
+if nargin<3
+    step = 1;
+end
+im = single(im); [m,n]=size(im); Energy = zeros(ItNum,1); result = im;
+%% four types of pixels %B = black, W = white, C = circle, T = triangle
+[BC_row,BC_col]=meshgrid(2:2:m-1,2:2:n-1);[BT_row,BT_col]=meshgrid(3:2:m-1,3:2:n-1);
+[WC_row,WC_col]=meshgrid(2:2:m-1,3:2:n-1);[WT_row,WT_col]=meshgrid(3:2:m-1,2:2:n-1);
+BC=sub2ind(size(im),reshape(BC_row,size(BC_row,1)*size(BC_row,2),1), reshape(BC_col,size(BC_col,1)*size(BC_col,2),1));
+BT=sub2ind(size(im),reshape(BT_row,size(BT_row,1)*size(BT_row,2),1), reshape(BT_col,size(BT_col,1)*size(BT_col,2),1));
+WC=sub2ind(size(im),reshape(WC_row,size(WC_row,1)*size(WC_row,2),1), reshape(WC_col,size(WC_col,1)*size(WC_col,2),1));
+WT=sub2ind(size(im),reshape(WT_row,size(WT_row,1)*size(WT_row,2),1), reshape(WT_col,size(WT_col,1)*size(WT_col,2),1));
+%% the neighbors' index
+BC_pre = BC -1;BC_nex = BC +1;BC_lef = BC -m;BC_rig = BC +m;BC_rd=BC+m+1;
+BT_pre = BT -1;BT_nex = BT +1;BT_lef = BT -m;BT_rig = BT +m;BT_rd=BT+m+1;
+WC_pre = WC -1;WC_nex = WC +1;WC_lef = WC -m;WC_rig = WC +m;WC_rd=WC+m+1;
+WT_pre = WT -1;WT_nex = WT +1;WT_lef = WT -m;WT_rig = WT +m;WT_rd=WT+m+1;
+%% dual Mesh optimization
+for it = 1:ItNum
+    Energy(it) = curv_TV(result);
+    [total, vert, horiz, diag] = Half_Box(result);
+    result = SimpleUpdate(result,BC,BC_pre,BC_nex,BC_lef,BC_rig,BC_rd,total, vert, horiz, diag, step);
+    result = SimpleUpdate(result,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_rd,total, vert, horiz, diag, step);
+    result = SimpleUpdate(result,WC,WC_pre,WC_nex,WC_lef,WC_rig,WC_rd,total, vert, horiz, diag, step);
+    result = SimpleUpdate(result,WT,WT_pre,WT_nex,WT_lef,WT_rig,WT_rd,total, vert, horiz, diag, step);
+end
+function res = SimpleUpdate(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_rd,total, vert, horiz, diag, step)
+res = im; BT5 = 5*im(BT); BT6 = 6*im(BT); dist = zeros(size(BT_pre,1),8,'single');
+dist(:,1) = total(BT) - horiz(BT_nex) - BT6; 
+dist(:,2) = total(BT) - horiz(BT_pre) - BT6; 
+dist(:,3) = total(BT) - vert(BT_lef) - BT6; 
+dist(:,4) = total(BT) - vert(BT_rig) - BT6; 
+dist(:,5) = total(BT) - diag(BT) - BT5; 
+dist(:,6) = total(BT) - diag(BT_rig) - BT5; 
+dist(:,7) = total(BT) - diag(BT_rd) - BT5; 
+dist(:,8) = total(BT) - diag(BT_nex) - BT5; 
+
+dist = dist/5; %% minimal projection
+tmp = abs(dist); [v,ind] = min(tmp,[],2);
+tmp = sub2ind(size(dist),(1:size(dist,1))',ind);
+tmp = dist(tmp);
+res(BT) = res(BT) + step*tmp;
+
+function [total, vert, horiz, diag] = Half_Box(im)
+%compute the total, vertical and horizontal sum in a 3X3 window
+%compute the diag(left up corner) sum
+[m,n]=size(im);vert = zeros(m,n,'single'); horiz = vert; diag = vert;
+total = myboxfilter(im);
+imCum = cumsum(im,1);
+vert(3:m-1,:) = imCum(4:m,:) - imCum(1:m-3,:);
+imCum = cumsum(im,2);
+horiz(:,3:n-1) = imCum(:,4:n) - imCum(:,1:n-3);
+diag(2:m,2:n) = im(2:m,2:n) + im(1:m-1,2:n) + im(2:m,1:n-1) + im(1:m-1,1:n-1);
+
+function imDst = myboxfilter(imSrc)
+[hei, wid] = size(imSrc); imDst = zeros(size(imSrc),'single'); r=1;
+%cumulative sum over Y axis
+imCum = cumsum(imSrc, 1);
+%difference over Y axis
+imDst(1:r+1, :) = imCum(1+r:2*r+1, :);
+imDst(r+2:hei-r, :) = imCum(2*r+2:hei, :) - imCum(1:hei-2*r-1, :);
+imDst(hei-r+1:hei, :) = repmat(imCum(hei, :), [r, 1]) - imCum(hei-2*r:hei-r-1, :);
+%cumulative sum over X axis
+imCum = cumsum(imDst, 2);
+%difference over Y axis
+imDst(:, 1:r+1) = imCum(:, 1+r:2*r+1);
+imDst(:, r+2:wid-r) = imCum(:, 2*r+2:wid) - imCum(:, 1:wid-2*r-1);
+imDst(:, wid-r+1:wid) = repmat(imCum(:, wid), [1, r]) - imCum(:, wid-2*r:wid-r-1);
