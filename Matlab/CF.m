@@ -66,14 +66,16 @@ Energy = Energy(1:i,:);
 %% %%%%%%%%%%%%%%%%%%%% three projection operaters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function res = proj_TV(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
 res = im; BT5 = 5*im(BT); dist = zeros(size(BT_pre,1),8,'single');
-dist(:,1) = im(BT_pre) + im(BT_nex) + im(BT_lu) + im(BT_lef) + im(BT_ld) - BT5; 
-dist(:,2) = im(BT_pre) + im(BT_nex) + im(BT_ru) + im(BT_rig) + im(BT_rd) - BT5;
-dist(:,3) = im(BT_lef) + im(BT_rig) + im(BT_lu) + im(BT_pre) + im(BT_ru) - BT5; 
-dist(:,4) = im(BT_lef) + im(BT_rig) + im(BT_ld) + im(BT_nex) + im(BT_rd) - BT5; 
-dist(:,5) = im(BT_pre) + im(BT_lef) + im(BT_lu) + im(BT_ru) + im(BT_ld) - BT5; 
-dist(:,6) = im(BT_pre) + im(BT_rig) + im(BT_ru) + im(BT_lu) + im(BT_rd) - BT5;
-dist(:,7) = im(BT_nex) + im(BT_lef) + im(BT_ld) + im(BT_lu) + im(BT_rd) - BT5; 
-dist(:,8) = im(BT_nex) + im(BT_rig) + im(BT_rd) + im(BT_ld) + im(BT_ru) - BT5;
+tmp1 = im(BT_pre) + im(BT_nex) - BT5; tmp2 = im(BT_lef) + im(BT_rig) - BT5;
+tmp3 = im(BT_pre) + im(BT_lu) + im(BT_ru) - BT5; tmp4 = im(BT_nex) + im(BT_ld) + im(BT_rd) - BT5;
+dist(:,1) = tmp1 + im(BT_lu) + im(BT_lef) + im(BT_ld); 
+dist(:,2) = tmp1 + im(BT_ru) + im(BT_rig) + im(BT_rd);
+dist(:,3) = tmp2 + im(BT_lu) + im(BT_pre) + im(BT_ru); 
+dist(:,4) = tmp2 + im(BT_ld) + im(BT_nex) + im(BT_rd); 
+dist(:,5) = tmp3 + im(BT_lef) + im(BT_ld); 
+dist(:,6) = tmp3 + im(BT_rig) + im(BT_rd);
+dist(:,7) = tmp4 + im(BT_lef) + im(BT_lu); 
+dist(:,8) = tmp4 + im(BT_rig) + im(BT_ru);
 dist = dist/5; %% minimal projection
 tmp = abs(dist); [v,ind] = min(tmp,[],2);
 tmp = sub2ind(size(dist),(1:size(dist,1))',ind);
@@ -136,44 +138,32 @@ function [result, Energy] = TVFilterFast(im, ItNum, step)
 if nargin<3
     step = 1;
 end
-im = single(im); [m,n]=size(im); Energy = zeros(ItNum,1); result = im;
-%% four types of pixels %B = black, W = white, C = circle, T = triangle
-[BC_row,BC_col]=meshgrid(2:2:m-1,2:2:n-1);[BT_row,BT_col]=meshgrid(3:2:m-1,3:2:n-1);
-[WC_row,WC_col]=meshgrid(2:2:m-1,3:2:n-1);[WT_row,WT_col]=meshgrid(3:2:m-1,2:2:n-1);
-BC=sub2ind(size(im),reshape(BC_row,size(BC_row,1)*size(BC_row,2),1), reshape(BC_col,size(BC_col,1)*size(BC_col,2),1));
-BT=sub2ind(size(im),reshape(BT_row,size(BT_row,1)*size(BT_row,2),1), reshape(BT_col,size(BT_col,1)*size(BT_col,2),1));
-WC=sub2ind(size(im),reshape(WC_row,size(WC_row,1)*size(WC_row,2),1), reshape(WC_col,size(WC_col,1)*size(WC_col,2),1));
-WT=sub2ind(size(im),reshape(WT_row,size(WT_row,1)*size(WT_row,2),1), reshape(WT_col,size(WT_col,1)*size(WT_col,2),1));
-%% the neighbors' index
-BC_pre = BC -1;BC_nex = BC +1;BC_lef = BC -m;BC_rig = BC +m;BC_rd=BC+m+1;
-BT_pre = BT -1;BT_nex = BT +1;BT_lef = BT -m;BT_rig = BT +m;BT_rd=BT+m+1;
-WC_pre = WC -1;WC_nex = WC +1;WC_lef = WC -m;WC_rig = WC +m;WC_rd=WC+m+1;
-WT_pre = WT -1;WT_nex = WT +1;WT_lef = WT -m;WT_rig = WT +m;WT_rd=WT+m+1;
-%% dual Mesh optimization
+im = single(im); Energy = zeros(ItNum,1); result = im; [m,n]=size(im);
+[col,row]=meshgrid(1:n,1:m); row = reshape(row,m*n,1); col = reshape(col,m*n,1);
+%% not dual Mesh optimization
 for it = 1:ItNum
     Energy(it) = curv_TV(result);
     [total, vert, horiz, diag] = Half_Box(result);
-    result = SimpleUpdate(result,BC,BC_pre,BC_nex,BC_lef,BC_rig,BC_rd,total, vert, horiz, diag, step);
-    result = SimpleUpdate(result,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_rd,total, vert, horiz, diag, step);
-    result = SimpleUpdate(result,WC,WC_pre,WC_nex,WC_lef,WC_rig,WC_rd,total, vert, horiz, diag, step);
-    result = SimpleUpdate(result,WT,WT_pre,WT_nex,WT_lef,WT_rig,WT_rd,total, vert, horiz, diag, step);
+    result = SimpleUpdate(result, total, vert, horiz, diag, step, row, col);
 end
-function res = SimpleUpdate(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_rd,total, vert, horiz, diag, step)
-res = im; BT5 = 5*im(BT); BT6 = 6*im(BT); dist = zeros(size(BT_pre,1),8,'single');
-dist(:,1) = total(BT) - horiz(BT_nex) - BT6; 
-dist(:,2) = total(BT) - horiz(BT_pre) - BT6; 
-dist(:,3) = total(BT) - vert(BT_lef) - BT6; 
-dist(:,4) = total(BT) - vert(BT_rig) - BT6; 
-dist(:,5) = total(BT) - diag(BT) - BT5; 
-dist(:,6) = total(BT) - diag(BT_rig) - BT5; 
-dist(:,7) = total(BT) - diag(BT_rd) - BT5; 
-dist(:,8) = total(BT) - diag(BT_nex) - BT5; 
-
+function res = SimpleUpdate(im, total, vert, horiz, diag, step, row, col)
+res = im; BT5 = total - 5*im; BT6 = total - 6*im; [m,n]=size(im); dist = zeros(m,n,8,'single');
+dist(1:m-1,:,1) = BT6(1:m-1,:) - horiz(2:m,:); 
+dist(2:m,:,2) = BT6(2:m,:) - horiz(1:m-1,:); 
+dist(:,2:n,3) = BT6(:,2:n) - vert(:,1:n-1); 
+dist(:,1:n-1,4) = BT6(:,1:n-1) - vert(:,2:n); 
+dist(:,:,5) = BT5 - diag; 
+dist(:,1:n-1,6) = BT5(:,1:n-1) - diag(:,2:n); 
+dist(1:m-1,1:n-1,7) = BT5(1:m-1,1:n-1) - diag(2:m,2:n) ; 
+dist(1:m-1,:,8) = BT5(1:m-1,:) - diag(2:m,:); 
 dist = dist/5; %% minimal projection
-tmp = abs(dist); [v,ind] = min(tmp,[],2);
-tmp = sub2ind(size(dist),(1:size(dist,1))',ind);
-tmp = dist(tmp);
-res(BT) = res(BT) + step*tmp;
+tmp = abs(dist); 
+[v,ind] = min(tmp,[],3);
+ind = reshape(ind,m*n,1);
+ind2 = sub2ind(size(dist),row,col,ind);
+dm = dist(ind2); 
+dm = reshape(dm,m,n);
+res = im + step*dm;
 
 function [total, vert, horiz, diag] = Half_Box(im)
 %compute the total, vertical and horizontal sum in a 3X3 window
