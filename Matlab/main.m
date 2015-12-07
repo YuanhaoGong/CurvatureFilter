@@ -15,8 +15,12 @@
 
 % this demo shows four edge-preserving filters and how to use them solve variational models 
 
+im_name = 'lena.png';
 %% ************************* Gaussian curvature *********************************************
-im = imread('lena.png');
+im = imread(im_name);
+if size(im,3)>1
+    im = rgb2gray(im);
+end
 
 FilterType = 2;
 Iteration = 60;
@@ -36,7 +40,10 @@ title('original(left), GCFilter(mid), difference(right)')
 figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Gaussian Curvature Energy'),title('Energy profile')
 
 %% ************************* mean curvature *********************************************
-im = imread('lena.png');
+im = imread(im_name);
+if size(im,3)>1
+    im = rgb2gray(im);
+end
 
 FilterType = 1;
 Iteration = 60;
@@ -54,7 +61,10 @@ title('original(left), MCFilter(mid), difference(right)')
 figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Mean Curvature Energy'),title('Energy profile')
 
 %% ************************* Bernstein Filter also minimizes mean curvature *********************************************
-im = imread('lena.png');
+im = imread(im_name);
+if size(im,3)>1
+    im = rgb2gray(im);
+end
 
 FilterType = 4;
 Iteration = 60;
@@ -72,7 +82,10 @@ title('original(left), BFilter(mid), difference(right)')
 figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Mean Curvature Energy'),title('Energy profile')
 
 %% ************************* TV Filter minimizes Total Variation *********************************************
-im = imread('lena.png');
+im = imread(im_name);
+if size(im,3)>1
+    im = rgb2gray(im);
+end
 
 FilterType = 0;
 Iteration = 60;
@@ -90,7 +103,10 @@ title('original(left), TVFilter(mid), difference(right)')
 figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('TV Energy'),title('Energy profile')
 
 %% ************************* Fast TV Filter minimizes Total Variation *********************************************
-im = imread('lena.png');
+im = imread(im_name);
+if size(im,3)>1
+    im = rgb2gray(im);
+end
 
 FilterType = 5;
 Iteration = 60;
@@ -114,7 +130,10 @@ figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('TV Energy'),title
 %
 %% ************************************************************************
 
-im = imread('lena.png');
+im = imread(im_name);
+if size(im,3)>1
+    im = rgb2gray(im);
+end
 
 MaxIteration = 60;
 DataFitOrder = 1.3; %fractional order
