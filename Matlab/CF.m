@@ -76,10 +76,10 @@ dist(:,5) = tmp3 + im(BT_lef) + im(BT_ld);
 dist(:,6) = tmp3 + im(BT_rig) + im(BT_rd);
 dist(:,7) = tmp4 + im(BT_lef) + im(BT_lu); 
 dist(:,8) = tmp4 + im(BT_rig) + im(BT_ru);
-dist = dist/5; %% minimal projection
+%% minimal projection
 tmp = abs(dist); [v,ind] = min(tmp,[],2);
 tmp = sub2ind(size(dist),(1:size(dist,1))',ind);
-tmp = dist(tmp); res(BT) = res(BT) + step*tmp;
+tmp = step/5*dist(tmp); res(BT) = res(BT) + tmp;
 
 function res = proj_MC(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
 res = im; BT8 = 8*im(BT); dist = zeros(size(BT_pre,1),4,'single');
@@ -89,10 +89,9 @@ dist(:,1) = tmp1  + 5*im(BT_rig) - im(BT_ru) - im(BT_rd);
 dist(:,2) = tmp1  + 5*im(BT_lef) - im(BT_lu) - im(BT_ld);
 dist(:,3) = tmp2  + 5*im(BT_pre) - im(BT_lu) - im(BT_ru);
 dist(:,4) = tmp2  + 5*im(BT_nex) - im(BT_ld) - im(BT_rd);
-dist(:,1:4) = dist(:,1:4)/8; %% minimal projection
 tmp = abs(dist); [v,ind] = min(tmp,[],2);
 tmp = sub2ind(size(dist),(1:size(dist,1))',ind);
-tmp = dist(tmp); res(BT) = res(BT) + step*tmp;
+tmp = dist(tmp); res(BT) = res(BT) + step/8*tmp;
 
 function res = proj_GC(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
 res = im; BT2 = 2*im(BT); BT3 = 3*im(BT);dist = zeros(size(BT_pre,1),8,'single');
@@ -114,10 +113,10 @@ dist(:,5) = im(BT_pre) + im(BT_lef) - im(BT_lu) + tmp1;
 dist(:,6) = im(BT_pre) + im(BT_rig) - im(BT_ru) + tmp2;
 dist(:,7) = im(BT_nex) + im(BT_lef)- im(BT_ld) + tmp2; 
 dist(:,8) = im(BT_nex) + im(BT_rig) - im(BT_rd) +tmp1;
-dist(:,1:4) = dist(:,1:4)/2; dist(:,5:8) = dist(:,5:8)/7; %% minimal projection
+dist(:,1:4) = 7/2*dist(:,1:4); %% minimal projection
 tmp = abs(dist); [v,ind] = min(tmp,[],2);
 tmp = sub2ind(size(dist),(1:size(dist,1))',ind);
-tmp = dist(tmp); res(BT) = res(BT) + step*tmp;
+tmp = dist(tmp); res(BT) = res(BT) + step/7*tmp;
 
 %% %%%%%%%%%%%%%%%%%%%% three curvature energy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function en = curv_TV(im)
@@ -156,14 +155,14 @@ dist(:,:,5) = BT5 - diag;
 dist(:,1:n-1,6) = BT5(:,1:n-1) - diag(:,2:n); 
 dist(1:m-1,1:n-1,7) = BT5(1:m-1,1:n-1) - diag(2:m,2:n) ; 
 dist(1:m-1,:,8) = BT5(1:m-1,:) - diag(2:m,:); 
-dist = dist/5; %% minimal projection
+%% minimal projection
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3);
 ind = reshape(ind,m*n,1);
 ind2 = sub2ind(size(dist),row,col,ind);
 dm = dist(ind2); 
-dm = reshape(dm,m,n);
-res = im + step*dm;
+dm = step/5*reshape(dm,m,n);
+res = im + dm;
 
 function [total, vert, horiz, diag] = Half_Box(im)
 %compute the total, vertical and horizontal sum in a 3X3 window
