@@ -138,7 +138,7 @@ if nargin<3
     step = 1;
 end
 im = single(im); Energy = zeros(ItNum,1); result = im; [m,n]=size(im);
-[col,row]=meshgrid(1:n,1:m); row = reshape(row,m*n,1); col = reshape(col,m*n,1);
+[col,row]=meshgrid(1:n,1:m);
 %% not dual Mesh optimization
 for it = 1:ItNum
     Energy(it) = curv_TV(result);
@@ -158,11 +158,9 @@ dist(1:m-1,:,8) = BT5(1:m-1,:) - diag(2:m,:);
 %% minimal projection
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3);
-ind = reshape(ind,m*n,1);
 ind2 = sub2ind(size(dist),row,col,ind);
 dm = dist(ind2); 
-dm = step/5*reshape(dm,m,n);
-res = im + dm;
+res = im + step/5*dm;
 
 function [total, vert, horiz, diag] = Half_Box(im)
 %compute the total, vertical and horizontal sum in a 3X3 window
