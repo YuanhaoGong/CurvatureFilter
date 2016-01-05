@@ -841,69 +841,72 @@ void DM::Solver(int Type, double & time, int MaxItNum, float lambda, float DataF
 //*************************** gongyuanhao@gmail.com *******************************//
 inline void DM::GC_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
-	register float dist[10];
+	register float dist[4];
+	register float scaled_stepsize = stepsize/3;
+	register float tmp, min_value;
 	for (int j = 1; j < N_half; ++j)
      {
-		dist[0] = 2*p[j];
-     	dist[1] = (p_pre[j]+p_down[j]) - dist[0];
-		dist[2] = (p_right[j-1]+p_right[j]) - dist[0];
-		dist[3] = (p_Corner[j-1]+p_rd[j]) - dist[0];
-		dist[4] = (p_Corner[j]+p_rd[j-1]) - dist[0];
-		
-
-		dist[5] = 3*p[j];
-		dist[6] = (p_Corner[j-1] + p_pre[j] + p_right[j-1]) - dist[5];
-		dist[7] = (p_Corner[j] + p_pre[j] + p_right[j]) - dist[5];
-		dist[8] = (p_right[j-1] + p_rd[j-1] + p_down[j]) - dist[5];
-		dist[9] = (p_right[j] + p_down[j] + p_rd[j]) - dist[5];
-        
-		for (int i = 2; i < 5; ++i)
+		tmp = 2*p[j];
+     	min_value = (p_pre[j]+p_down[j]) - tmp;
+		dist[1] = (p_right[j-1]+p_right[j]) - tmp;
+		dist[2] = (p_Corner[j-1]+p_rd[j]) - tmp;
+		dist[3] = (p_Corner[j]+p_rd[j-1]) - tmp;
+		for (int i = 1; i < 4; ++i)
 		{
-		    if (fabsf(dist[i])<fabsf(dist[1])) dist[1] = dist[i];
-		    if (fabsf(dist[i+5])<fabsf(dist[6])) dist[6] = dist[i+5];
+		    if (fabsf(dist[i])<fabsf(min_value)) min_value = dist[i];
 		}
-		dist[1] /= 2;
-		dist[6] /= 3;
-		if (fabsf(dist[6])<fabsf(dist[1])) dist[1] = dist[6];
 
-		p[j] += (stepsize*dist[1]);
+		tmp = 3*p[j];
+		min_value *= 1.5f;
+		dist[0] = (p_Corner[j-1] + p_pre[j] + p_right[j-1]) - tmp;
+		dist[1] = (p_Corner[j] + p_pre[j] + p_right[j]) - tmp;
+		dist[2] = (p_right[j-1] + p_rd[j-1] + p_down[j]) - tmp;
+		dist[3] = (p_right[j] + p_down[j] + p_rd[j]) - tmp;
+        for (int i = 0; i < 4; ++i)
+		{
+		    if (fabsf(dist[i])<fabsf(min_value)) min_value = dist[i];
+		}
+
+		p[j] += (scaled_stepsize*min_value);
      }
 }
 
 inline void DM::GC_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
-	register float dist[10];
+	register float dist[4];
+	register float scaled_stepsize = stepsize/3;
+	register float tmp, min_value;
 	for (int j = 0; j < N_half-1; ++j)
      {
-		dist[0] = 2*p[j];
-     	dist[1] = (p_pre[j]+p_down[j]) - dist[0];
-		dist[2] = (p_right[j]+p_right[j+1]) - dist[0];
-		dist[3] = (p_Corner[j]+p_rd[j+1]) - dist[0];
-		dist[4] = (p_Corner[j+1]+p_rd[j]) - dist[0];
-		
-
-		dist[5] = 3*p[j];
-		dist[6] = (p_Corner[j] + p_pre[j] + p_right[j]) - dist[5];
-		dist[7] = (p_Corner[j+1] + p_pre[j] + p_right[j+1]) - dist[5];
-		dist[8] = (p_right[j] + p_rd[j] + p_down[j]) - dist[5];
-		dist[9] = (p_right[j+1] + p_down[j] + p_rd[j+1]) - dist[5];
-		
-		for (int i = 2; i < 5; ++i)
+		tmp = 2*p[j];
+     	min_value = (p_pre[j]+p_down[j]) - tmp;
+		dist[1] = (p_right[j]+p_right[j+1]) - tmp;
+		dist[2] = (p_Corner[j]+p_rd[j+1]) - tmp;
+		dist[3] = (p_Corner[j+1]+p_rd[j]) - tmp;
+		for (int i = 1; i < 4; ++i)
 		{
-		    if (fabsf(dist[i])<fabsf(dist[1])) dist[1] = dist[i];
-		    if (fabsf(dist[i+5])<fabsf(dist[6])) dist[6] = dist[i+5];
+		    if (fabsf(dist[i])<fabsf(min_value)) min_value = dist[i];
 		}
-		dist[1] /= 2;
-		dist[6] /= 3;
-		if (fabsf(dist[6])<fabsf(dist[1])) dist[1] = dist[6];
 
-		p[j] += (stepsize*dist[1]);
+		tmp = 3*p[j];
+		min_value *= 1.5f;
+		dist[0] = (p_Corner[j] + p_pre[j] + p_right[j]) - tmp;
+		dist[1] = (p_Corner[j+1] + p_pre[j] + p_right[j+1]) - tmp;
+		dist[2] = (p_right[j] + p_rd[j] + p_down[j]) - tmp;
+		dist[3] = (p_right[j+1] + p_down[j] + p_rd[j+1]) - tmp;
+		for (int i = 0; i < 4; ++i)
+		{
+		    if (fabsf(dist[i])<fabsf(min_value)) min_value = dist[i];
+		}
+
+		p[j] += (scaled_stepsize*min_value);
      }
 }
 
 inline void DM::MC_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
 	register float dist[8];
+	register float scaled_stepsize = stepsize/8;
 	for (int j = 1; j < N_half; ++j)
      {
      	
@@ -920,15 +923,14 @@ inline void DM::MC_one(float* __restrict p, float* __restrict p_right, float* __
           if(fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
           if(fabsf(dist[3])<fabsf(dist[0])) dist[0] = dist[3];
 
-		dist[0] /= 8;
-
-		p[j] += (stepsize*dist[0]);
+		p[j] += (scaled_stepsize*dist[0]);
      }
 }
 
 inline void DM::MC_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
 	register float dist[8];
+	register float scaled_stepsize = stepsize/8;
 	for (int j = 0; j < N_half-1; ++j)
      {
      	
@@ -945,10 +947,8 @@ inline void DM::MC_two(float* __restrict p, float* __restrict p_right, float* __
 		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
         if(fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
         if(fabsf(dist[3])<fabsf(dist[0])) dist[0] = dist[3];
-        
-		dist[0] /= 8;
 		
-		p[j] += (stepsize*dist[0]);
+		p[j] += (scaled_stepsize*dist[0]);
      }
 }
 
@@ -956,6 +956,7 @@ inline void DM::LS_one(float* __restrict p, float* __restrict p_right, float* __
 {
 	//one is for BT and WC, two is for BC and WT
 	register float dist[5];
+	register float scaled_stepsize = stepsize/7;
 	for (int j = 1; j < N_half; ++j)
      {
      	
@@ -987,10 +988,7 @@ inline void DM::LS_one(float* __restrict p, float* __restrict p_right, float* __
 		dist[1] = p_right[j-1] + p_down[j]  - p_rd[j-1] + dist[3];
 		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-
-		dist[0] /= 7;
-
-		p[j] += (stepsize*dist[0]);
+		p[j] += (scaled_stepsize*dist[0]);
      }
 }
 
@@ -998,6 +996,7 @@ inline void DM::LS_two(float* __restrict p, float* __restrict p_right, float* __
 {
 	//one is for BT and WC, two is for BC and WT
 	register float dist[5];
+	register float scaled_stepsize = stepsize/7;
 	for (int j = 0; j < N_half-1; ++j)
      {
      	
@@ -1027,17 +1026,15 @@ inline void DM::LS_two(float* __restrict p, float* __restrict p_right, float* __
 
      	dist[0] = p_right[j] + p_down[j] - p_rd[j] + dist[3];
      	if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-
-        
-		dist[0] /= 7;
 		
-		p[j] += (stepsize*dist[0]);
+		p[j] += (scaled_stepsize*dist[0]);
      }
 }
 
 inline void DM::TV_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
 	register float dist[13]; // first eight are distances, the rest are temp
+	register float scaled_stepsize = stepsize/5;
 	for (int j = 1; j < N_half; ++j)
      {
 		//temp var
@@ -1066,14 +1063,14 @@ inline void DM::TV_one(float* __restrict p, float* __restrict p_right, float* __
 		if (fabsf(dist[6])<fabsf(dist[4])) dist[4] = dist[6];
 		if (fabsf(dist[4])<fabsf(dist[0])) dist[0] = dist[4];
 
-		dist[0] /= 5;
-		p[j] += (stepsize*dist[0]);
+		p[j] += (scaled_stepsize*dist[0]);
      }
 }
 
 inline void DM::TV_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
 	register float dist[13]; // first eight are distances, the rest are temp
+	register float scaled_stepsize = stepsize/5;
 	for (int j = 0; j < N_half-1; ++j)
      {
 		dist[8] = p[j]*5;
@@ -1100,9 +1097,7 @@ inline void DM::TV_two(float* __restrict p, float* __restrict p_right, float* __
 		if (fabsf(dist[6])<fabsf(dist[4])) dist[4] = dist[6];
 		if (fabsf(dist[4])<fabsf(dist[0])) dist[0] = dist[4];
         
-
-		dist[0] /= 5;
-		p[j] += (stepsize*dist[0]);
+		p[j] += (scaled_stepsize*dist[0]);
      }
 }
 
@@ -1162,7 +1157,7 @@ inline void DM::DC_two(float* __restrict p, float* __restrict p_right, float* __
 /********************************************************************/
 inline float DM::Scheme_GC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex)
 {
-	float dist[4];
+	register float dist[4];
     dist[2] = 2*p[i];
     dist[0] = (p_pre[i] + p_nex[i]) - dist[2];
     dist[1] = (p[i-1] + p[i+1]) - dist[2];
@@ -1211,7 +1206,7 @@ inline float DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex)
     dist[1] = 2.5f*(p[i-1]+p[i+1]) + 5*p_pre[i]- p_pre[i-1] - p_pre[i+1] - tmp;
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-    dist[0] /= 8.0f;
+    dist[0] /= 8;
     
     return dist[0];
 }
@@ -1310,7 +1305,7 @@ inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
     dist[1] = all - p_nex[i-1] - p_nex[i] - p[i-1];
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
     */
-    dist[0]/=5.0;
+    dist[0]/=5;
     return dist[0];
 }
 
