@@ -4,7 +4,7 @@
  *
  **************************************************************************  
  
-            @phdthesis{gong:phd, 
+            @phdthesis{gong:phd, 
              title={Spectrally regularized surfaces}, 
              author={Gong, Yuanhao}, 
              year={2015}, 
@@ -89,25 +89,28 @@ void CurvatureFilter(itk::Image< float, 2 >::Pointer image, int FilterType, int 
 //estimate d_m (minimal projection signed distance)
 float GC(float & cur, float & prev, float & rigUp, float & right, float & rigDn, float & down, float & lefDn, float & left, float& lefUp)
 {
-	float d_m = (prev + down)/2 - cur;
-	float tmp = (left, right)/2 - cur;
+	float TM = 2*cur;
+	float d_m = prev + down - TM;
+	float tmp = left + right - TM;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
-	tmp = (lefUp, rigDn)/2 - cur;
+	tmp = lefUp + rigDn - TM;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
-	tmp = (lefDn, rigUp)/2 - cur;
+	tmp = lefDn + rigUp - TM;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
 
 	//hybrid
-	tmp = (left + lefUp + prev)/3 - cur;
+	d_m *= 1.5f;
+	TM *= 1.5f;
+	tmp = left + lefUp + prev - TM;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
-	tmp = (prev + rigUp + right)/3 - cur;
+	tmp = prev + rigUp + right - TM;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
-	tmp = (right + rigDn + down)/3 - cur;
+	tmp = right + rigDn + down - TM;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;  
-	tmp = (down + lefDn + left)/3 - cur;
+	tmp = down + lefDn + left - TM;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
 
-	return d_m;
+	return d_m/3;
 }
 float MC(float & cur, float & prev, float & rigUp, float & right, float & rigDn, float & down, float & lefDn, float & left, float& lefUp)
 {
