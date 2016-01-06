@@ -955,25 +955,26 @@ inline void DM::MC_two(float* __restrict p, float* __restrict p_right, float* __
 inline void DM::LS_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
 	//one is for BT and WC, two is for BC and WT
-	register float dist[5];
-	register float scaled_stepsize = stepsize/7;
+	register float dist[4];
+	register float scaled_stepsize = stepsize/10;
+	register float tmp;
 	for (int j = 1; j < N_half; ++j)
      {
      	
-		dist[4] = p[j]*2;
-		dist[0] = (p_pre[j]+p_down[j]) - dist[4];
-		dist[1] = (p_right[j-1]+p_right[j]) - dist[4];
+		tmp = p[j]*2;
+		dist[0] = (p_pre[j]+p_down[j]) - tmp;
+		dist[1] = (p_right[j-1]+p_right[j]) - tmp;
 		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-		dist[1] = (p_Corner[j-1]+p_rd[j]) - dist[4];
+		dist[1] = (p_Corner[j-1]+p_rd[j]) - tmp;
 		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-		dist[1] = (p_Corner[j]+p_rd[j-1]) - dist[4];
+		dist[1] = (p_Corner[j]+p_rd[j-1]) - tmp;
 		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-		dist[4] *= 3.5;
-		dist[0] *= 3.5;
+		tmp *= 3.5f;
+		dist[0] *= 3.3333f;
 
-		dist[2] = 3*(p_Corner[j] + p_rd[j-1]) - dist[4];
-		dist[3] = 3*(p_Corner[j-1] + p_rd[j]) - dist[4];
+		dist[2] = 3*(p_Corner[j] + p_rd[j-1]) - tmp;
+		dist[3] = 3*(p_Corner[j-1] + p_rd[j]) - tmp;
 
 
 		dist[1] = p_right[j-1] + p_pre[j] - p_Corner[j-1] + dist[2];
@@ -995,25 +996,26 @@ inline void DM::LS_one(float* __restrict p, float* __restrict p_right, float* __
 inline void DM::LS_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
 	//one is for BT and WC, two is for BC and WT
-	register float dist[5];
-	register float scaled_stepsize = stepsize/7;
+	register float dist[4];
+	register float scaled_stepsize = stepsize/10;
+	register float tmp;
 	for (int j = 0; j < N_half-1; ++j)
      {
      	
-		dist[4] = p[j]*2;
-		dist[0] = p_pre[j]+p_down[j] - dist[4];
-		dist[1] = p_right[j]+p_right[j+1] - dist[4];
+		tmp = p[j]*2;
+		dist[0] = p_pre[j]+p_down[j] - tmp;
+		dist[1] = p_right[j]+p_right[j+1] - tmp;
 		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-		dist[1] = p_Corner[j]+p_rd[j+1] - dist[4];
+		dist[1] = p_Corner[j]+p_rd[j+1] - tmp;
 		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-		dist[1] = p_Corner[j+1]+p_rd[j] - dist[4];
+		dist[1] = p_Corner[j+1]+p_rd[j] - tmp;
 		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-		dist[4] *= 3.5;
-		dist[0] *= 3.5;
+		tmp *= 3.5f;
+		dist[0] *= 3.3333f;
 
-		dist[2] = 3*(p_Corner[j+1] + p_rd[j]) - dist[4];
-		dist[3] = 3*(p_Corner[j] + p_rd[j+1]) - dist[4];
+		dist[2] = 3*(p_Corner[j+1] + p_rd[j]) - tmp;
+		dist[3] = 3*(p_Corner[j] + p_rd[j+1]) - tmp;
 
      	dist[0] = p_right[j] + p_pre[j] - p_Corner[j] + dist[2];
      	if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
@@ -1033,35 +1035,33 @@ inline void DM::LS_two(float* __restrict p, float* __restrict p_right, float* __
 
 inline void DM::TV_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
-	register float dist[13]; // first eight are distances, the rest are temp
+	register float dist[8], tmp[4];
 	register float scaled_stepsize = stepsize/5;
+	register float scaledP;
 	for (int j = 1; j < N_half; ++j)
      {
 		//temp var
-		dist[8] =  p[j]*5;
-		dist[9] = p_pre[j]+p_down[j] - dist[8];
-		dist[10] = p_right[j-1]+p_right[j] - dist[8];
-		dist[11] = p_Corner[j-1]+p_Corner[j]+p_pre[j] - dist[8];
-		dist[12] = p_rd[j-1]+p_rd[j]+p_down[j] - dist[8];
+		scaledP =  p[j]*5;
+		tmp[0] = p_pre[j]+p_down[j] - scaledP;
+		tmp[1] = p_right[j-1]+p_right[j] - scaledP;
+		tmp[2] = p_Corner[j-1]+p_Corner[j]+p_pre[j] - scaledP;
+		tmp[3] = p_rd[j-1]+p_rd[j]+p_down[j] - scaledP;
 
-     	dist[0] = dist[9] + p_Corner[j-1]+p_rd[j-1]+p_right[j-1];
-		dist[1] = dist[9] + p_Corner[j]+p_rd[j]+p_right[j];
-		dist[2] = dist[10] + p_Corner[j-1] + p_Corner[j] + p_pre[j];
-		dist[3] = dist[10] + p_rd[j-1] + p_rd[j] + p_down[j];
+     	dist[0] = tmp[0] + p_Corner[j-1]+p_rd[j-1]+p_right[j-1];
+		dist[1] = tmp[0] + p_Corner[j]+p_rd[j]+p_right[j];
+		dist[2] = tmp[1] + p_Corner[j-1] + p_Corner[j] + p_pre[j];
+		dist[3] = tmp[1] + p_rd[j-1] + p_rd[j] + p_down[j];
 
-		dist[4] = dist[11] + p_right[j-1]+p_rd[j-1];
-		dist[5] = dist[11] + p_right[j]+p_rd[j];
-		dist[6] = dist[12] + p_right[j-1]+p_Corner[j-1];
-		dist[7] = dist[12] + p_right[j]+p_Corner[j];
+		dist[4] = tmp[2] + p_right[j-1]+p_rd[j-1];
+		dist[5] = tmp[2] + p_right[j]+p_rd[j];
+		dist[6] = tmp[3] + p_right[j-1]+p_Corner[j-1];
+		dist[7] = tmp[3] + p_right[j]+p_Corner[j];
 
 
-        for (int i = 0; i < 8; i+=2)
+        for (int i = 1; i < 8; ++i)
 		{
-		    if (fabsf(dist[i+1])<fabsf(dist[i])) dist[i] = dist[i+1];
+		    if (fabsf(dist[i])<fabsf(dist[0])) dist[0] = dist[i];
 		}
-		if (fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
-		if (fabsf(dist[6])<fabsf(dist[4])) dist[4] = dist[6];
-		if (fabsf(dist[4])<fabsf(dist[0])) dist[0] = dist[4];
 
 		p[j] += (scaled_stepsize*dist[0]);
      }
@@ -1069,34 +1069,32 @@ inline void DM::TV_one(float* __restrict p, float* __restrict p_right, float* __
 
 inline void DM::TV_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, float& stepsize)
 {
-	register float dist[13]; // first eight are distances, the rest are temp
+	register float dist[8], tmp[4]; 
 	register float scaled_stepsize = stepsize/5;
+	register float scaledP;
 	for (int j = 0; j < N_half-1; ++j)
      {
-		dist[8] = p[j]*5;
-		dist[9] = p_pre[j]+p_down[j] - dist[8];
-		dist[10] = p_right[j]+p_right[j+1] - dist[8];
-		dist[11] = p_Corner[j]+p_Corner[j+1]+p_pre[j] - dist[8];
-		dist[12] = p_rd[j]+p_rd[j+1]+p_down[j] - dist[8];
+		scaledP = p[j]*5;
+		tmp[0] = p_pre[j]+p_down[j] - scaledP;
+		tmp[1] = p_right[j]+p_right[j+1] - scaledP;
+		tmp[2] = p_Corner[j]+p_Corner[j+1]+p_pre[j] - scaledP;
+		tmp[3] = p_rd[j]+p_rd[j+1]+p_down[j] - scaledP;
 
-     	dist[0] = dist[9] + p_Corner[j]+p_rd[j]+p_right[j];
-		dist[1] = dist[9] + p_Corner[j+1]+p_rd[j+1]+p_right[j+1];
-		dist[2] = dist[10] + p_Corner[j] + p_Corner[j+1] + p_pre[j];
-		dist[3] = dist[10] + p_rd[j] + p_rd[j+1] + p_down[j];
+     	dist[0] = tmp[0] + p_Corner[j]+p_rd[j]+p_right[j];
+		dist[1] = tmp[0] + p_Corner[j+1]+p_rd[j+1]+p_right[j+1];
+		dist[2] = tmp[1] + p_Corner[j] + p_Corner[j+1] + p_pre[j];
+		dist[3] = tmp[1] + p_rd[j] + p_rd[j+1] + p_down[j];
         
-		dist[4] = dist[11] +p_right[j]+p_rd[j];
-		dist[5] = dist[11] +p_right[j+1]+p_rd[j+1];
-		dist[6] = dist[12] +p_right[j]+p_Corner[j];
-		dist[7] = dist[12] +p_right[j+1]+p_Corner[j+1];
+		dist[4] = tmp[2] +p_right[j]+p_rd[j];
+		dist[5] = tmp[2] +p_right[j+1]+p_rd[j+1];
+		dist[6] = tmp[3] +p_right[j]+p_Corner[j];
+		dist[7] = tmp[3] +p_right[j+1]+p_Corner[j+1];
 
-        for (int i = 0; i < 8; i+=2)
+        for (int i = 1; i < 8; ++i)
 		{
-		    if (fabsf(dist[i+1])<fabsf(dist[i])) dist[i] = dist[i+1];
+		    if (fabsf(dist[i])<fabsf(dist[0])) dist[0] = dist[i];
 		}
-		if (fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
-		if (fabsf(dist[6])<fabsf(dist[4])) dist[4] = dist[6];
-		if (fabsf(dist[4])<fabsf(dist[0])) dist[0] = dist[4];
-        
+		
 		p[j] += (scaled_stepsize*dist[0]);
      }
 }
@@ -1217,7 +1215,11 @@ inline float DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex)
     //   f   a   b            0 1/2 0               3/7 1/7 -1/7
     //       I   e               -1 0                    -1  1/7
     //       c   d              1/2 0                        3/7
-    // 
+    // or (include central pixel)
+    //   f   a   b            0 1/3 0               3/10 1/10 -1/10
+    //       I   e              -2/3 0                   -7/10  1/10
+    //       c   d              1/3 0                        3/10
+
     float dist[4];
     float tmp = 2*p[i];
 
@@ -1231,8 +1233,8 @@ inline float DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex)
     
 
     
-    tmp *= 3.5;
-    dist[0] *= 3.5;
+    tmp *= 3.5f;
+    dist[0] *= 3.3333f;
 
     dist[2] = 3*(p_pre[i+1] + p_nex[i-1]) - tmp;
     dist[3] = 3*(p_pre[i-1] + p_nex[i+1]) - tmp;
@@ -1249,7 +1251,7 @@ inline float DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex)
     dist[1] = p_nex[i]  - p_nex[i+1] + p[i+1] + dist[2];
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-    dist[0] /= 7;
+    dist[0] /= 10;
 
     return dist[0];
 }
@@ -1305,6 +1307,7 @@ inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
     dist[1] = all - p_nex[i-1] - p_nex[i] - p[i-1];
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
     */
+    
     dist[0]/=5;
     return dist[0];
 }
