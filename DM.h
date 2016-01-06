@@ -856,7 +856,7 @@ inline void DM::GC_one(float* __restrict p, float* __restrict p_right, float* __
 		    if (fabsf(dist[i])<fabsf(min_value)) min_value = dist[i];
 		}
 
-		tmp = 3*p[j];
+		tmp *= 1.5f;
 		min_value *= 1.5f;
 		dist[0] = (p_Corner[j-1] + p_pre[j] + p_right[j-1]) - tmp;
 		dist[1] = (p_Corner[j] + p_pre[j] + p_right[j]) - tmp;
@@ -888,7 +888,7 @@ inline void DM::GC_two(float* __restrict p, float* __restrict p_right, float* __
 		    if (fabsf(dist[i])<fabsf(min_value)) min_value = dist[i];
 		}
 
-		tmp = 3*p[j];
+		tmp *= 1.5f;
 		min_value *= 1.5f;
 		dist[0] = (p_Corner[j] + p_pre[j] + p_right[j]) - tmp;
 		dist[1] = (p_Corner[j+1] + p_pre[j] + p_right[j+1]) - tmp;
@@ -920,8 +920,8 @@ inline void DM::MC_one(float* __restrict p, float* __restrict p_right, float* __
 		dist[3] = dist[6] + p_down[j]*5 -p_rd[j-1]-p_rd[j];
 
 		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-          if(fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
-          if(fabsf(dist[3])<fabsf(dist[0])) dist[0] = dist[3];
+        if(fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
+        if(fabsf(dist[3])<fabsf(dist[0])) dist[0] = dist[3];
 
 		p[j] += (scaled_stepsize*dist[0]);
      }
@@ -1156,33 +1156,31 @@ inline void DM::DC_two(float* __restrict p, float* __restrict p_right, float* __
 inline float DM::Scheme_GC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex)
 {
 	register float dist[4];
-    dist[2] = 2*p[i];
-    dist[0] = (p_pre[i] + p_nex[i]) - dist[2];
-    dist[1] = (p[i-1] + p[i+1]) - dist[2];
-    if (fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    register float tmp, min_value;
+    tmp = 2*p[i];
+    min_value = (p_pre[i] + p_nex[i]) - tmp;
+    dist[1] = (p[i-1] + p[i+1]) - tmp;
+    dist[2] = (p_pre[i-1] + p_nex[i+1]) - tmp;
+    dist[3]  = (p_nex[i-1] + p_pre[i+1]) - tmp;
+    for (int j = 1; j < 4; ++j)
+    {
+        if(fabsf(dist[j])<fabsf(min_value)) min_value = dist[j];
+    }
     
-    dist[1] = (p_pre[i-1] + p_nex[i+1]) - dist[2];
-    if (fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-    dist[1]  = (p_nex[i-1] + p_pre[i+1]) - dist[2];
-    if (fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-    dist[0] /= 2;
-    
-    
-    
-    dist[3] = 3*p[i];
-    dist[1] = (p_pre[i] + p_pre[i-1] + p[i-1])- dist[3];
-    
-    dist[2] = (p_pre[i] + p_pre[i+1] + p[i+1])- dist[3];
-    if (fabsf(dist[2])<fabsf(dist[1])) dist[1] = dist[2];
-    dist[2] = (p_nex[i] + p_nex[i-1] + p[i-1])- dist[3];
-    if (fabsf(dist[2])<fabsf(dist[1])) dist[1] = dist[2];
-    dist[2] = (p_nex[i] + p_nex[i+1] + p[i+1])- dist[3];
-    if (fabsf(dist[2])<fabsf(dist[1])) dist[1] = dist[2];
-    dist[1] /= 3;
+    tmp *= 1.5f;
+    min_value *= 1.5f;
+    dist[0] = (p_pre[i] + p_pre[i-1] + p[i-1])- tmp;
+    dist[1] = (p_pre[i] + p_pre[i+1] + p[i+1])- tmp;
+    dist[2] = (p_nex[i] + p_nex[i-1] + p[i-1])- tmp;
+    dist[3] = (p_nex[i] + p_nex[i+1] + p[i+1])- tmp;
+    for (int j = 0; j < 4; ++j)
+    {
+        if(fabsf(dist[j])<fabsf(min_value)) min_value = dist[j];
+    }
 
-    if (fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    min_value /= 3;
     
-    return dist[0];
+    return min_value;
 }
 
 inline float DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex)
@@ -1192,16 +1190,18 @@ inline float DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex)
     //       I   e
     //       c   d
     // return (2.5(a+c)+5*e)-b-d)/8.0;
-	float dist[2];
+	float dist[4];
     float tmp = 8*p[i];
+    dist[3] = 2.5f*(p_pre[i]+p_nex[i]) - tmp;
+    dist[2] = 2.5f*(p[i-1]+p[i+1]) -tmp;
 
-    dist[0] = 2.5f*(p_pre[i]+p_nex[i]) + 5*p[i+1] - p_pre[i+1] - p_nex[i+1] - tmp;
-    dist[1] = 2.5f*(p_pre[i]+p_nex[i]) + 5*p[i-1] - p_pre[i-1] - p_nex[i-1] - tmp;
+    dist[0] = dist[3] + 5*p[i+1] - p_pre[i+1] - p_nex[i+1];
+    dist[1] = dist[3] + 5*p[i-1] - p_pre[i-1] - p_nex[i-1];
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-    dist[1] = 2.5f*(p[i-1]+p[i+1]) + 5*p_nex[i] - p_nex[i-1] - p_nex[i+1] - tmp;
+    dist[1] = dist[2] - p_nex[i-1] + 5*p_nex[i] - p_nex[i+1];
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-    dist[1] = 2.5f*(p[i-1]+p[i+1]) + 5*p_pre[i]- p_pre[i-1] - p_pre[i+1] - tmp;
+    dist[1] = dist[2] - p_pre[i-1] + 5*p_pre[i] - p_pre[i+1];
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
     dist[0] /= 8;
@@ -1262,29 +1262,33 @@ inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
     //       I   e
     //       c   d
     // return (a+b+c+d+e)/5.0;
-	float dist[2];
+	register float dist[4], tmp[4];
 	 //old fashion, need 5*8 times plus or minus
-    float tmp = 5*p[i];
+    register float scaledP = 5*p[i], min_value;
 
-    dist[0] = p_pre[i]+ p_pre[i+1]+p[i+1]+p_nex[i] + p_nex[i+1] - tmp;
+    tmp[0] = p_pre[i-1]+p_pre[i] + p_pre[i+1] - scaledP;
+    tmp[1] = p_nex[i-1]+p_nex[i] + p_nex[i+1] - scaledP;
+    tmp[2] = p[i-1]+p[i+1];
+    tmp[3] = p_pre[i]+p_nex[i] - scaledP;
 
-    dist[1] = p_pre[i]+p[i-1]+p_nex[i] + p_pre[i-1] + p_nex[i-1] - tmp;
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-
-    dist[1] = p[i-1]+p[i+1]+p_nex[i] + p_nex[i-1] + p_nex[i+1] - tmp;
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-    dist[1] = p[i-1]+p[i+1]+p_pre[i] + p_pre[i-1] + p_pre[i+1] - tmp;
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    min_value = tmp[3]+ p_pre[i+1]+p[i+1] + p_nex[i+1];
+    dist[1] = tmp[3]+ p[i-1] + p_pre[i-1] + p_nex[i-1];
+    dist[2] = tmp[2]+tmp[1];
+    dist[3] = tmp[2]+tmp[0];
+    for (int j = 1; j < 4; ++j)
+    {
+        if(fabsf(dist[j])<fabsf(min_value)) min_value = dist[j];
+    }
 
     //diag
-    dist[1] = p_pre[i-1]+p_pre[i] + p_pre[i+1] + p[i-1] + p_nex[i-1]- tmp;
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-    dist[1] = p_pre[i-1]+p_pre[i] + p_pre[i+1] + p[i+1] + p_nex[i+1]- tmp;
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-    dist[1] = p_nex[i-1]+p_nex[i] + p_nex[i+1] + p[i-1] + p_pre[i-1]- tmp;
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-    dist[1] = p_nex[i-1]+p_nex[i] + p_nex[i+1] + p[i+1] + p_pre[i+1]- tmp;
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    dist[0] = tmp[0] + p[i-1] + p_nex[i-1];
+    dist[1] = tmp[0] + p[i+1] + p_nex[i+1];
+    dist[2] = tmp[1] + p[i-1] + p_pre[i-1];
+    dist[3] = tmp[1] + p[i+1] + p_pre[i+1];
+    for (int j = 0; j < 4; ++j)
+    {
+        if(fabsf(dist[j])<fabsf(min_value)) min_value = dist[j];
+    }
     
     /*
     //only need 8 + 8*3 = 32 times plut or minus, but slower than above code on my MacBook
@@ -1308,8 +1312,8 @@ inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
     */
     
-    dist[0]/=5;
-    return dist[0];
+    min_value/=5;
+    return min_value;
 }
 
 inline float DM::Scheme_DC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex)
