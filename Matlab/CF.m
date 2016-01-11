@@ -38,90 +38,95 @@ switch FilterType
    otherwise
       disp('Filter Type is not correct.'), return;
 end
-im = single(im); im_orig = im; result = im; [m,n]=size(im); Energy = zeros(ItNum,1); 
-%% four types of pixels %B = black, W = white, C = circle, T = triangle
-[BC_row,BC_col]=meshgrid(2:2:m-1,2:2:n-1);[BT_row,BT_col]=meshgrid(3:2:m-1,3:2:n-1);
-[WC_row,WC_col]=meshgrid(2:2:m-1,3:2:n-1);[WT_row,WT_col]=meshgrid(3:2:m-1,2:2:n-1);
-BC=sub2ind(size(im),reshape(BC_row,size(BC_row,1)*size(BC_row,2),1), reshape(BC_col,size(BC_col,1)*size(BC_col,2),1));
-BT=sub2ind(size(im),reshape(BT_row,size(BT_row,1)*size(BT_row,2),1), reshape(BT_col,size(BT_col,1)*size(BT_col,2),1));
-WC=sub2ind(size(im),reshape(WC_row,size(WC_row,1)*size(WC_row,2),1), reshape(WC_col,size(WC_col,1)*size(WC_col,2),1));
-WT=sub2ind(size(im),reshape(WT_row,size(WT_row,1)*size(WT_row,2),1), reshape(WT_col,size(WT_col,1)*size(WT_col,2),1));
+%pad to even size
+orig = im; [orig_r, orig_c]=size(orig); m=ceil(orig_r/2)*2; n=ceil(orig_c/2)*2;im = zeros(m,n,'single'); 
+im(1:orig_r,1:orig_c)=single(orig); im(m,:) = im(m-1,:); im(:,n) = im(:,n-1); result = im; Energy = zeros(ItNum,1); 
+
+%% four types of pixels %B = black, W = white, C = circle, T = triangle; r and c indicate row and column
+BC_r = 2:2:m-2; BC_c = 2:2:n-2; BT_r = 3:2:m-1; BT_c = 3:2:n-1;
+WC_r = 2:2:m-2; WC_c = 3:2:n-1; WT_r = 3:2:m-1; WT_c = 2:2:n-2;
 %% the neighbors' index
-BC_pre = BC -1;BC_nex = BC +1;BC_lef = BC -m;BC_rig = BC +m;BC_lu = BC-1-m;BC_ru = BC-1+m;BC_ld=BC+1-m;BC_rd=BC+m+1;
-BT_pre = BT -1;BT_nex = BT +1;BT_lef = BT -m;BT_rig = BT +m;BT_lu = BT-1-m;BT_ru = BT-1+m;BT_ld=BT+1-m;BT_rd=BT+m+1;
-WC_pre = WC -1;WC_nex = WC +1;WC_lef = WC -m;WC_rig = WC +m;WC_lu = WC-1-m;WC_ru = WC-1+m;WC_ld=WC+1-m;WC_rd=WC+m+1;
-WT_pre = WT -1;WT_nex = WT +1;WT_lef = WT -m;WT_rig = WT +m;WT_lu = WT-1-m;WT_ru = WT-1+m;WT_ld=WT+1-m;WT_rd=WT+m+1;
+BC_pre = BC_r-1; BC_nex = BC_r+1; BC_lef = BC_c-1; BC_rig = BC_c+1;
+BT_pre = BT_r-1; BT_nex = BT_r+1; BT_lef = BT_c-1; BT_rig = BT_c+1;
+WC_pre = WC_r-1; WC_nex = WC_r+1; WC_lef = WC_c-1; WC_rig = WC_c+1;
+WT_pre = WT_r-1; WT_nex = WT_r+1; WT_lef = WT_c-1; WT_rig = WT_c+1;
+[row,col] = ndgrid(1:size(BT_r,2),1:size(BT_c,2));
 %% Dual Mesh optimization
 for i = 1:ItNum
     Energy(i) = mycurv(result); 
     if (i>1) && Energy(i,1) > Energy(i-1,1) % if the energy start to increase
         break;
     end
-    result = myfun(result,BC,BC_pre,BC_nex,BC_lef,BC_rig,BC_lu,BC_ld,BC_ru,BC_rd,step);
-    result = myfun(result,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step);
-    result = myfun(result,WC,WC_pre,WC_nex,WC_lef,WC_rig,WC_lu,WC_ld,WC_ru,WC_rd,step);
-    result = myfun(result,WT,WT_pre,WT_nex,WT_lef,WT_rig,WT_lu,WT_ld,WT_ru,WT_rd,step);
+    result = myfun(result,BC_r,BC_c,BC_pre,BC_nex,BC_lef,BC_rig,row,col,step);
+    result = myfun(result,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step);
+    result = myfun(result,WC_r,WC_c,WC_pre,WC_nex,WC_lef,WC_rig,row,col,step);
+    result = myfun(result,WT_r,WT_c,WT_pre,WT_nex,WT_lef,WT_rig,row,col,step);
 end
-Energy = Energy(1:i,:);
+%unpad
+Energy = Energy(1:i,:); result = result(1:orig_r,1:orig_c);
 %% %%%%%%%%%%%%%%%%%%%% three projection operaters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function res = proj_TV(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
-res = im; BT5 = 5*im(BT); dist = zeros(size(BT_pre,1),8,'single');
-tmp1 = im(BT_pre) + im(BT_nex) - BT5; tmp2 = im(BT_lef) + im(BT_rig) - BT5;
-tmp3 = im(BT_pre) + im(BT_lu) + im(BT_ru) - BT5; tmp4 = im(BT_nex) + im(BT_ld) + im(BT_rd) - BT5;
-dist(:,1) = tmp1 + im(BT_lu) + im(BT_lef) + im(BT_ld); 
-dist(:,2) = tmp1 + im(BT_ru) + im(BT_rig) + im(BT_rd);
-dist(:,3) = tmp2 + im(BT_lu) + im(BT_pre) + im(BT_ru); 
-dist(:,4) = tmp2 + im(BT_ld) + im(BT_nex) + im(BT_rd); 
-dist(:,5) = tmp3 + im(BT_lef) + im(BT_ld); 
-dist(:,6) = tmp3 + im(BT_rig) + im(BT_rd);
-dist(:,7) = tmp4 + im(BT_lef) + im(BT_lu); 
-dist(:,8) = tmp4 + im(BT_rig) + im(BT_ru);
+function res = proj_TV(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
+res = im; BT5 = 5*im(BT_r,BT_c); dist = zeros([size(BT5),8],'single');
+tmp1 = im(BT_pre,BT_c) + im(BT_nex,BT_c) - BT5; tmp2 = im(BT_r,BT_lef) + im(BT_r,BT_rig) - BT5;
+tmp3 = im(BT_pre,BT_c) + im(BT_pre,BT_lef) + im(BT_pre,BT_rig) - BT5; 
+tmp4 = im(BT_nex,BT_c) + im(BT_nex,BT_lef) + im(BT_nex,BT_rig) - BT5;
+
+dist(:,:,1) = tmp1 + im(BT_pre,BT_lef) + im(BT_r,BT_lef) + im(BT_nex,BT_lef); 
+dist(:,:,2) = tmp1 + im(BT_pre,BT_rig) + im(BT_r,BT_rig) + im(BT_nex,BT_rig);
+dist(:,:,3) = tmp2 + im(BT_pre,BT_lef) + im(BT_pre,BT_c) + im(BT_pre,BT_rig); 
+dist(:,:,4) = tmp2 + im(BT_nex,BT_lef) + im(BT_nex,BT_c) + im(BT_nex,BT_rig); 
+dist(:,:,5) = tmp3 + im(BT_r,BT_lef) + im(BT_nex,BT_lef); 
+dist(:,:,6) = tmp3 + im(BT_r,BT_rig) + im(BT_nex,BT_rig);
+dist(:,:,7) = tmp4 + im(BT_r,BT_lef) + im(BT_pre,BT_lef); 
+dist(:,:,8) = tmp4 + im(BT_r,BT_rig) + im(BT_pre,BT_rig);
 %% minimal projection
-tmp = abs(dist); [v,ind] = min(tmp,[],2);
-tmp = sub2ind(size(dist),(1:size(dist,1))',ind);
-tmp = step/5*dist(tmp); res(BT) = res(BT) + tmp;
+tmp = abs(dist); [v,ind] = min(tmp,[],3);
+tmp = sub2ind(size(dist), row, col, ind);
+tmp = step/5*dist(tmp); res(BT_r,BT_c) = res(BT_r,BT_c) + tmp;
 
-function res = proj_MC(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
-res = im; BT8 = 8*im(BT); dist = zeros(size(BT_pre,1),4,'single');
-tmp1 = 2.5*(im(BT_pre) + im(BT_nex)) - BT8;
-tmp2 = 2.5*(im(BT_lef) + im(BT_rig)) - BT8;
-dist(:,1) = tmp1  + 5*im(BT_rig) - im(BT_ru) - im(BT_rd);
-dist(:,2) = tmp1  + 5*im(BT_lef) - im(BT_lu) - im(BT_ld);
-dist(:,3) = tmp2  + 5*im(BT_pre) - im(BT_lu) - im(BT_ru);
-dist(:,4) = tmp2  + 5*im(BT_nex) - im(BT_ld) - im(BT_rd);
-tmp = abs(dist); [v,ind] = min(tmp,[],2);
-tmp = sub2ind(size(dist),(1:size(dist,1))',ind);
-tmp = step/8*dist(tmp); res(BT) = res(BT) + tmp;
+function res = proj_MC(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
+res = im; BT8 = 8*im(BT_r,BT_c); dist = zeros([size(BT8),4],'single');
+tmp1 = 2.5*(im(BT_pre,BT_c) + im(BT_nex,BT_c)) - BT8;
+tmp2 = 2.5*(im(BT_r,BT_lef) + im(BT_r,BT_rig)) - BT8;
+dist(:,:,1) = tmp1  + 5*im(BT_r,BT_rig) - im(BT_pre,BT_rig) - im(BT_nex,BT_rig);
+dist(:,:,2) = tmp1  + 5*im(BT_r,BT_lef) - im(BT_pre,BT_lef) - im(BT_nex,BT_lef);
+dist(:,:,3) = tmp2  + 5*im(BT_pre,BT_c) - im(BT_pre,BT_lef) - im(BT_pre,BT_rig);
+dist(:,:,4) = tmp2  + 5*im(BT_nex,BT_c) - im(BT_nex,BT_lef) - im(BT_nex,BT_rig);
+tmp = abs(dist); [v,ind] = min(tmp,[],3);
+tmp = sub2ind(size(dist),row,col,ind);
+tmp = step/8*dist(tmp); res(BT_r,BT_c) = res(BT_r,BT_c) + tmp;
 
-function res = proj_GC(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
-res = im; BT2 = 2*im(BT); BT3 = 3*im(BT);dist = zeros(size(BT_pre,1),8,'single');
-dist(:,1) = im(BT_pre) + im(BT_nex) - BT2; dist(:,2) = im(BT_lef) + im(BT_rig) - BT2;
-dist(:,3) = im(BT_lu) + im(BT_rd) - BT2; dist(:,4) = im(BT_ld) + im(BT_ru) - BT2;
-dist(:,5) = im(BT_pre) + im(BT_lef) + im(BT_lu) - BT3; dist(:,6) = im(BT_pre) + im(BT_rig) + im(BT_ru) - BT3;
-dist(:,7) = im(BT_nex) + im(BT_lef) + im(BT_ld) - BT3; dist(:,8) = im(BT_nex) + im(BT_rig) + im(BT_rd) - BT3;
-dist(:,1:4) = dist(:,1:4)*1.5; %% minimal projection
-tmp = abs(dist); [v,ind] = min(tmp,[],2);
-tmp = sub2ind(size(dist),(1:size(dist,1))',ind);
-tmp = step/3*dist(tmp); res(BT) = res(BT) + tmp;
+function res = proj_GC(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
+res = im; BT2 = 2*im(BT_r,BT_c); BT3 = 3*im(BT_r,BT_c);dist = zeros([size(BT2),8],'single');
+dist(:,:,1) = im(BT_pre,BT_c) + im(BT_nex,BT_c) - BT2; dist(:,:,2) = im(BT_r,BT_lef) + im(BT_r,BT_rig) - BT2;
+dist(:,:,3) = im(BT_pre,BT_lef) + im(BT_nex,BT_rig) - BT2; dist(:,:,4) = im(BT_nex,BT_lef) + im(BT_pre,BT_rig) - BT2;
+dist(:,:,5) = im(BT_pre,BT_c) + im(BT_r,BT_lef) + im(BT_pre,BT_lef) - BT3; 
+dist(:,:,6) = im(BT_pre,BT_c) + im(BT_r,BT_rig) + im(BT_pre,BT_rig) - BT3;
+dist(:,:,7) = im(BT_nex,BT_c) + im(BT_r,BT_lef) + im(BT_nex,BT_lef) - BT3; 
+dist(:,:,8) = im(BT_nex,BT_c) + im(BT_r,BT_rig) + im(BT_nex,BT_rig) - BT3;
+dist(:,:,1:4) = dist(:,:,1:4)*1.5; %% scale to the same level
+tmp = abs(dist); [v,ind] = min(tmp,[],3);
+tmp = sub2ind(size(dist),row,col,ind);
+tmp = step/3*dist(tmp); res(BT_r,BT_c) = res(BT_r,BT_c) + tmp;
 
-function res = proj_BF(im,BT,BT_pre,BT_nex,BT_lef,BT_rig,BT_lu,BT_ld,BT_ru,BT_rd,step)
-res = im; BT2 = 2*im(BT); BT3 = 7*im(BT); 
-dist = zeros(size(BT_pre,1),8,'single');
-dist(:,1) = im(BT_pre) + im(BT_nex) - BT2; 
-dist(:,2) = im(BT_lef) + im(BT_rig) - BT2;
-dist(:,3) = im(BT_lu) + im(BT_rd) - BT2; 
-dist(:,4) = im(BT_ld) + im(BT_ru) - BT2;
-tmp1 = 3*(im(BT_ld) + im(BT_ru)) - BT3;
-tmp2 = 3*(im(BT_lu) + im(BT_rd)) - BT3;
-dist(:,5) = im(BT_pre) + im(BT_lef) - im(BT_lu) + tmp1; 
-dist(:,6) = im(BT_pre) + im(BT_rig) - im(BT_ru) + tmp2;
-dist(:,7) = im(BT_nex) + im(BT_lef)- im(BT_ld) + tmp2; 
-dist(:,8) = im(BT_nex) + im(BT_rig) - im(BT_rd) +tmp1;
-dist(:,1:4) = 10/3*dist(:,1:4); %% minimal projection
-tmp = abs(dist); [v,ind] = min(tmp,[],2);
-tmp = sub2ind(size(dist),(1:size(dist,1))',ind);
+function res = proj_BF(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
+res = im; BT2 = 2*im(BT_r,BT_c); BT7 = 7*im(BT_r,BT_c); 
+dist = zeros([size(BT2),8],'single');
+dist(:,:,1) = im(BT_pre,BT_c) + im(BT_nex,BT_c) - BT2; 
+dist(:,:,2) = im(BT_r,BT_lef) + im(BT_r,BT_rig) - BT2;
+dist(:,:,3) = im(BT_pre,BT_lef) + im(BT_nex,BT_rig) - BT2; 
+dist(:,:,4) = im(BT_nex,BT_lef) + im(BT_pre,BT_rig) - BT2;
+tmp1 = 3*(im(BT_nex,BT_lef) + im(BT_pre,BT_rig)) - BT7;
+tmp2 = 3*(im(BT_pre,BT_lef) + im(BT_nex,BT_rig)) - BT7;
+dist(:,:,5) = im(BT_pre,BT_c) + im(BT_r,BT_lef) - im(BT_pre,BT_lef) + tmp1; 
+dist(:,:,6) = im(BT_pre,BT_c) + im(BT_r,BT_rig) - im(BT_pre,BT_rig) + tmp2;
+dist(:,:,7) = im(BT_nex,BT_c) + im(BT_r,BT_lef)- im(BT_nex,BT_lef) + tmp2; 
+dist(:,:,8) = im(BT_nex,BT_c) + im(BT_r,BT_rig) - im(BT_nex,BT_rig) +tmp1;
+dist(:,:,1:4) = 10/3*dist(:,:,1:4); %% scale to the same level
+tmp = abs(dist); [v,ind] = min(tmp,[],3);
+tmp = sub2ind(size(dist),row,col,ind);
 tmp = step/10*dist(tmp); 
-res(BT) = res(BT) + tmp;
+res(BT_r,BT_c) = res(BT_r,BT_c) + tmp;
 
 %% %%%%%%%%%%%%%%%%%%%% three curvature energy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function en = curv_TV(im)
@@ -143,7 +148,7 @@ if nargin<3
     step = 1;
 end
 im = single(im); Energy = zeros(ItNum,1); result = im; [m,n]=size(im);
-[col,row]=meshgrid(1:n,1:m);
+[row,col]=ndgrid(1:m,1:n);
 %% not dual Mesh optimization
 for it = 1:ItNum
     Energy(it) = curv_TV(result);

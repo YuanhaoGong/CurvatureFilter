@@ -32,7 +32,7 @@ tic
 mytime = toc;
 
 %% show the running time and the result
-mystr = strcat('GC filter performance: ', num2str(mytime/Iteration),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
+mystr = strcat('GC filter performance: ', num2str(mytime/size(energy,1)),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
 disp(mystr)
 
 figure, imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
@@ -53,7 +53,7 @@ tic
 mytime = toc;
 
 %% show the running time and the result
-mystr = strcat('MC filter performance: ', num2str(mytime/Iteration),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
+mystr = strcat('MC filter performance: ', num2str(mytime/size(energy,1)),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
 disp(mystr)
 
 figure, imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
@@ -74,7 +74,7 @@ tic
 mytime = toc;
 
 %% show the running time and the result
-mystr = strcat('BF filter performance: ', num2str(mytime/Iteration),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
+mystr = strcat('BF filter performance: ', num2str(mytime/size(energy,1)),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
 disp(mystr)
 
 figure, imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
@@ -95,7 +95,7 @@ tic
 mytime = toc;
 
 %% show the running time and the result
-mystr = strcat('TV filter performance: ', num2str(mytime/Iteration),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
+mystr = strcat('TV filter performance: ', num2str(mytime/size(energy,1)),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
 disp(mystr)
 
 figure, imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
@@ -116,7 +116,7 @@ tic
 mytime = toc;
 
 %% show the running time and the result
-mystr = strcat('TV filter(fast) performance: ', num2str(mytime/Iteration),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
+mystr = strcat('TV filter(fast) performance: ', num2str(mytime/size(energy,1)),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
 disp(mystr)
 
 figure, imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
@@ -145,7 +145,7 @@ tic
 mytime = toc;
 
 %% show the running time and the result
-mystr = strcat('solver performance: ', num2str(mytime/MaxIteration),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
+mystr = strcat('solver performance: ', num2str(mytime/size(energy,1)),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
 disp(mystr)
 
 figure,imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
