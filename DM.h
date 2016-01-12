@@ -26,10 +26,6 @@ public:
     //write the result to disk
     void write();
     void write(const char* FileName);
-    //split imgF into four sets
-    void split();
-    //merge four sets back to imgF
-    void merge();
     //compute TV
     void TV(Mat & img, Mat & T);
     //compute MC
@@ -66,6 +62,10 @@ private:
     //pointer to the data
     const float* p_data;
 private:
+	//split imgF into four sets
+    void split();
+    //merge four sets back to imgF
+    void merge();
 	/*************************************** Split into 4 sets *********************************/
 	//one is for BT and WC, two is for BC and WT
 	inline void GC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
@@ -354,6 +354,8 @@ void DM::merge()
 void DM::Filter(const int Type, double & time, const int ItNum, const float stepsize)
 {
     clock_t Tstart, Tend;
+    //split imgF into four sets
+    split();
 
     void (DM::* Local_one)(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
     void (DM::* Local_two)(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
@@ -431,6 +433,9 @@ void DM::Filter(const int Type, double & time, const int ItNum, const float step
     }
     Tend = clock() - Tstart;   
     time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
+
+    //merge four sets back to imgF
+    merge();
 }
 
 //this nosplit is very useful for tasks like deconvolution, where the four sets need to be merged 
@@ -1215,8 +1220,8 @@ inline float DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex)
     //       I   e
     //       c   d
     // return (2.5(a+c)+5*e)-b-d)/8.0;
-	float dist[4];
-    float tmp = 8*p[i];
+	register float dist[4];
+    register float tmp = 8*p[i];
     dist[3] = 2.5f*(p_pre[i]+p_nex[i]) - tmp;
     dist[2] = 2.5f*(p[i-1]+p[i+1]) - tmp;
 
@@ -1245,40 +1250,39 @@ inline float DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex)
     //       I   e              -2/3 0                   -7/10  1/10
     //       c   d              1/3 0                        3/10
 
-    float dist[4];
-    float tmp = 2*p[i];
+    register float dist[4];
+    register float tmp = 2*p[i], min_value;
+    register float tmp_one, tmp_two;
 
+    tmp_one = p_nex[i-1] + p_pre[i+1];
+    tmp_two = p_pre[i-1] + p_nex[i+1];
+
+    min_value = p[i-1] + p[i+1] - tmp;
     dist[0] = p_pre[i]+p_nex[i] - tmp;
-    dist[1] = p[i-1] + p[i+1] - tmp;
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-    dist[1] = p_pre[i-1] + p_nex[i+1] - tmp;
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-    dist[1] = p_nex[i-1] + p_pre[i+1] - tmp;
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-    
-
+    dist[1] = tmp_two - tmp;
+    dist[2] = tmp_one - tmp;
+    if(fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
+    if(fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
+    if(fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
     
     tmp *= 3.5f;
-    dist[0] *= 3.3333f;
+    min_value *= 3.3333f;
 
-    dist[2] = 3*(p_pre[i+1] + p_nex[i-1]) - tmp;
-    dist[3] = 3*(p_pre[i-1] + p_nex[i+1]) - tmp;
+    tmp_one *= 3;
+    tmp_two *= 3;
+    tmp_one -= tmp;
+    tmp_two -= tmp;
 
-    dist[1] = p_pre[i] - p_pre[i-1] +  p[i-1] + dist[2];
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    dist[0] = p_pre[i] - p_pre[i-1] +  p[i-1] + tmp_one;
+    dist[1] = p_pre[i] - p_pre[i+1] + p[i+1] + tmp_two;
+    dist[2] = p_nex[i] - p_nex[i-1] + p[i-1] + tmp_two;
+    dist[3] = p_nex[i]  - p_nex[i+1] + p[i+1] + tmp_one;
+    if(fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
+    if(fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
+    if(fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
+    if(fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
 
-    dist[1] = p_pre[i] - p_pre[i+1] + p[i+1] + dist[3];
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-
-    dist[1] = p_nex[i] - p_nex[i-1] + p[i-1] + dist[3];
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-
-    dist[1] = p_nex[i]  - p_nex[i+1] + p[i+1] + dist[2];
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-
-    dist[0] /= 10;
-
-    return dist[0];
+    return min_value/10;
 }
 
 inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
@@ -1313,6 +1317,9 @@ inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
     {
         if(fabsf(dist[j])<fabsf(min_value)) min_value = dist[j];
     }
+
+    min_value/=5;
+    return min_value;
 
 /*
     tmp[0] = p_pre[i-1]+p_pre[i] + p_pre[i+1] - scaledP;
@@ -1359,10 +1366,10 @@ inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
     dist[1] = all - p_nex[i-1] - p_nex[i] - p[i-1];
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+    return dist[0]/5;
     */
     
-    min_value/=5;
-    return min_value;
 }
 
 inline float DM::Scheme_DC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex)

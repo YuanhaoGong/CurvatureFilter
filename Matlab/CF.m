@@ -43,14 +43,14 @@ orig = im; [orig_r, orig_c]=size(orig); m=ceil(orig_r/2)*2; n=ceil(orig_c/2)*2;i
 im(1:orig_r,1:orig_c)=single(orig); im(m,:) = im(m-1,:); im(:,n) = im(:,n-1); result = im; Energy = zeros(ItNum,1); 
 
 %% four types of pixels %B = black, W = white, C = circle, T = triangle; r and c indicate row and column
-BC_r = 2:2:m-2; BC_c = 2:2:n-2; BT_r = 3:2:m-1; BT_c = 3:2:n-1;
-WC_r = 2:2:m-2; WC_c = 3:2:n-1; WT_r = 3:2:m-1; WT_c = 2:2:n-2;
+BC_r = uint32(2:2:m-2); BC_c = uint32(2:2:n-2); BT_r = uint32(3:2:m-1); BT_c = uint32(3:2:n-1);
+WC_r = uint32(2:2:m-2); WC_c = uint32(3:2:n-1); WT_r = uint32(3:2:m-1); WT_c = uint32(2:2:n-2);
 %% the neighbors' index
 BC_pre = BC_r-1; BC_nex = BC_r+1; BC_lef = BC_c-1; BC_rig = BC_c+1;
 BT_pre = BT_r-1; BT_nex = BT_r+1; BT_lef = BT_c-1; BT_rig = BT_c+1;
 WC_pre = WC_r-1; WC_nex = WC_r+1; WC_lef = WC_c-1; WC_rig = WC_c+1;
 WT_pre = WT_r-1; WT_nex = WT_r+1; WT_lef = WT_c-1; WT_rig = WT_c+1;
-[row,col] = ndgrid(1:size(BT_r,2),1:size(BT_c,2));
+[row,col] = ndgrid(1:size(BT_r,2),1:size(BT_c,2)); row=uint32(row); col=uint32(col);
 %% Dual Mesh optimization
 for i = 1:ItNum
     Energy(i) = mycurv(result); 
@@ -81,8 +81,9 @@ dist(:,:,7) = tmp4 + im(BT_r,BT_lef) + im(BT_pre,BT_lef);
 dist(:,:,8) = tmp4 + im(BT_r,BT_rig) + im(BT_pre,BT_rig);
 %% minimal projection
 tmp = abs(dist); [v,ind] = min(tmp,[],3);
-tmp = sub2ind(size(dist), row, col, ind);
-tmp = step/5*dist(tmp); res(BT_r,BT_c) = res(BT_r,BT_c) + tmp;
+index = sub2ind(size(dist), row, col, ind);
+dm = step/5*dist(index); 
+res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 
 function res = proj_MC(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; BT8 = 8*im(BT_r,BT_c); dist = zeros([size(BT8),4],'single');
@@ -93,8 +94,9 @@ dist(:,:,2) = tmp1  + 5*im(BT_r,BT_lef) - im(BT_pre,BT_lef) - im(BT_nex,BT_lef);
 dist(:,:,3) = tmp2  + 5*im(BT_pre,BT_c) - im(BT_pre,BT_lef) - im(BT_pre,BT_rig);
 dist(:,:,4) = tmp2  + 5*im(BT_nex,BT_c) - im(BT_nex,BT_lef) - im(BT_nex,BT_rig);
 tmp = abs(dist); [v,ind] = min(tmp,[],3);
-tmp = sub2ind(size(dist),row,col,ind);
-tmp = step/8*dist(tmp); res(BT_r,BT_c) = res(BT_r,BT_c) + tmp;
+index = sub2ind(size(dist),row,col,ind);
+dm = step/8*dist(index); 
+res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 
 function res = proj_GC(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; BT2 = 2*im(BT_r,BT_c); BT3 = 3*im(BT_r,BT_c);dist = zeros([size(BT2),8],'single');
@@ -105,9 +107,11 @@ dist(:,:,6) = im(BT_pre,BT_c) + im(BT_r,BT_rig) + im(BT_pre,BT_rig) - BT3;
 dist(:,:,7) = im(BT_nex,BT_c) + im(BT_r,BT_lef) + im(BT_nex,BT_lef) - BT3; 
 dist(:,:,8) = im(BT_nex,BT_c) + im(BT_r,BT_rig) + im(BT_nex,BT_rig) - BT3;
 dist(:,:,1:4) = dist(:,:,1:4)*1.5; %% scale to the same level
-tmp = abs(dist); [v,ind] = min(tmp,[],3);
-tmp = sub2ind(size(dist),row,col,ind);
-tmp = step/3*dist(tmp); res(BT_r,BT_c) = res(BT_r,BT_c) + tmp;
+tmp = abs(dist); 
+[v,ind] = min(tmp,[],3); 
+index = sub2ind(size(dist),row,col,ind);
+dm = single(step/3)*dist(index); 
+res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 
 function res = proj_BF(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; BT2 = 2*im(BT_r,BT_c); BT7 = 7*im(BT_r,BT_c); 
@@ -124,20 +128,20 @@ dist(:,:,7) = im(BT_nex,BT_c) + im(BT_r,BT_lef)- im(BT_nex,BT_lef) + tmp2;
 dist(:,:,8) = im(BT_nex,BT_c) + im(BT_r,BT_rig) - im(BT_nex,BT_rig) +tmp1;
 dist(:,:,1:4) = 10/3*dist(:,:,1:4); %% scale to the same level
 tmp = abs(dist); [v,ind] = min(tmp,[],3);
-tmp = sub2ind(size(dist),row,col,ind);
-tmp = step/10*dist(tmp); 
-res(BT_r,BT_c) = res(BT_r,BT_c) + tmp;
+index = sub2ind(size(dist),row,col,ind);
+dm = step/10*dist(index); 
+res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 
 %% %%%%%%%%%%%%%%%%%%%% three curvature energy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function en = curv_TV(im)
-t = single(im);[gx,gy]=gradient(t); g = abs(gx) + abs(gy);
+[gx,gy]=gradient(im); g = abs(gx) + abs(gy);
 en = sum(g(:));
 function en = curv_MC(im)
-t = single(im);[gx,gy]=gradient(t);[gxx,gxy]=gradient(gx);[gyx,gyy]=gradient(gy);
+[gx,gy]=gradient(im);[gxx,gxy]=gradient(gx);[gyx,gyy]=gradient(gy);
 g = ((1+gy.^2).*gxx + gx.*gy.*(gxy+gyx)+ (1+gx.^2).*gyy)./((1+gx.^2+gy.^2).^1.5)/2;
 en = sum(abs(g(:)));
 function en = curv_GC(im)
-t = single(im);[gx,gy]=gradient(t);[gxx,gxy]=gradient(gx);[gyx,gyy]=gradient(gy);
+[gx,gy]=gradient(im);[gxx,gxy]=gradient(gx);[gyx,gyy]=gradient(gy);
 g = (gxx.*gyy-gxy.*gyx)./((1+gx.^2+gy.^2).^1.5); en = sum(abs(g(:)));
 
 %% %%%%%%%%%%%%%%%%%%%%%%% Fast TV Filter %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

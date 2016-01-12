@@ -48,9 +48,9 @@ int main(int argc, char** argv)
        cout<<" -------------------- Curvature Filter ------------------------- "<<endl;
        cout<<" Please cite Yuanhao's PhD thesis and related papers. Thank you! "<<endl;
        cout<<" --------------------------------------------------------------- \n\n";
-       cout<<"usage: main imageName filterType Iterations.\n For example: ./cf lena.bmp m 30\n";
+       cout<<"usage: main imageName filterType Iterations.\nFor example: ./cf lena.bmp m 30\n";
        cout<<"             or              "<<endl;
-       cout<<"usage: main imageName filterType MaxItNum lambda DataFitOrder.\n For example: ./cf lena.bmp m 30 1.2 1.5\n";
+       cout<<"usage: main imageName filterType MaxItNum lambda DataFitOrder.\nFor example: ./cf lena.bmp m 30 1.2 1.5\n";
        cout<<"************************************************\n";
        cout<<"Possible Filter Type: t (Total Variation) \n";
        cout<<"                      m (Mean Curvature) \n";
@@ -74,11 +74,8 @@ int main(int argc, char** argv)
     //just smooth the image by the filter
     if (argc==4)
     {
-      DualMesh.split();
       DualMesh.Filter(Type, mytime, ItNum);
       cout<<"runtime is "<<mytime<<" milliseconds."<<endl;
-
-      DualMesh.merge();
       DualMesh.write();
 
       DualMesh.read(argv[1]);
