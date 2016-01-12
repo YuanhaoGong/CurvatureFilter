@@ -100,8 +100,10 @@ res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 
 function res = proj_GC(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; BT2 = 2*im(BT_r,BT_c); BT3 = 3*im(BT_r,BT_c);dist = zeros([size(BT2),8],'single');
-dist(:,:,1) = im(BT_pre,BT_c) + im(BT_nex,BT_c) - BT2; dist(:,:,2) = im(BT_r,BT_lef) + im(BT_r,BT_rig) - BT2;
-dist(:,:,3) = im(BT_pre,BT_lef) + im(BT_nex,BT_rig) - BT2; dist(:,:,4) = im(BT_nex,BT_lef) + im(BT_pre,BT_rig) - BT2;
+dist(:,:,1) = im(BT_pre,BT_c) + im(BT_nex,BT_c) - BT2; 
+dist(:,:,2) = im(BT_r,BT_lef) + im(BT_r,BT_rig) - BT2;
+dist(:,:,3) = im(BT_pre,BT_lef) + im(BT_nex,BT_rig) - BT2; 
+dist(:,:,4) = im(BT_nex,BT_lef) + im(BT_pre,BT_rig) - BT2;
 dist(:,:,5) = im(BT_pre,BT_c) + im(BT_r,BT_lef) + im(BT_pre,BT_lef) - BT3; 
 dist(:,:,6) = im(BT_pre,BT_c) + im(BT_r,BT_rig) + im(BT_pre,BT_rig) - BT3;
 dist(:,:,7) = im(BT_nex,BT_c) + im(BT_r,BT_lef) + im(BT_nex,BT_lef) - BT3; 
