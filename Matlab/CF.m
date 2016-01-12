@@ -117,18 +117,16 @@ res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 
 function res = proj_BF(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; BT2 = 2*im(BT_r,BT_c); BT7 = 7*im(BT_r,BT_c); 
-dist = zeros([size(BT2),8],'single');
+dist = zeros([size(BT2),6],'single');
 dist(:,:,1) = im(BT_pre,BT_c) + im(BT_nex,BT_c) - BT2; 
 dist(:,:,2) = im(BT_r,BT_lef) + im(BT_r,BT_rig) - BT2;
-dist(:,:,3) = im(BT_pre,BT_lef) + im(BT_nex,BT_rig) - BT2; 
-dist(:,:,4) = im(BT_nex,BT_lef) + im(BT_pre,BT_rig) - BT2;
 tmp1 = 3*(im(BT_nex,BT_lef) + im(BT_pre,BT_rig)) - BT7;
 tmp2 = 3*(im(BT_pre,BT_lef) + im(BT_nex,BT_rig)) - BT7;
-dist(:,:,5) = im(BT_pre,BT_c) + im(BT_r,BT_lef) - im(BT_pre,BT_lef) + tmp1; 
-dist(:,:,6) = im(BT_pre,BT_c) + im(BT_r,BT_rig) - im(BT_pre,BT_rig) + tmp2;
-dist(:,:,7) = im(BT_nex,BT_c) + im(BT_r,BT_lef)- im(BT_nex,BT_lef) + tmp2; 
-dist(:,:,8) = im(BT_nex,BT_c) + im(BT_r,BT_rig) - im(BT_nex,BT_rig) +tmp1;
-dist(:,:,1:4) = 10/3*dist(:,:,1:4); %% scale to the same level
+dist(:,:,3) = im(BT_pre,BT_c) + im(BT_r,BT_lef) - im(BT_pre,BT_lef) + tmp1; 
+dist(:,:,4) = im(BT_pre,BT_c) + im(BT_r,BT_rig) - im(BT_pre,BT_rig) + tmp2;
+dist(:,:,5) = im(BT_nex,BT_c) + im(BT_r,BT_lef)- im(BT_nex,BT_lef) + tmp2; 
+dist(:,:,6) = im(BT_nex,BT_c) + im(BT_r,BT_rig) - im(BT_nex,BT_rig) +tmp1;
+dist(:,:,1:2) = 10/3*dist(:,:,1:2); %% scale to the same level
 tmp = abs(dist); [v,ind] = min(tmp,[],3);
 index = sub2ind(size(dist),row,col,ind);
 dm = step/10*dist(index); 
