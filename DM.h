@@ -460,14 +460,14 @@ void DM::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
     		{
     			Local = &DM::Scheme_GC; cout<<"GC Filter: "; break;
     		}
-			case 3:
-			{
-			    Local = &DM::Scheme_DC; cout<<"DC Filter: "; break;
-			}
-			case 4:
-			{
-				Local = &DM::Scheme_LS; cout<<"Bernstein Filter: "; break;
-			}
+     	case 3:
+     	{
+     	    Local = &DM::Scheme_DC; cout<<"DC Filter: "; break;
+     	}
+     	case 4:
+     	{
+     		Local = &DM::Scheme_LS; cout<<"Bernstein Filter: "; break;
+     	}
     		default:
     		{
     			cout<<"The filter type is wrong. Do nothing."<<endl;
@@ -992,10 +992,6 @@ inline void DM::LS_one(float* __restrict p, float* __restrict p_right, float* __
 		dist[0] = (p_pre[j]+p_down[j]) - tmp;
 		dist[1] = (p_right[j-1]+p_right[j]) - tmp;
 		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-		dist[1] = (p_Corner[j-1]+p_rd[j]) - tmp;
-		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-		dist[1] = (p_Corner[j]+p_rd[j-1]) - tmp;
-		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
 		tmp *= 3.5f;
 		dist[0] *= 3.3333f;
@@ -1033,10 +1029,6 @@ inline void DM::LS_two(float* __restrict p, float* __restrict p_right, float* __
 		dist[0] = p_pre[j]+p_down[j] - tmp;
 		dist[1] = p_right[j]+p_right[j+1] - tmp;
 		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-		dist[1] = p_Corner[j]+p_rd[j+1] - tmp;
-		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-		dist[1] = p_Corner[j+1]+p_rd[j] - tmp;
-		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
 		tmp *= 3.5f;
 		dist[0] *= 3.3333f;
@@ -1063,7 +1055,9 @@ inline void DM::LS_two(float* __restrict p, float* __restrict p_right, float* __
 inline void DM::TV_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
 {
 	register float dist[8], tmp[4];
-	register float scaled_stepsize = stepsize/5;
+	// if use 6, the scheme includes central pixel;
+	// if use 5, the scheme does not include central pixel (my PhD thesis uses five)
+	register float scaled_stepsize = stepsize/6;
 	register float scaledP, absMin;
 	int index;
 	for (int j = 1; j < N_half; ++j)
@@ -1097,8 +1091,10 @@ inline void DM::TV_one(float* __restrict p, float* __restrict p_right, float* __
 
 inline void DM::TV_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
 {
-	register float dist[8], tmp[4]; 
-	register float scaled_stepsize = stepsize/5;
+	register float dist[8], tmp[4];
+	// if use 6, the scheme includes central pixel;
+	// if use 5, the scheme does not include central pixel (my PhD thesis uses five) 
+	register float scaled_stepsize = stepsize/6;
 	register float scaledP, absMin;
 	int index;
 	for (int j = 0; j < N_half-1; ++j)
@@ -1254,35 +1250,27 @@ inline float DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex)
     register float tmp = 2*p[i], min_value;
     register float tmp_one, tmp_two;
 
-    tmp_one = p_nex[i-1] + p_pre[i+1];
-    tmp_two = p_pre[i-1] + p_nex[i+1];
-
-    min_value = p[i-1] + p[i+1] - tmp;
-    dist[0] = p_pre[i]+p_nex[i] - tmp;
-    dist[1] = tmp_two - tmp;
-    dist[2] = tmp_one - tmp;
+    min_value = p_pre[i]+p_nex[i] - tmp;
+    dist[0] = p[i-1] + p[i+1] - tmp;
     if(fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
-    if(fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
-    if(fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
     
     tmp *= 3.5f;
     min_value *= 3.3333f;
 
-    tmp_one *= 3;
-    tmp_two *= 3;
-    tmp_one -= tmp;
-    tmp_two -= tmp;
+    tmp_one = 3*(p_nex[i-1] + p_pre[i+1]) - tmp;
+    tmp_two = 3*(p_pre[i-1] + p_nex[i+1]) - tmp;
 
-    dist[0] = p_pre[i] - p_pre[i-1] +  p[i-1] + tmp_one;
+    dist[0] = p_pre[i] - p_pre[i-1] + p[i-1] + tmp_one;
     dist[1] = p_pre[i] - p_pre[i+1] + p[i+1] + tmp_two;
-    dist[2] = p_nex[i] - p_nex[i-1] + p[i-1] + tmp_two;
-    dist[3] = p_nex[i]  - p_nex[i+1] + p[i+1] + tmp_one;
+    dist[2] = p_nex[i] - p_nex[i+1] + p[i+1] + tmp_one;
+    dist[3] = p_nex[i] - p_nex[i-1] + p[i-1] + tmp_two;
+    
+    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    if(fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
+    if(fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
     if(fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
-    if(fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
-    if(fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
-    if(fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
 
-    return min_value/10;
+    return min_value/10;//here 10 means including central pixel while 7 means exclusion
 }
 
 inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
@@ -1318,7 +1306,10 @@ inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
         if(fabsf(dist[j])<fabsf(min_value)) min_value = dist[j];
     }
 
-    min_value/=5;
+    min_value/=6;
+    // if use 6, the scheme includes central pixel;
+	// if use 5, the scheme does not include central pixel (my PhD thesis uses five)
+
     return min_value;
 
 /*
