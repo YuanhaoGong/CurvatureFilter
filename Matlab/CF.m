@@ -111,7 +111,10 @@ res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 
 function res = proj_GC(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; BT2 = 2*im(BT_r,BT_c); BT3 = 3*im(BT_r,BT_c);dist = zeros([size(BT2),8],'single');
+<<<<<<< HEAD
 %compute all possible projection distances
+=======
+>>>>>>> origin/master
 dist(:,:,1) = im(BT_pre,BT_c) + im(BT_nex,BT_c) - BT2; 
 dist(:,:,2) = im(BT_r,BT_lef) + im(BT_r,BT_rig) - BT2;
 dist(:,:,3) = im(BT_pre,BT_lef) + im(BT_nex,BT_rig) - BT2; 
@@ -132,19 +135,30 @@ res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 function res = proj_BF(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; BT2 = 2*im(BT_r,BT_c); BT7 = 7*im(BT_r,BT_c); 
 dist = zeros([size(BT2),6],'single');
+<<<<<<< HEAD
 tmp1 = 3*(im(BT_nex,BT_lef) + im(BT_pre,BT_rig)) - BT7;
 tmp2 = 3*(im(BT_pre,BT_lef) + im(BT_nex,BT_rig)) - BT7;
 %compute all possible projection distances
 dist(:,:,1) = im(BT_pre,BT_c) + im(BT_nex,BT_c) - BT2; 
 dist(:,:,2) = im(BT_r,BT_lef) + im(BT_r,BT_rig) - BT2;
+=======
+dist(:,:,1) = im(BT_pre,BT_c) + im(BT_nex,BT_c) - BT2; 
+dist(:,:,2) = im(BT_r,BT_lef) + im(BT_r,BT_rig) - BT2;
+tmp1 = 3*(im(BT_nex,BT_lef) + im(BT_pre,BT_rig)) - BT7;
+tmp2 = 3*(im(BT_pre,BT_lef) + im(BT_nex,BT_rig)) - BT7;
+>>>>>>> origin/master
 dist(:,:,3) = im(BT_pre,BT_c) + im(BT_r,BT_lef) - im(BT_pre,BT_lef) + tmp1; 
 dist(:,:,4) = im(BT_pre,BT_c) + im(BT_r,BT_rig) - im(BT_pre,BT_rig) + tmp2;
 dist(:,:,5) = im(BT_nex,BT_c) + im(BT_r,BT_lef)- im(BT_nex,BT_lef) + tmp2; 
 dist(:,:,6) = im(BT_nex,BT_c) + im(BT_r,BT_rig) - im(BT_nex,BT_rig) +tmp1;
 dist(:,:,1:2) = 10/3*dist(:,:,1:2); %% scale to the same level
+<<<<<<< HEAD
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3);
+=======
+tmp = abs(dist); [v,ind] = min(tmp,[],3);
+>>>>>>> origin/master
 index = sub2ind(size(dist),row,col,ind);
 dm = step/10*dist(index); 
 %update current pixels
