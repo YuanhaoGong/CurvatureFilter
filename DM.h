@@ -112,7 +112,7 @@ double DM::PSNR(const Mat& I1, const Mat& I2)
      else
      {
          double  mse =sse /(double)(I1.total());
-         double psnr = 20*log10(255) - 10*log10(mse);
+         double psnr = 20*log10(255.0f) - 10*log10(mse);
          return psnr;
      }
 }
