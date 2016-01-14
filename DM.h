@@ -2,14 +2,16 @@
  *
  *                           Curvature Filter 
  *
+ *                             Yuanhao Gong
+ *                        gongyuanhao@gmail.com
  **************************************************************************  
  
-            @phdthesis{gong:phd, 
-             title={Spectrally regularized surfaces}, 
-             author={Gong, Yuanhao}, 
-             year={2015}, 
-             school={ETH Zurich, Nr. 22616},
-             note={http://dx.doi.org/10.3929/ethz-a-010438292}}
+@phdthesis{gong:phd, 
+ title={Spectrally regularized surfaces}, 
+ author={Gong, Yuanhao}, 
+ year={2015}, 
+ school={ETH Zurich, Nr. 22616},
+ note={http://dx.doi.org/10.3929/ethz-a-010438292}}
 
  *=========================================================================*/
 
@@ -98,21 +100,6 @@ double DM::PSNR()
 
 double DM::PSNR(const Mat& I1, const Mat& I2)
 {
-     //in our case, I1 and I2 are float type, in [0, 1].
-     double v_min, v_max;
-     minMaxLoc(I1, &v_min, &v_max);
-     if (v_max>1.01)
-     {
-         cout<<"Input in PSNR is not correct.\n";
-         return 0;
-     }
-     minMaxLoc(I2, &v_min, &v_max);
-     if (v_max>1.01)
-     {
-         cout<<"Input in PSNR is not correct.\n";
-         return 0;
-     }
-
      Mat diff;
      absdiff(I1, I2, diff);           // |I1 - I2|
      diff = diff.mul(diff);           // |I1 - I2|^2
@@ -125,7 +112,7 @@ double DM::PSNR(const Mat& I1, const Mat& I2)
      else
      {
          double  mse =sse /(double)(I1.total());
-         double psnr = -10.0*log10(mse);
+         double psnr = 20*log10(255) - 10*log10(mse);
          return psnr;
      }
 }
@@ -143,7 +130,6 @@ void DM::read(const char* FileName)
 
     Mat tmp2 = Mat::zeros(tmp.rows, tmp.cols, CV_32FC1);
     tmp.convertTo(tmp2, CV_32FC1);
-    tmp2 /=255;
     M_orig = tmp2.rows;
     N_orig = tmp2.cols;
     M = (int)ceil(M_orig/2.0)*2;
@@ -170,7 +156,6 @@ void DM::set(Mat& file)
     
     Mat tmp2 = Mat::zeros(file.rows, file.cols, CV_32FC1);
     file.convertTo(tmp2, CV_32FC1);
-    tmp2 /=255;
     M_orig = tmp2.rows;
     N_orig = tmp2.cols;
     M = (int)ceil(M_orig/2.0)*2;
@@ -197,7 +182,7 @@ void DM::write()
 void DM::write(const char* FileName)
 {
     Mat tmp = Mat::zeros(M_orig,N_orig,CV_8UC1);
-    Mat tmp2 = imgF*255;
+    Mat tmp2 = imgF;
     tmp2(Range(0,M_orig),Range(0,N_orig)).convertTo(tmp, CV_8UC1);
 
     vector<int> params;
