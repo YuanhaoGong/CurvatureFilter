@@ -23,7 +23,7 @@ Therefore, **Curvature filters focus on minimizing the regularization term,** wh
 ![image](images/phs.PNG)
 ***
 ## The role of curvature filters
-Curvature filters link the variational models with image filters. Meanwhile, they consider high performance computing.                                                              ![ image ](images/role.png)
+Curvature filters link the variational models with image filters. Meanwhile, they implicitly impose differential geometry.                                                              ![ image ](images/role.png)
 ***
 ## Running Time (10 iterations on 512X512 Lena image)
 | Filter       | Bilateral Filter | Guided Filter | Guided Filter | MC Filter | MC Filter | GC Filter | GC Filter| Bernstein Filter |
