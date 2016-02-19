@@ -56,7 +56,10 @@ We show three lines' profiles during minimizing a mean curvature regularized mod
 The noise free test image can be downloaded **[here](images/developable.png)**
 ### 4) Cartoon Texture Decomposition
 ![image](images/decomposition.png)
-### 5) Multi Resolution Analysis
+### 5) Registration
+from left to right: original reference image, distorted source image, registered results by TV filter, MC filter and GC filter.
+![image](images/lena_circ.png)
+### 6) Multi Resolution Analysis
 ![image](images/scaleSpace.png)
 
 ***
