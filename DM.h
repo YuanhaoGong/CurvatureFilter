@@ -29,13 +29,15 @@ public:
     void write();
     void write(const char* FileName);
     //compute TV
-    void TV(Mat & img, Mat & T);
+    void TV(const Mat & img, Mat & T);
     //compute MC
-    void MC(Mat & img, Mat & MC);
+    void MC(const Mat & img, Mat & MC);
+    void MC_new(const Mat & img, Mat & MC);//new scheme, Eq.6.12 in my thesis
     //compute GC
-    void GC(Mat & img, Mat & GC);
+    void GC(const Mat & img, Mat & GC);
+    void GC_new(const Mat & img, Mat & MC);//new scheme, Eq.6.16 in my thesis
     //compute energy for given TV, MC, or GC image
-    double energy(Mat& img);
+    double energy(const Mat& img);
     //compute data fitting energy between image and imgF
     double DataFitEnergy(Mat& tmp, double order);
     //PSNR
@@ -193,9 +195,10 @@ void DM::write(const char* FileName)
 }
 
 //compute Total Variation
-void DM::TV(Mat & imgF, Mat & T)
+void DM::TV(const Mat & imgF, Mat & T)
 {
-    float * p_row, * pn_row, * p_t;
+    const float * p_row, * pn_row;
+    float * p_t;
 	if (true) //the switch between TVL1 and TVL2
 	{
 		for(int i = 1; i < imgF.rows-1; i++)
@@ -226,10 +229,11 @@ void DM::TV(Mat & imgF, Mat & T)
 }
 
 //compute Mean Curvature
-void DM::MC(Mat& imgF, Mat & MC)
+void DM::MC(const Mat& imgF, Mat & MC)
 {
 	//classical scheme is used
-    float * p_row, *pn_row, *pp_row, *p_d;
+    const float * p_row, *pn_row, *pp_row;
+    float *p_d;
     float Ix, Iy, Ixx, Iyy, num, den;
     for(int i = 1; i < imgF.rows-1; i++)
     {
@@ -252,11 +256,36 @@ void DM::MC(Mat& imgF, Mat & MC)
     }
 }
 
+//compute Mean Curvature, Eq.6.12 in my thesis
+void DM::MC_new(const Mat& imgF, Mat & MC)
+{
+	//new scheme used
+    const float * p_row, *pn_row, *pp_row;
+    float * p_d;
+    float one, five;
+    for(int i = 1; i < imgF.rows-1; i++)
+    {
+        p_row = imgF.ptr<float>(i);
+        pn_row = imgF.ptr<float>(i+1);
+        pp_row = imgF.ptr<float>(i-1);
+        p_d = MC.ptr<float>(i);
+        
+        for(int j = 1; j < imgF.cols-1; j++)
+        {
+            one = pp_row[j-1] + pp_row[j+1] + pn_row[j-1] + pn_row[j+1];
+            five = pp_row[j] + p[j-1] + p[j+1] + pn_row[j];
+
+            p_d[j] = 0.3125f*five - 0.0625f*one - p_row[j];
+        }   
+    }
+}
+
 //compute Gaussian curvature
-void DM::GC(Mat & imgF, Mat &GC)
+void DM::GC(const Mat & imgF, Mat &GC)
 {
 	//classical scheme is used
-    float * p_row, *pn_row, *pp_row, *p_d;
+    const float * p_row, *pn_row, *pp_row;
+    float *p_d;
     float Ix, Iy, Ixx, Iyy, Ixy, num, den;
     for(int i = 1; i < imgF.rows-1; i++)
     {
@@ -281,8 +310,63 @@ void DM::GC(Mat & imgF, Mat &GC)
     }
 }
 
+//new scheme, Eq.6.16 in my thesis
+void DM::GC_new(const Mat & img, Mat & MC)
+{
+    const float * p_row, *pn_row, *pp_row;
+    float * p_d;
+    float six[6];
+    float sum_ud, sum_lr, sum_diag_one, sum_diag_two;
+    float diff_ud, diff_lr, diff_diag_one, diff_diag_two;
+    float tmp, tmp2;
+    for(int i = 1; i < imgF.rows-1; ++i)
+    {
+        p_row = imgF.ptr<float>(i);
+        pn_row = imgF.ptr<float>(i+1);
+        pp_row = imgF.ptr<float>(i-1);
+        p_d = MC.ptr<float>(i);
+        
+        for(int j = 1; j < imgF.cols-1; ++j)
+        {
+            sum_lr = p_row[j-1] + p_row[j+1];
+            diff_lr= p_row[j-1] - p_row[j+1];
+            sum_ud = pp_row[j] + pn_row[j];
+            diff_ud= pp_row[j] - pn_row[j];
+            sum_diag_one = pp_row[j-1] + pn_row[j+1];
+            diff_diag_one= pp_row[j-1] - pn_row[j+1];
+            sum_diag_two = pp_row[j+1] + pn_row[j-1];
+            diff_diag_two= pp_row[j+1] - pn_row[j-1];
+
+            tmp = sum_lr + sum_ud;
+            tmp2= sum_diag_one + sum_diag_two;
+
+            six[0] = tmp*0.254187f + tmp2*0.00210414f - 1.02516f*p[j];
+            six[1] = tmp*0.229983f - tmp2*0.286419f - 0.225743f*p[j]; 
+            six[2] = (sum_diag_two - sum_diag_one)*0.306186f;
+            six[3] = (sum_lr - sum_ud)*0.176777f;
+            six[4] = (diff_diag_one - diff_diag_two)/4 - diff_lr/2;
+            six[5] = diff_ud/2 - (diff_diag_one+diff_diag_two)/4;
+
+            six[0]*=six[0];
+            six[1]*=six[1];
+            six[2]*=six[2];
+            six[3]*=six[3];
+            six[4]*=six[4];
+            six[5]*=six[5];
+
+            six[4] += six[5];
+            six[3] += six[4];
+            six[2] += six[3];
+            six[1] += six[2];
+            six[0] -= six[1];
+            p_d[j] = six[0];
+			
+        }   
+    }
+}
+
 //compute the curvature energy
-double DM::energy(Mat &img)
+double DM::energy(const Mat &img)
 {
     Scalar tmp = sum(cv::abs(img));
     return tmp(0);
@@ -525,7 +609,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
 {
     clock_t Tstart, Tend;
     float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex);
-    void (DM::* curvature_compute)(Mat& img, Mat& curv);
+    void (DM::* curvature_compute)(const Mat& img, Mat& curv);
 
     Mat curvature = Mat::zeros(M, N, CV_32FC1);
     Mat dataFit = Mat::zeros(M, N, CV_32FC1);
@@ -680,7 +764,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
  {
  	clock_t Tstart, Tend;
     float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex);
-    void (DM::* curvature_compute)(Mat& img, Mat& curv);
+    void (DM::* curvature_compute)(const Mat& img, Mat& curv);
 
     Mat curvature = Mat::zeros(M, N, CV_32FC1);
     Mat dataFit = Mat::zeros(M, N, CV_32FC1);
