@@ -14,16 +14,14 @@ function [result, Energy] = CF(im, FilterType, ItNum, step)
 % 
 % =========================================================================
 % FilterType: 0(Total Variation), 1(Mean Curvature), 2(Gaussian Curvature)
-%             4(Bernstein Filter), 5(Fast TV Filter)
+%             4(Bernstein Filter)
 if (nargin~=3) && (nargin~=4)
     disp('Input are not correct.'), return;
 end
 if nargin==3
     step = 1;
 end
-if (size(im,3)>1)
-    disp('This only works for gray scale image.'), return;
-end
+
 switch FilterType
     case 0
         myfun = @proj_TV; mycurv = @curv_TV;
@@ -33,14 +31,13 @@ switch FilterType
         myfun = @proj_GC; mycurv = @curv_GC;
     case 4
         myfun = @proj_BF; mycurv = @curv_MC;
-    case 5
-        [result, Energy] = TVFilterFast(im, ItNum, step); return;
    otherwise
       disp('Filter Type is not correct.'), return;
 end
 %pad to even size
-orig = single(im); [orig_r, orig_c]=size(orig); m=ceil(orig_r/2)*2; n=ceil(orig_c/2)*2;im = zeros(m,n,'single'); 
-im(1:orig_r,1:orig_c)=orig; im(m,:) = im(m-1,:); im(:,n) = im(:,n-1); 
+orig = single(im); [orig_r, orig_c, orig_z]=size(orig); m=ceil(orig_r/2)*2; n=ceil(orig_c/2)*2;
+im = zeros(m,n,orig_z,'single'); 
+im(m,:,:) = im(m-1,:,:); im(:,n,:) = im(:,n-1,:); im(1:orig_r,1:orig_c,1:orig_z)=orig; 
 %init
 result = im; Energy = zeros(ItNum,1);
 
@@ -55,18 +52,20 @@ WC_pre = WC_r-1; WC_nex = WC_r+1; WC_lef = WC_c-1; WC_rig = WC_c+1;
 WT_pre = WT_r-1; WT_nex = WT_r+1; WT_lef = WT_c-1; WT_rig = WT_c+1;
 [row,col] = ndgrid(1:size(BT_r,2),1:size(BT_c,2)); row=uint32(row); col=uint32(col);
 %% Dual Mesh optimization
-for i = 1:ItNum
-    Energy(i) = mycurv(result); 
-    if (i>1) && Energy(i,1) > Energy(i-1,1) % if the energy start to increase
-        break;
+for ch = 1:orig_z
+    for i = 1:ItNum
+        Energy(i) = mycurv(result); 
+        if (i>1) && Energy(i,1) > Energy(i-1,1) % if the energy start to increase
+            break;
+        end
+        result(:,:,ch) = myfun(result(:,:,ch),BC_r,BC_c,BC_pre,BC_nex,BC_lef,BC_rig,row,col,step);
+        result(:,:,ch) = myfun(result(:,:,ch),BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step);
+        result(:,:,ch) = myfun(result(:,:,ch),WC_r,WC_c,WC_pre,WC_nex,WC_lef,WC_rig,row,col,step);
+        result(:,:,ch) = myfun(result(:,:,ch),WT_r,WT_c,WT_pre,WT_nex,WT_lef,WT_rig,row,col,step);
     end
-    result = myfun(result,BC_r,BC_c,BC_pre,BC_nex,BC_lef,BC_rig,row,col,step);
-    result = myfun(result,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step);
-    result = myfun(result,WC_r,WC_c,WC_pre,WC_nex,WC_lef,WC_rig,row,col,step);
-    result = myfun(result,WT_r,WT_c,WT_pre,WT_nex,WT_lef,WT_rig,row,col,step);
 end
 %unpad
-result = result(1:orig_r,1:orig_c);
+result = result(1:orig_r,1:orig_c,1:orig_z);
 Energy = Energy(1:i,:); 
 %% %%%%%%%%%%%%%%%%%%%% three projection operaters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function res = proj_TV(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
@@ -161,62 +160,3 @@ en = sum(abs(g(:)));
 function en = curv_GC(im)
 [gx,gy]=gradient(im);[gxx,gxy]=gradient(gx);[gyx,gyy]=gradient(gy);
 g = (gxx.*gyy-gxy.*gyx)./((1+gx.^2+gy.^2).^1.5); en = sum(abs(g(:)));
-
-%% %%%%%%%%%%%%%%%%%%%%%%% Fast TV Filter %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [result, Energy] = TVFilterFast(im, ItNum, step)
-%%% this is the fast TV filter based on box filter to remove the overlapped
-%%% computation.
-if nargin<3
-    step = 1;
-end
-im = single(im); Energy = zeros(ItNum,1); result = im; [m,n]=size(im);
-[row,col]=ndgrid(1:m,1:n);
-%% not dual Mesh optimization
-for it = 1:ItNum
-    Energy(it) = curv_TV(result);
-    [total, vert, horiz, diag] = Half_Box(result);
-    result = SimpleUpdate(result, total, vert, horiz, diag, step, row, col);
-end
-function res = SimpleUpdate(im, total, vert, horiz, diag, step, row, col)
-res = im; BT5 = total - 5*im; BT6 = total - 6*im; [m,n]=size(im); dist = zeros(m,n,8,'single');
-%compute all possible projection distances
-dist(1:m-1,:,1) = BT6(1:m-1,:) - horiz(2:m,:); 
-dist(2:m,:,2) = BT6(2:m,:) - horiz(1:m-1,:); 
-dist(:,2:n,3) = BT6(:,2:n) - vert(:,1:n-1); 
-dist(:,1:n-1,4) = BT6(:,1:n-1) - vert(:,2:n); 
-dist(:,:,5) = BT5 - diag; 
-dist(:,1:n-1,6) = BT5(:,1:n-1) - diag(:,2:n); 
-dist(1:m-1,1:n-1,7) = BT5(1:m-1,1:n-1) - diag(2:m,2:n) ; 
-dist(1:m-1,:,8) = BT5(1:m-1,:) - diag(2:m,:); 
-%% minimal projection
-tmp = abs(dist); 
-[v,ind] = min(tmp,[],3);
-ind2 = sub2ind(size(dist),row,col,ind);
-dm = step/5*dist(ind2); 
-res = im + dm;
-
-function [total, vert, horiz, diag] = Half_Box(im)
-%compute the total, vertical and horizontal sum in a 3X3 window
-%compute the diag(left up corner) sum
-[m,n]=size(im);vert = zeros(m,n,'single'); horiz = vert; diag = vert;
-total = myboxfilter(im);
-imCum = cumsum(im,1);
-vert(3:m-1,:) = imCum(4:m,:) - imCum(1:m-3,:);
-imCum = cumsum(im,2);
-horiz(:,3:n-1) = imCum(:,4:n) - imCum(:,1:n-3);
-diag(2:m,2:n) = im(2:m,2:n) + im(1:m-1,2:n) + im(2:m,1:n-1) + im(1:m-1,1:n-1);
-
-function imDst = myboxfilter(imSrc)
-[hei, wid] = size(imSrc); imDst = zeros(size(imSrc),'single'); r=1;
-%cumulative sum over Y axis
-imCum = cumsum(imSrc, 1);
-%difference over Y axis
-imDst(1:r+1, :) = imCum(1+r:2*r+1, :);
-imDst(r+2:hei-r, :) = imCum(2*r+2:hei, :) - imCum(1:hei-2*r-1, :);
-imDst(hei-r+1:hei, :) = repmat(imCum(hei, :), [r, 1]) - imCum(hei-2*r:hei-r-1, :);
-%cumulative sum over X axis
-imCum = cumsum(imDst, 2);
-%difference over Y axis
-imDst(:, 1:r+1) = imCum(:, 1+r:2*r+1);
-imDst(:, r+2:wid-r) = imCum(:, 2*r+2:wid) - imCum(:, 1:wid-2*r-1);
-imDst(:, wid-r+1:wid) = repmat(imCum(:, wid), [1, r]) - imCum(:, wid-2*r:wid-r-1);
