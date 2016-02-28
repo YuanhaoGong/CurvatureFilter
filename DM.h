@@ -114,7 +114,7 @@ double DM::PSNR(const Mat& I1, const Mat& I2)
      else
      {
          double  mse =sse /(double)(I1.total());
-         double psnr = 20*log10(255.0f) - 10*log10(mse);
+         psnr = - 10*log10(mse);
          return psnr;
      }
 }
@@ -138,7 +138,8 @@ void DM::read(const char* FileName)
     N = (int)ceil(N_orig/2.0)*2;
     M_half = M/2;
     N_half = N/2;
-
+    
+    tmp2 /= 255.0f;
 
     image = Mat::zeros(M,N,CV_32FC1);
     tmp2.copyTo(image(Range(0,M_orig),Range(0,N_orig)));
@@ -164,7 +165,8 @@ void DM::set(Mat& file)
     N = (int)ceil(N_orig/2.0)*2;
     M_half = M/2;
     N_half = N/2;
-
+    
+    tmp2 /= 255.0f;
 
     image = Mat::zeros(M,N,CV_32FC1);
     tmp2.copyTo(image(Range(0,M_orig),Range(0,N_orig)));
@@ -184,7 +186,7 @@ void DM::write()
 void DM::write(const char* FileName)
 {
     Mat tmp = Mat::zeros(M_orig,N_orig,CV_8UC1);
-    Mat tmp2 = imgF;
+    Mat tmp2 = imgF*255.0f;
     tmp2(Range(0,M_orig),Range(0,N_orig)).convertTo(tmp, CV_8UC1);
 
     vector<int> params;
