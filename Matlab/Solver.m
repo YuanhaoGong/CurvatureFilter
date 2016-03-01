@@ -122,7 +122,7 @@ t = single(im);[gx,gy]=gradient(t); g = abs(gx) + abs(gy);
 en = sum(g(:));
 function en = curv_MC(im)
 t = single(im);[gx,gy]=gradient(t);[gxx,gxy]=gradient(gx);[gyx,gyy]=gradient(gy);
-g = ((1+gy.^2).*gxx + gx.*gy.*(gxy+gyx)+ (1+gx.^2).*gyy)./((1+gx.^2+gy.^2).^1.5)/2;
+g = ((1+gy.^2).*gxx - gx.*gy.*(gxy+gyx)+ (1+gx.^2).*gyy)./((1+gx.^2+gy.^2).^1.5)/2;
 en = sum(abs(g(:)));
 function en = curv_GC(im)
 t = single(im);[gx,gy]=gradient(t);[gxx,gxy]=gradient(gx);[gyx,gyy]=gradient(gy);
