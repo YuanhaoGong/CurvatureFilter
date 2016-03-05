@@ -45,8 +45,8 @@ public:
     double PSNR(const Mat& I1, const Mat& I2);
     /******************* filters *****************************/
     // Type=0, TV; Type=1, MC; Type=2, GC; (Type=3, DC, experimental);
-	// the stepsize parameter is in (0,1]:smaller means more iterations, but reaches lower energy level; larger means less iterations, but converges at higher energy level
-	//////////////////////////////////////////////////////////
+    // the stepsize parameter is in (0,1]:smaller means more iterations, but reaches lower energy level; larger means less iterations, but converges at higher energy level
+    //////////////////////////////////////////////////////////
     void Filter(const int Type, double & time, const int ItNum = 10, const float stepsize=1);//with split
     void FilterNoSplit(const int Type, double & time, const int ItNum = 10, const float stepsize=1);//direct on imgF 
     /******************* generic solver for variational models *****************************/
@@ -66,31 +66,29 @@ private:
     //pointer to the data
     const float* p_data;
 private:
-	//split imgF into four sets
+    //split imgF into four sets
     void split();
     //merge four sets back to imgF
     void merge();
-	/*************************************** Split into 4 sets *********************************/
-	//one is for BT and WC, two is for BC and WT
-	inline void GC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-	inline void GC_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-	
-	inline void MC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-	inline void MC_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-	
-	inline void TV_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-	inline void TV_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
+    /*************************************** Split into 4 sets *********************************/
+    //one is for BT and WC, two is for BC and WT
+    inline void GC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
+    inline void GC_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
+
+    inline void MC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
+    inline void MC_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
+    inline void TV_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
+    inline void TV_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
 
     inline void DC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
     inline void DC_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-	
-	inline void LS_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-	inline void LS_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-	
-	/*************************************** Direct on imgF (no split) ***********************/
-	inline float Scheme_GC(int i, float * p_pre, float * p, float * p_nex);
-	inline float Scheme_MC(int i, float * p_pre, float * p, float * p_nex);
-	inline float Scheme_TV(int i, float * p_pre, float * p, float * p_nex);
+    inline void LS_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
+    inline void LS_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
+
+    /*************************************** Direct on imgF (no split) ***********************/
+    inline float Scheme_GC(int i, float * p_pre, float * p, float * p_nex);
+    inline float Scheme_MC(int i, float * p_pre, float * p, float * p_nex);
+    inline float Scheme_TV(int i, float * p_pre, float * p, float * p_nex);
     inline float Scheme_DC(int i, float * p_pre, float * p, float * p_nex);
     inline float Scheme_LS(int i, float * p_pre, float * p, float * p_nex);
 };
@@ -201,39 +199,39 @@ void DM::TV(const Mat & imgF, Mat & T)
 {
     const float * p_row, * pn_row;
     float * p_t;
-	if (true) //the switch between TVL1 and TVL2
-	{
-		for(int i = 1; i < imgF.rows-1; i++)
-		{
-			p_row = imgF.ptr<float>(i);
-			pn_row = imgF.ptr<float>(i+1);
-			p_t = T.ptr<float>(i);
-			for(int j = 1; j < imgF.cols-1; j++)
-			{
-				p_t[j] = fabsf(p_row[j+1] - p_row[j]) + fabsf(pn_row[j] - p_row[j]);
-			}   
-		}
-	}else //TVL2
-	{
-		float gx, gy;
-		for(int i = 1; i < imgF.rows-1; i++)
-		{
-			p_row = imgF.ptr<float>(i);
-			pn_row = imgF.ptr<float>(i+1);
-			p_t = T.ptr<float>(i);
-			for(int j = 1; j < imgF.cols-1; j++)
-			{
-				gx = p_row[j+1] - p_row[j]; gy = pn_row[j] - p_row[j];
-				p_t[j] = sqrt(gx*gx + gy*gy);
-			}   
-		}
-	}
+    if (true) //the switch between TVL1 and TVL2
+    {
+        for(int i = 1; i < imgF.rows-1; i++)
+        {
+            p_row = imgF.ptr<float>(i);
+            pn_row = imgF.ptr<float>(i+1);
+            p_t = T.ptr<float>(i);
+            for(int j = 1; j < imgF.cols-1; j++)
+            {
+                p_t[j] = fabsf(p_row[j+1] - p_row[j]) + fabsf(pn_row[j] - p_row[j]);
+            }   
+        }
+    }else //TVL2
+    {
+        float gx, gy;
+        for(int i = 1; i < imgF.rows-1; i++)
+        {
+            p_row = imgF.ptr<float>(i);
+            pn_row = imgF.ptr<float>(i+1);
+            p_t = T.ptr<float>(i);
+            for(int j = 1; j < imgF.cols-1; j++)
+            {
+                gx = p_row[j+1] - p_row[j]; gy = pn_row[j] - p_row[j];
+                p_t[j] = sqrt(gx*gx + gy*gy);
+            }   
+        }
+    }
 }
 
 //compute Mean Curvature
 void DM::MC(const Mat& imgF, Mat & MC)
 {
-	//classical scheme is used
+    //classical scheme is used
     const float * p_row, *pn_row, *pp_row;
     float *p_d;
     float Ix, Iy, Ixx, Iyy, num, den;
@@ -261,7 +259,7 @@ void DM::MC(const Mat& imgF, Mat & MC)
 //compute Mean Curvature, Eq.6.12 in my thesis
 void DM::MC_new(const Mat& imgF, Mat & MC)
 {
-	//new scheme used
+    //new scheme used
     const float * p_row, *pn_row, *pp_row;
     float * p_d;
     float one, five;
@@ -285,7 +283,7 @@ void DM::MC_new(const Mat& imgF, Mat & MC)
 //compute Gaussian curvature
 void DM::GC(const Mat & imgF, Mat &GC)
 {
-	//classical scheme is used
+    //classical scheme is used
     const float * p_row, *pn_row, *pp_row;
     float *p_d;
     float Ix, Iy, Ixx, Iyy, Ixy, num, den;
@@ -362,7 +360,6 @@ void DM::GC_new(const Mat & img, Mat & MC)
             six[1] += six[2];
             six[0] -= six[1];
             p_d[j] = six[0];
-			
         }   
     }
 }
@@ -433,36 +430,36 @@ void DM::Filter(const int Type, double & time, const int ItNum, const float step
 
     switch(Type)
     {
-    		case 0:
-    		{
-    			Local_one = &DM::TV_one; Local_two = &DM::TV_two; 
-    			cout<<"TV Filter: "; break;
-    		}
-    		case 1:
-    		{
-    			Local_one = &DM::MC_one; Local_two = &DM::MC_two; 
-    			cout<<"MC Filter: "; break;
-    		}
-    		case 2:
-    		{
-    			Local_one = &DM::GC_one; Local_two = &DM::GC_two; 
-    			cout<<"GC Filter: "; break;
-    		}
-            case 3:
-            {
-                Local_one = &DM::DC_one; Local_two = &DM::DC_two; 
-                cout<<"DC Filter: "; break;
-            }
-            case 4:
-            {
-            	Local_one = &DM::LS_one; Local_two = &DM::LS_two;
-            	cout<<"Bernstein Filter: "; break;
-            }
-    		default:
-    		{
-    			cout<<"The filter type is wrong. Do nothing."<<endl;
-    			return;
-    		}
+        case 0:
+        {
+            Local_one = &DM::TV_one; Local_two = &DM::TV_two; 
+            cout<<"TV Filter: "; break;
+        }
+        case 1:
+        {
+            Local_one = &DM::MC_one; Local_two = &DM::MC_two; 
+            cout<<"MC Filter: "; break;
+        }
+        case 2:
+        {
+            Local_one = &DM::GC_one; Local_two = &DM::GC_two; 
+            cout<<"GC Filter: "; break;
+        }
+        case 3:
+        {
+            Local_one = &DM::DC_one; Local_two = &DM::DC_two; 
+            cout<<"DC Filter: "; break;
+        }
+        case 4:
+        {
+            Local_one = &DM::LS_one; Local_two = &DM::LS_two;
+            cout<<"Bernstein Filter: "; break;
+        }
+        default:
+        {
+            cout<<"The filter type is wrong. Do nothing."<<endl;
+            return;
+        }
     }
 
     Tstart = clock();
@@ -471,34 +468,34 @@ void DM::Filter(const int Type, double & time, const int ItNum, const float step
         //BC
         for (int i = 0; i < M_half-1; ++i)
         {
-                p = BC.ptr<float>(i); p_right = WC.ptr<float>(i);
-                p_down = WT.ptr<float>(i+1); p_rd = BT.ptr<float>(i+1); 
-                p_pre = WT.ptr<float>(i); p_Corner = BT.ptr<float>(i);
-                (this->*Local_two)(p, p_right, p_down, p_rd, p_pre, p_Corner, stepsize);
+            p = BC.ptr<float>(i); p_right = WC.ptr<float>(i);
+            p_down = WT.ptr<float>(i+1); p_rd = BT.ptr<float>(i+1); 
+            p_pre = WT.ptr<float>(i); p_Corner = BT.ptr<float>(i);
+            (this->*Local_two)(p, p_right, p_down, p_rd, p_pre, p_Corner, stepsize);
         }
         //BT
         for (int i = 1; i < M_half; ++i)
         {
-                p = BT.ptr<float>(i); p_right = WT.ptr<float>(i);
-                p_down = WC.ptr<float>(i); p_rd = BC.ptr<float>(i); 
-                p_pre = WC.ptr<float>(i-1); p_Corner = BC.ptr<float>(i-1);
-                (this->*Local_one)(p, p_right, p_down, p_rd, p_pre, p_Corner, stepsize);
+            p = BT.ptr<float>(i); p_right = WT.ptr<float>(i);
+            p_down = WC.ptr<float>(i); p_rd = BC.ptr<float>(i); 
+            p_pre = WC.ptr<float>(i-1); p_Corner = BC.ptr<float>(i-1);
+            (this->*Local_one)(p, p_right, p_down, p_rd, p_pre, p_Corner, stepsize);
         }
         //WC
         for (int i = 0; i < M_half-1; ++i)
         {
-                p = WC.ptr<float>(i); p_right = BC.ptr<float>(i);
-                p_down = BT.ptr<float>(i+1); p_rd = WT.ptr<float>(i+1); 
-                p_pre = BT.ptr<float>(i); p_Corner = WT.ptr<float>(i);
-                (this->*Local_one)(p, p_right, p_down, p_rd, p_pre, p_Corner, stepsize);
+            p = WC.ptr<float>(i); p_right = BC.ptr<float>(i);
+            p_down = BT.ptr<float>(i+1); p_rd = WT.ptr<float>(i+1); 
+            p_pre = BT.ptr<float>(i); p_Corner = WT.ptr<float>(i);
+            (this->*Local_one)(p, p_right, p_down, p_rd, p_pre, p_Corner, stepsize);
         }
-    	//WT
+        //WT
         for (int i = 1; i < M_half; ++i)
         {
-                p = WT.ptr<float>(i); p_right = BT.ptr<float>(i);
-                p_down = BC.ptr<float>(i); p_rd = WC.ptr<float>(i); 
-                p_pre = BC.ptr<float>(i-1); p_Corner = WC.ptr<float>(i-1);
-                (this->*Local_two)(p, p_right, p_down, p_rd, p_pre, p_Corner, stepsize);
+            p = WT.ptr<float>(i); p_right = BT.ptr<float>(i);
+            p_down = BC.ptr<float>(i); p_rd = WC.ptr<float>(i); 
+            p_pre = BC.ptr<float>(i-1); p_Corner = WC.ptr<float>(i-1);
+            (this->*Local_two)(p, p_right, p_down, p_rd, p_pre, p_Corner, stepsize);
         }
         
     }
@@ -519,31 +516,31 @@ void DM::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
 
     switch(Type)
     {
-    		case 0:
-    		{
-    			Local = &DM::Scheme_TV; cout<<"TV Filter: "; break;
-    		}
-    		case 1:
-    		{
-    			Local = &DM::Scheme_MC; cout<<"MC Filter: "; break;
-    		}
-    		case 2:
-    		{
-    			Local = &DM::Scheme_GC; cout<<"GC Filter: "; break;
-    		}
-     	case 3:
-     	{
-     	    Local = &DM::Scheme_DC; cout<<"DC Filter: "; break;
-     	}
-     	case 4:
-     	{
-     		Local = &DM::Scheme_LS; cout<<"Bernstein Filter: "; break;
-     	}
-    		default:
-    		{
-    			cout<<"The filter type is wrong. Do nothing."<<endl;
-    			return;
-    		}
+        case 0:
+        {
+            Local = &DM::Scheme_TV; cout<<"TV Filter: "; break;
+        }
+        case 1:
+        {
+            Local = &DM::Scheme_MC; cout<<"MC Filter: "; break;
+        }
+        case 2:
+        {
+            Local = &DM::Scheme_GC; cout<<"GC Filter: "; break;
+        }
+        case 3:
+        {
+         Local = &DM::Scheme_DC; cout<<"DC Filter: "; break;
+        }
+        case 4:
+        {
+         Local = &DM::Scheme_LS; cout<<"Bernstein Filter: "; break;
+        }
+        default:
+        {
+            cout<<"The filter type is wrong. Do nothing."<<endl;
+            return;
+        }
     }
     Tstart = clock();
     float d;
@@ -624,36 +621,36 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
 
     switch(Type)
     {
-            case 0:
-            {
-                Local = &DM::Scheme_TV; cout<<"TV Filter:(TVL1 by default) "; 
-                curvature_compute = &DM::TV; break;
-            }
-            case 1:
-            {
-                Local = &DM::Scheme_MC; cout<<"MC Filter: "; 
-                curvature_compute = &DM::MC; break;
-            }
-            case 2:
-            {
-                Local = &DM::Scheme_GC; cout<<"GC Filter: "; 
-                curvature_compute = &DM::GC; break;
-            }
-            case 3:
-            {
-              Local = &DM::Scheme_DC; cout<<"DC Filter: "; 
-                curvature_compute = &DM::GC; break;
-            }
-            case 4:
-            {
-              Local = &DM::Scheme_LS; cout<<"Bernstein Filter: "; 
-                curvature_compute = &DM::MC; break;
-            }
-            default:
-            {
-                cout<<"The filter type is wrong. Do nothing."<<endl;
-                return;
-            }
+        case 0:
+        {
+            Local = &DM::Scheme_TV; cout<<"TV Filter:(TVL1 by default) "; 
+            curvature_compute = &DM::TV; break;
+        }
+        case 1:
+        {
+            Local = &DM::Scheme_MC; cout<<"MC Filter: "; 
+            curvature_compute = &DM::MC; break;
+        }
+        case 2:
+        {
+            Local = &DM::Scheme_GC; cout<<"GC Filter: "; 
+            curvature_compute = &DM::GC; break;
+        }
+        case 3:
+        {
+          Local = &DM::Scheme_DC; cout<<"DC Filter: "; 
+            curvature_compute = &DM::GC; break;
+        }
+        case 4:
+        {
+          Local = &DM::Scheme_LS; cout<<"Bernstein Filter: "; 
+            curvature_compute = &DM::MC; break;
+        }
+        default:
+        {
+            cout<<"The filter type is wrong. Do nothing."<<endl;
+            return;
+        }
     }
     
     float d, energy_increase, dist_orig, dist_proj_orig;
@@ -742,7 +739,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
     Tend = clock() - Tstart;   
     time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
 
-	cout<<"stop after "<<count<<" Iterations and ";
+    cout<<"stop after "<<count<<" Iterations and ";
 
     (this->*curvature_compute)(imgF, curvature);
     dataFit = imgF - image;
@@ -764,7 +761,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
 //solve BlackBox() + lambda * |curvature(U)|
  void DM::BlackBoxSolver(const int Type, double & time, const int MaxItNum, const float lambda, float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d), const float stepsize)
  {
- 	clock_t Tstart, Tend;
+     clock_t Tstart, Tend;
     float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex);
     void (DM::* curvature_compute)(const Mat& img, Mat& curv);
 
@@ -779,36 +776,36 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
 
     switch(Type)
     {
-            case 0:
-            {
-                Local = &DM::Scheme_TV; cout<<"TV Filter:(TVL1 by default) "; 
-                curvature_compute = &DM::TV; break;
-            }
-            case 1:
-            {
-                Local = &DM::Scheme_MC; cout<<"MC Filter: "; 
-                curvature_compute = &DM::MC; break;
-            }
-            case 2:
-            {
-                Local = &DM::Scheme_GC; cout<<"GC Filter: "; 
-                curvature_compute = &DM::GC; break;
-            }
-            case 3:
-            {
-              Local = &DM::Scheme_DC; cout<<"DC Filter: "; 
-                curvature_compute = &DM::GC; break;
-            }
-            case 4:
-            {
-              Local = &DM::Scheme_LS; cout<<"Bernstein Filter: "; 
-                curvature_compute = &DM::MC; break;
-            }
-            default:
-            {
-                cout<<"The filter type is wrong. Do nothing."<<endl;
-                return;
-            }
+        case 0:
+        {
+            Local = &DM::Scheme_TV; cout<<"TV Filter:(TVL1 by default) "; 
+            curvature_compute = &DM::TV; break;
+        }
+        case 1:
+        {
+            Local = &DM::Scheme_MC; cout<<"MC Filter: "; 
+            curvature_compute = &DM::MC; break;
+        }
+        case 2:
+        {
+            Local = &DM::Scheme_GC; cout<<"GC Filter: "; 
+            curvature_compute = &DM::GC; break;
+        }
+        case 3:
+        {
+          Local = &DM::Scheme_DC; cout<<"DC Filter: "; 
+            curvature_compute = &DM::GC; break;
+        }
+        case 4:
+        {
+          Local = &DM::Scheme_LS; cout<<"Bernstein Filter: "; 
+            curvature_compute = &DM::MC; break;
+        }
+        default:
+        {
+            cout<<"The filter type is wrong. Do nothing."<<endl;
+            return;
+        }
     }
     
     float d, energy_increase, dist_orig, dist_proj_orig;
@@ -821,11 +818,11 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
         energyRecord_Curvature.push_back(lambda*energy(curvature));
 
         for (int i = 1; i < M-1; ++i)
-        	for (int j = 1; j < N-1; ++j)
-        	{
-        		dataFit.at<float>(i,j) = BlackBox(i,j, imgF, image,zero);
-        	}
-    	Scalar tmp_scalar = sum(dataFit);
+            for (int j = 1; j < N-1; ++j)
+            {
+                dataFit.at<float>(i,j) = BlackBox(i,j, imgF, image,zero);
+            }
+        Scalar tmp_scalar = sum(dataFit);
         energyRecord_DataFit.push_back(tmp_scalar(0));
         //if the energy starts to increase, stop the loop
         if(count>1 && (energyRecord_DataFit[it] + energyRecord_Curvature[it] > energyRecord_DataFit[it-1] + energyRecord_Curvature[it-1])) break;
@@ -898,7 +895,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
     Tend = clock() - Tstart;   
     time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
 
-	cout<<"stop after "<<count<<" Iterations and ";
+    cout<<"stop after "<<count<<" Iterations and ";
 
     //output the total energy profile
     ofstream energyProfile;
@@ -917,282 +914,281 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
 //*************************** gongyuanhao@gmail.com *******************************//
 inline void DM::GC_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
 {
-	register float dist[4];
-	register float scaled_stepsize = stepsize/3;
-	register float tmp, min_value;
-	for (int j = 1; j < N_half; ++j)
+    register float dist[4];
+    register float scaled_stepsize = stepsize/3;
+    register float tmp, min_value;
+    for (int j = 1; j < N_half; ++j)
      {
-		tmp = 2*p[j];
-     	min_value = p_pre[j]+p_down[j] - tmp;
-		dist[1] = p_right[j-1]+p_right[j] - tmp;
-		dist[2] = p_Corner[j-1]+p_rd[j] - tmp;
-		dist[3] = p_Corner[j]+p_rd[j-1] - tmp;
+        tmp = 2*p[j];
+         min_value = p_pre[j]+p_down[j] - tmp;
+        dist[1] = p_right[j-1]+p_right[j] - tmp;
+        dist[2] = p_Corner[j-1]+p_rd[j] - tmp;
+        dist[3] = p_Corner[j]+p_rd[j-1] - tmp;
 
-		if (fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
-		if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
-		if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
+        if (fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
+        if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
+        if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
 
-		tmp *= 1.5f;
-		min_value *= 1.5f;
-		dist[0] = p_pre[j] - tmp;
-		dist[1] = p_down[j] - tmp;
-		dist[2] = p_Corner[j-1] + p_right[j-1] + dist[0];
-		dist[3] = p_Corner[j] + p_right[j] + dist[0];
+        tmp *= 1.5f;
+        min_value *= 1.5f;
+        dist[0] = p_pre[j] - tmp;
+        dist[1] = p_down[j] - tmp;
+        dist[2] = p_Corner[j-1] + p_right[j-1] + dist[0];
+        dist[3] = p_Corner[j] + p_right[j] + dist[0];
 
-		if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
-		if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
+        if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
+        if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
 
-		dist[2] = p_right[j-1] + p_rd[j-1] + dist[1];
-		dist[3] = p_right[j] + p_rd[j] +dist[1];
+        dist[2] = p_right[j-1] + p_rd[j-1] + dist[1];
+        dist[3] = p_right[j] + p_rd[j] +dist[1];
         
-		if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
-		if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
+        if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
+        if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
 
-		/*
-		dist[0] = p_Corner[j-1] + p_pre[j] + p_right[j-1] - tmp;
-		dist[1] = p_Corner[j] + p_pre[j] + p_right[j] - tmp;
-		dist[2] = p_right[j-1] + p_rd[j-1] + p_down[j] - tmp;
-		dist[3] = p_right[j] + p_down[j] + p_rd[j] - tmp;
+        /*
+        dist[0] = p_Corner[j-1] + p_pre[j] + p_right[j-1] - tmp;
+        dist[1] = p_Corner[j] + p_pre[j] + p_right[j] - tmp;
+        dist[2] = p_right[j-1] + p_rd[j-1] + p_down[j] - tmp;
+        dist[3] = p_right[j] + p_down[j] + p_rd[j] - tmp;
         
-		if (fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
-		if (fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
-		if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
-		if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
-		*/
+        if (fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
+        if (fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
+        if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
+        if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
+        */
 
-		p[j] += (scaled_stepsize*min_value);
+        p[j] += (scaled_stepsize*min_value);
      }
 }
 
 inline void DM::GC_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
 {
-	register float dist[4];
-	register float scaled_stepsize = stepsize/3;
-	register float tmp, min_value;
-	for (int j = 0; j < N_half-1; ++j)
+    register float dist[4];
+    register float scaled_stepsize = stepsize/3;
+    register float tmp, min_value;
+    for (int j = 0; j < N_half-1; ++j)
      {
-		tmp = 2*p[j];
-     	min_value = p_pre[j]+p_down[j] - tmp;
-		dist[1] = p_right[j]+p_right[j+1] - tmp;
-		dist[2] = p_Corner[j]+p_rd[j+1] - tmp;
-		dist[3] = p_Corner[j+1]+p_rd[j] - tmp;
-		
-		if (fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
-		if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
-		if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
+        tmp = 2*p[j];
+        min_value = p_pre[j]+p_down[j] - tmp;
+        dist[1] = p_right[j]+p_right[j+1] - tmp;
+        dist[2] = p_Corner[j]+p_rd[j+1] - tmp;
+        dist[3] = p_Corner[j+1]+p_rd[j] - tmp;
+        
+        if (fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
+        if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
+        if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
 
-		tmp *= 1.5f;
-		min_value *= 1.5f;
-		dist[0] = p_Corner[j] + p_pre[j] + p_right[j] - tmp;
-		dist[1] = p_Corner[j+1] + p_pre[j] + p_right[j+1] - tmp;
-		dist[2] = p_right[j] + p_rd[j] + p_down[j] - tmp;
-		dist[3] = p_right[j+1] + p_down[j] + p_rd[j+1] - tmp;
-		
-		if (fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
-		if (fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
-		if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
-		if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
+        tmp *= 1.5f;
+        min_value *= 1.5f;
+        dist[0] = p_Corner[j] + p_pre[j] + p_right[j] - tmp;
+        dist[1] = p_Corner[j+1] + p_pre[j] + p_right[j+1] - tmp;
+        dist[2] = p_right[j] + p_rd[j] + p_down[j] - tmp;
+        dist[3] = p_right[j+1] + p_down[j] + p_rd[j+1] - tmp;
+        
+        if (fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
+        if (fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
+        if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
+        if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
 
-		p[j] += (scaled_stepsize*min_value);
+        p[j] += (scaled_stepsize*min_value);
      }
 }
 
 inline void DM::MC_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
 {
-	register float dist[8];
-	register float scaled_stepsize = stepsize/8;
-	register float absMin;
-	for (int j = 1; j < N_half; ++j)
+    register float dist[8];
+    register float scaled_stepsize = stepsize/8;
+    register float absMin;
+    for (int j = 1; j < N_half; ++j)
      {
-     	
-		dist[4] = p[j]*8;
-		dist[5] = (p_pre[j]+p_down[j])*2.5f - dist[4];
-		dist[6] = (p_right[j-1]+p_right[j])*2.5f - dist[4];
+         
+        dist[4] = p[j]*8;
+        dist[5] = (p_pre[j]+p_down[j])*2.5f - dist[4];
+        dist[6] = (p_right[j-1]+p_right[j])*2.5f - dist[4];
 
-		dist[0] = dist[5] + p_right[j]*5 -p_Corner[j]-p_rd[j];
-		dist[1] = dist[5] + p_right[j-1]*5 -p_Corner[j-1]-p_rd[j-1];
-		dist[2] = dist[6] + p_pre[j]*5 -p_Corner[j-1]-p_Corner[j];
-		dist[3] = dist[6] + p_down[j]*5 -p_rd[j-1]-p_rd[j];
+        dist[0] = dist[5] + p_right[j]*5 -p_Corner[j]-p_rd[j];
+        dist[1] = dist[5] + p_right[j-1]*5 -p_Corner[j-1]-p_rd[j-1];
+        dist[2] = dist[6] + p_pre[j]*5 -p_Corner[j-1]-p_Corner[j];
+        dist[3] = dist[6] + p_down[j]*5 -p_rd[j-1]-p_rd[j];
 
-		absMin = dist[0];
-		if(fabsf(dist[1])<fabsf(absMin)) absMin = dist[1];
+        absMin = dist[0];
+        if(fabsf(dist[1])<fabsf(absMin)) absMin = dist[1];
         if(fabsf(dist[2])<fabsf(absMin)) absMin = dist[2];
         if(fabsf(dist[3])<fabsf(absMin)) absMin = dist[3];
 
-		p[j] += (scaled_stepsize*absMin);
+        p[j] += (scaled_stepsize*absMin);
      }
 }
 
 inline void DM::MC_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
 {
-	register float dist[8];
-	register float scaled_stepsize = stepsize/8;
-	register float absMin;
-	for (int j = 0; j < N_half-1; ++j)
-     {
-     	
-		dist[4] = p[j]*8;
-		dist[5] = (p_pre[j]+p_down[j])*2.5f - dist[4];
-		dist[6] = (p_right[j]+p_right[j+1])*2.5f - dist[4];
+    register float dist[8];
+    register float scaled_stepsize = stepsize/8;
+    register float absMin;
+    for (int j = 0; j < N_half-1; ++j)
+    {
+         
+        dist[4] = p[j]*8;
+        dist[5] = (p_pre[j]+p_down[j])*2.5f - dist[4];
+        dist[6] = (p_right[j]+p_right[j+1])*2.5f - dist[4];
 
 
-     	dist[0] = dist[5] + p_right[j]*5 -p_Corner[j]-p_rd[j];
-		dist[1] = dist[5] + p_right[j+1]*5 -p_Corner[j+1]-p_rd[j+1];
-		dist[2] = dist[6] + p_pre[j]*5 -p_Corner[j]-p_Corner[j+1];
-		dist[3] = dist[6] + p_down[j]*5 -p_rd[j]-p_rd[j+1];
-		
-		absMin = dist[0];
-		if(fabsf(dist[1])<fabsf(absMin)) absMin = dist[1];
+        dist[0] = dist[5] + p_right[j]*5 -p_Corner[j]-p_rd[j];
+        dist[1] = dist[5] + p_right[j+1]*5 -p_Corner[j+1]-p_rd[j+1];
+        dist[2] = dist[6] + p_pre[j]*5 -p_Corner[j]-p_Corner[j+1];
+        dist[3] = dist[6] + p_down[j]*5 -p_rd[j]-p_rd[j+1];
+        
+        absMin = dist[0];
+        if(fabsf(dist[1])<fabsf(absMin)) absMin = dist[1];
         if(fabsf(dist[2])<fabsf(absMin)) absMin = dist[2];
         if(fabsf(dist[3])<fabsf(absMin)) absMin = dist[3];
-		
-		p[j] += (scaled_stepsize*absMin);
-     }
+        
+        p[j] += (scaled_stepsize*absMin);
+    }
 }
 
 inline void DM::LS_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
 {
-	//one is for BT and WC, two is for BC and WT
-	register float dist[4];
-	register float scaled_stepsize = stepsize/10;
-	register float tmp;
-	for (int j = 1; j < N_half; ++j)
-     {
-     	
-		tmp = p[j]*2;
-		dist[0] = (p_pre[j]+p_down[j]) - tmp;
-		dist[1] = (p_right[j-1]+p_right[j]) - tmp;
-		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    //one is for BT and WC, two is for BC and WT
+    register float dist[4];
+    register float scaled_stepsize = stepsize/10;
+    register float tmp;
+    for (int j = 1; j < N_half; ++j)
+    {
+         
+        tmp = p[j]*2;
+        dist[0] = (p_pre[j]+p_down[j]) - tmp;
+        dist[1] = (p_right[j-1]+p_right[j]) - tmp;
+        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-		tmp *= 3.5f;
-		dist[0] *= 3.3333f;
+        tmp *= 3.5f;
+        dist[0] *= 3.3333f;
 
-		dist[2] = 3*(p_Corner[j] + p_rd[j-1]) - tmp;
-		dist[3] = 3*(p_Corner[j-1] + p_rd[j]) - tmp;
+        dist[2] = 3*(p_Corner[j] + p_rd[j-1]) - tmp;
+        dist[3] = 3*(p_Corner[j-1] + p_rd[j]) - tmp;
 
 
-		dist[1] = p_right[j-1] + p_pre[j] - p_Corner[j-1] + dist[2];
-		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+        dist[1] = p_right[j-1] + p_pre[j] - p_Corner[j-1] + dist[2];
+        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-		dist[1] = p_right[j] + p_pre[j] - p_Corner[j] + dist[3];
-		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+        dist[1] = p_right[j] + p_pre[j] - p_Corner[j] + dist[3];
+        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-		dist[1] = p_right[j] + p_down[j] - p_rd[j] + dist[2];
-		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+        dist[1] = p_right[j] + p_down[j] - p_rd[j] + dist[2];
+        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-		dist[1] = p_right[j-1] + p_down[j]  - p_rd[j-1] + dist[3];
-		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+        dist[1] = p_right[j-1] + p_down[j]  - p_rd[j-1] + dist[3];
+        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-		p[j] += (scaled_stepsize*dist[0]);
-     }
+        p[j] += (scaled_stepsize*dist[0]);
+    }
 }
 
 inline void DM::LS_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
 {
-	//one is for BT and WC, two is for BC and WT
-	register float dist[4];
-	register float scaled_stepsize = stepsize/10;
-	register float tmp;
-	for (int j = 0; j < N_half-1; ++j)
-     {
-     	
-		tmp = p[j]*2;
-		dist[0] = p_pre[j]+p_down[j] - tmp;
-		dist[1] = p_right[j]+p_right[j+1] - tmp;
-		if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    //one is for BT and WC, two is for BC and WT
+    register float dist[4];
+    register float scaled_stepsize = stepsize/10;
+    register float tmp;
+    for (int j = 0; j < N_half-1; ++j)
+    {
+        tmp = p[j]*2;
+        dist[0] = p_pre[j]+p_down[j] - tmp;
+        dist[1] = p_right[j]+p_right[j+1] - tmp;
+        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-		tmp *= 3.5f;
-		dist[0] *= 3.3333f;
+        tmp *= 3.5f;
+        dist[0] *= 3.3333f;
 
-		dist[2] = 3*(p_Corner[j+1] + p_rd[j]) - tmp;
-		dist[3] = 3*(p_Corner[j] + p_rd[j+1]) - tmp;
+        dist[2] = 3*(p_Corner[j+1] + p_rd[j]) - tmp;
+        dist[3] = 3*(p_Corner[j] + p_rd[j+1]) - tmp;
 
-     	dist[0] = p_right[j] + p_pre[j] - p_Corner[j] + dist[2];
-     	if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+        dist[0] = p_right[j] + p_pre[j] - p_Corner[j] + dist[2];
+        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-     	dist[0] = p_right[j+1] + p_pre[j] - p_Corner[j+1] + dist[3];
-     	if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+        dist[0] = p_right[j+1] + p_pre[j] - p_Corner[j+1] + dist[3];
+        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-     	dist[0] = p_right[j+1] + p_down[j] - p_rd[j+1] + dist[2];
-     	if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+        dist[0] = p_right[j+1] + p_down[j] - p_rd[j+1] + dist[2];
+        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-     	dist[0] = p_right[j] + p_down[j] - p_rd[j] + dist[3];
-     	if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-		
-		p[j] += (scaled_stepsize*dist[0]);
-     }
+        dist[0] = p_right[j] + p_down[j] - p_rd[j] + dist[3];
+        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+
+        p[j] += (scaled_stepsize*dist[0]);
+    }
 }
 
 inline void DM::TV_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
 {
-	register float dist[8], tmp[4];
-	// if use 6, the scheme includes central pixel;
-	// if use 5, the scheme does not include central pixel (my PhD thesis uses five)
-	register float scaled_stepsize = stepsize/6;
-	register float scaledP, absMin;
-	int index;
-	for (int j = 1; j < N_half; ++j)
+    register float dist[8], tmp[4];
+    // if use 6, the scheme includes central pixel;
+    // if use 5, the scheme does not include central pixel (my PhD thesis uses five)
+    register float scaled_stepsize = stepsize/6;
+    register float scaledP, absMin;
+    int index;
+    for (int j = 1; j < N_half; ++j)
      {
-		//temp var
-		scaledP =  p[j]*5;
-		tmp[0] = p_pre[j]+p_down[j] - scaledP;
-		tmp[1] = p_right[j-1]+p_right[j] - scaledP;
-		tmp[2] = p_Corner[j-1]+p_Corner[j]+p_pre[j] - scaledP;
-		tmp[3] = p_rd[j-1]+p_rd[j]+p_down[j] - scaledP;
+        //temp var
+        scaledP =  p[j]*5;
+        tmp[0] = p_pre[j]+p_down[j] - scaledP;
+        tmp[1] = p_right[j-1]+p_right[j] - scaledP;
+        tmp[2] = p_Corner[j-1]+p_Corner[j]+p_pre[j] - scaledP;
+        tmp[3] = p_rd[j-1]+p_rd[j]+p_down[j] - scaledP;
 
-     	dist[0] = tmp[0] + p_Corner[j-1]+p_rd[j-1]+p_right[j-1];
-		dist[1] = tmp[0] + p_Corner[j]+p_rd[j]+p_right[j];
-		dist[2] = tmp[1] + p_Corner[j-1] + p_Corner[j] + p_pre[j];
-		dist[3] = tmp[1] + p_rd[j-1] + p_rd[j] + p_down[j];
+        dist[0] = tmp[0] + p_Corner[j-1]+p_rd[j-1]+p_right[j-1];
+        dist[1] = tmp[0] + p_Corner[j]+p_rd[j]+p_right[j];
+        dist[2] = tmp[1] + p_Corner[j-1] + p_Corner[j] + p_pre[j];
+        dist[3] = tmp[1] + p_rd[j-1] + p_rd[j] + p_down[j];
 
-		dist[4] = tmp[2] + p_right[j-1]+p_rd[j-1];
-		dist[5] = tmp[2] + p_right[j]+p_rd[j];
-		dist[6] = tmp[3] + p_right[j-1]+p_Corner[j-1];
-		dist[7] = tmp[3] + p_right[j]+p_Corner[j];
+        dist[4] = tmp[2] + p_right[j-1]+p_rd[j-1];
+        dist[5] = tmp[2] + p_right[j]+p_rd[j];
+        dist[6] = tmp[3] + p_right[j-1]+p_Corner[j-1];
+        dist[7] = tmp[3] + p_right[j]+p_Corner[j];
 
-		index = 0; absMin = fabsf(dist[0]);
-		for (int i = 1; i < 8; ++i)
-		{
-			if(fabsf(dist[i])<absMin) {absMin = fabsf(dist[i]); index = i;}
-		}
+        index = 0; absMin = fabsf(dist[0]);
+        for (int i = 1; i < 8; ++i)
+        {
+            if(fabsf(dist[i])<absMin) {absMin = fabsf(dist[i]); index = i;}
+        }
 
-		p[j] += (scaled_stepsize*dist[index]);
+        p[j] += (scaled_stepsize*dist[index]);
      }
 }
 
 inline void DM::TV_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
 {
-	register float dist[8], tmp[4];
-	// if use 6, the scheme includes central pixel;
-	// if use 5, the scheme does not include central pixel (my PhD thesis uses five) 
-	register float scaled_stepsize = stepsize/6;
-	register float scaledP, absMin;
-	int index;
-	for (int j = 0; j < N_half-1; ++j)
+    register float dist[8], tmp[4];
+    // if use 6, the scheme includes central pixel;
+    // if use 5, the scheme does not include central pixel (my PhD thesis uses five) 
+    register float scaled_stepsize = stepsize/6;
+    register float scaledP, absMin;
+    int index;
+    for (int j = 0; j < N_half-1; ++j)
      {
-		scaledP = p[j]*5;
-		tmp[0] = p_pre[j]+p_down[j] - scaledP;
-		tmp[1] = p_right[j]+p_right[j+1] - scaledP;
-		tmp[2] = p_Corner[j]+p_Corner[j+1]+p_pre[j] - scaledP;
-		tmp[3] = p_rd[j]+p_rd[j+1]+p_down[j] - scaledP;
+        scaledP = p[j]*5;
+        tmp[0] = p_pre[j]+p_down[j] - scaledP;
+        tmp[1] = p_right[j]+p_right[j+1] - scaledP;
+        tmp[2] = p_Corner[j]+p_Corner[j+1]+p_pre[j] - scaledP;
+        tmp[3] = p_rd[j]+p_rd[j+1]+p_down[j] - scaledP;
 
-     	dist[0] = tmp[0] + p_Corner[j]+p_rd[j]+p_right[j];
-		dist[1] = tmp[0] + p_Corner[j+1]+p_rd[j+1]+p_right[j+1];
-		dist[2] = tmp[1] + p_Corner[j] + p_Corner[j+1] + p_pre[j];
-		dist[3] = tmp[1] + p_rd[j] + p_rd[j+1] + p_down[j];
+        dist[0] = tmp[0] + p_Corner[j]+p_rd[j]+p_right[j];
+        dist[1] = tmp[0] + p_Corner[j+1]+p_rd[j+1]+p_right[j+1];
+        dist[2] = tmp[1] + p_Corner[j] + p_Corner[j+1] + p_pre[j];
+        dist[3] = tmp[1] + p_rd[j] + p_rd[j+1] + p_down[j];
         
-		dist[4] = tmp[2] +p_right[j]+p_rd[j];
-		dist[5] = tmp[2] +p_right[j+1]+p_rd[j+1];
-		dist[6] = tmp[3] +p_right[j]+p_Corner[j];
-		dist[7] = tmp[3] +p_right[j+1]+p_Corner[j+1];
+        dist[4] = tmp[2] +p_right[j]+p_rd[j];
+        dist[5] = tmp[2] +p_right[j+1]+p_rd[j+1];
+        dist[6] = tmp[3] +p_right[j]+p_Corner[j];
+        dist[7] = tmp[3] +p_right[j+1]+p_Corner[j+1];
         
-		index = 0; absMin = fabsf(dist[0]);
-		for (int i = 1; i < 8; ++i)
-		{
-			if(fabsf(dist[i])<absMin) {absMin = fabsf(dist[i]); index = i;}
-		}
-		
-		p[j] += (scaled_stepsize*dist[index]);
+        index = 0; absMin = fabsf(dist[0]);
+        for (int i = 1; i < 8; ++i)
+        {
+            if(fabsf(dist[i])<absMin) {absMin = fabsf(dist[i]); index = i;}
+        }
+        
+        p[j] += (scaled_stepsize*dist[index]);
      }
 }
 
@@ -1252,7 +1248,7 @@ inline void DM::DC_two(float* __restrict p, float* __restrict p_right, float* __
 /********************************************************************/
 inline float DM::Scheme_GC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex)
 {
-	register float dist[4];
+    register float dist[4];
     register float tmp, min_value;
     tmp = -2*p[i];
     min_value = p_pre[i] + p_nex[i] + tmp;
@@ -1287,7 +1283,7 @@ inline float DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex)
     //       I   e
     //       c   d
     // return (2.5(a+c)+5*e)-b-d)/8.0;
-	register float dist[4];
+    register float dist[4];
     register float tmp = 8*p[i];
     dist[3] = 2.5f*(p_pre[i]+p_nex[i]) - tmp;
     dist[2] = 2.5f*(p[i-1]+p[i+1]) - tmp;
@@ -1350,8 +1346,8 @@ inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
     //       I   e
     //       c   d
     // return (a+b+c+d+e)/5.0;
-	register float dist[4], tmp[4];
-	 //old fashion, need 5*8 times plus or minus
+    register float dist[4], tmp[4];
+     //old fashion, need 5*8 times plus or minus
     register float scaledP = 5*p[i], min_value;
     tmp[0] = p_pre[i-1]+p[i-1] + p_nex[i-1] - scaledP;
     tmp[1] = p_pre[i+1]+p[i+1] + p_nex[i+1] - scaledP;
@@ -1379,7 +1375,7 @@ inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
 
     min_value/=6;
     // if use 6, the scheme includes central pixel;
-	// if use 5, the scheme does not include central pixel (my PhD thesis uses five)
+    // if use 5, the scheme does not include central pixel (my PhD thesis uses five)
 
     return min_value;
 
