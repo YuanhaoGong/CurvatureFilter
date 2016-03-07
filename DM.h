@@ -234,7 +234,7 @@ void DM::MC(const Mat& imgF, Mat & MC)
     //classical scheme is used
     const float * p_row, *pn_row, *pp_row;
     float *p_d;
-    float Ix, Iy, Ixx, Iyy, num, den;
+    float Ix, Iy, Ixy, Ixx, Iyy, num, den, tmp;
     for(int i = 1; i < imgF.rows-1; i++)
     {
         p_row = imgF.ptr<float>(i);
@@ -247,10 +247,12 @@ void DM::MC(const Mat& imgF, Mat & MC)
             Ix = (p_row[j+1] - p_row[j-1])/2;
             Iy = (pn_row[j] - pp_row[j])/2;
             Ixx = p_row[j+1] - 2*p_row[j] + p_row[j-1];
-            Iyy = pn_row[j] -2*p_row[j] + pp_row[j];
+            Iyy = pn_row[j] - 2*p_row[j] + pp_row[j];
+            Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])/4;
             
-            num = Ixx + Iyy;
-            den = (1.0f + Ix*Ix + Iy*Iy);
+            num = (1+Ix*Ix)*Iyy - 2*Ix*Iy*Ixy + (1+Iy*Iy)*Ixx;
+            tmp = 1.0f + Ix*Ix + Iy*Iy;
+            den = sqrt(tmp)*tmp/2;
             p_d[j] = num/den;
         }   
     }
@@ -304,7 +306,7 @@ void DM::GC(const Mat & imgF, Mat &GC)
 
             num = Ixx*Iyy - Ixy*Ixy;
             den = (1.0f + Ix*Ix + Iy*Iy);
-            den = powf(den, 1.5f);
+            den *= den;
             p_d[j] = num/den;
         }   
     }
