@@ -918,46 +918,33 @@ inline void DM::GC_one(float* __restrict p, float* __restrict p_right, float* __
 {
     register float dist[4];
     register float scaled_stepsize = stepsize/3;
-    register float tmp, min_value;
+    register float tmp, min_value, com_one, com_two;
     for (int j = 1; j < N_half; ++j)
      {
         tmp = 2*p[j];
-         min_value = p_pre[j]+p_down[j] - tmp;
+        dist[0] = p_pre[j]+p_down[j] - tmp;
         dist[1] = p_right[j-1]+p_right[j] - tmp;
         dist[2] = p_Corner[j-1]+p_rd[j] - tmp;
         dist[3] = p_Corner[j]+p_rd[j-1] - tmp;
 
-        if (fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
-        if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
-        if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
+        if (fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+        if (fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
+        if (fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
+        min_value = dist[0];
 
         tmp *= 1.5f;
         min_value *= 1.5f;
-        dist[0] = p_pre[j] - tmp;
-        dist[1] = p_down[j] - tmp;
-        dist[2] = p_Corner[j-1] + p_right[j-1] + dist[0];
-        dist[3] = p_Corner[j] + p_right[j] + dist[0];
+        com_one = p_pre[j] - tmp;
+        com_two = p_down[j] - tmp;
+        dist[0] = p_Corner[j-1] + p_right[j-1] + com_one;
+        dist[1] = p_Corner[j] + p_right[j] + com_one;
+        dist[2] = p_right[j-1] + p_rd[j-1] + com_two;
+        dist[3] = p_right[j] + p_rd[j] +com_two;
 
-        if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
-        if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
-
-        dist[2] = p_right[j-1] + p_rd[j-1] + dist[1];
-        dist[3] = p_right[j] + p_rd[j] +dist[1];
-        
-        if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
-        if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
-
-        /*
-        dist[0] = p_Corner[j-1] + p_pre[j] + p_right[j-1] - tmp;
-        dist[1] = p_Corner[j] + p_pre[j] + p_right[j] - tmp;
-        dist[2] = p_right[j-1] + p_rd[j-1] + p_down[j] - tmp;
-        dist[3] = p_right[j] + p_down[j] + p_rd[j] - tmp;
-        
+        if (fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+        if (fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
+        if (fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
         if (fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
-        if (fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
-        if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
-        if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
-        */
 
         p[j] += (scaled_stepsize*min_value);
      }
@@ -967,30 +954,33 @@ inline void DM::GC_two(float* __restrict p, float* __restrict p_right, float* __
 {
     register float dist[4];
     register float scaled_stepsize = stepsize/3;
-    register float tmp, min_value;
+    register float tmp, min_value, com_one, com_two;
     for (int j = 0; j < N_half-1; ++j)
      {
         tmp = 2*p[j];
-        min_value = p_pre[j]+p_down[j] - tmp;
+        dist[0] = p_pre[j]+p_down[j] - tmp;
         dist[1] = p_right[j]+p_right[j+1] - tmp;
         dist[2] = p_Corner[j]+p_rd[j+1] - tmp;
         dist[3] = p_Corner[j+1]+p_rd[j] - tmp;
         
-        if (fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
-        if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
-        if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
+        if (fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+        if (fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
+        if (fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
+        min_value = dist[0];
 
         tmp *= 1.5f;
         min_value *= 1.5f;
-        dist[0] = p_Corner[j] + p_pre[j] + p_right[j] - tmp;
-        dist[1] = p_Corner[j+1] + p_pre[j] + p_right[j+1] - tmp;
-        dist[2] = p_right[j] + p_rd[j] + p_down[j] - tmp;
-        dist[3] = p_right[j+1] + p_down[j] + p_rd[j+1] - tmp;
+        com_one = p_pre[j] - tmp;
+        com_two = p_down[j] - tmp;
+        dist[0] = p_Corner[j] + p_right[j] + com_one;
+        dist[1] = p_Corner[j+1] + p_right[j+1] + com_one;
+        dist[2] = p_right[j] + p_rd[j] + com_two;
+        dist[3] = p_right[j+1] + p_rd[j+1] + com_two;
         
+        if (fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+        if (fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
+        if (fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
         if (fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
-        if (fabsf(dist[1])<fabsf(min_value)) min_value = dist[1];
-        if (fabsf(dist[2])<fabsf(min_value)) min_value = dist[2];
-        if (fabsf(dist[3])<fabsf(min_value)) min_value = dist[3];
 
         p[j] += (scaled_stepsize*min_value);
      }
@@ -1000,7 +990,6 @@ inline void DM::MC_one(float* __restrict p, float* __restrict p_right, float* __
 {
     register float dist[8];
     register float scaled_stepsize = stepsize/8;
-    register float absMin;
     for (int j = 1; j < N_half; ++j)
      {
          
@@ -1013,12 +1002,11 @@ inline void DM::MC_one(float* __restrict p, float* __restrict p_right, float* __
         dist[2] = dist[6] + p_pre[j]*5 -p_Corner[j-1]-p_Corner[j];
         dist[3] = dist[6] + p_down[j]*5 -p_rd[j-1]-p_rd[j];
 
-        absMin = dist[0];
-        if(fabsf(dist[1])<fabsf(absMin)) absMin = dist[1];
-        if(fabsf(dist[2])<fabsf(absMin)) absMin = dist[2];
-        if(fabsf(dist[3])<fabsf(absMin)) absMin = dist[3];
+        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+        if(fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
+        if(fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
 
-        p[j] += (scaled_stepsize*absMin);
+        p[j] += (scaled_stepsize*dist[0]);
      }
 }
 
@@ -1026,7 +1014,6 @@ inline void DM::MC_two(float* __restrict p, float* __restrict p_right, float* __
 {
     register float dist[8];
     register float scaled_stepsize = stepsize/8;
-    register float absMin;
     for (int j = 0; j < N_half-1; ++j)
     {
          
@@ -1040,12 +1027,11 @@ inline void DM::MC_two(float* __restrict p, float* __restrict p_right, float* __
         dist[2] = dist[6] + p_pre[j]*5 -p_Corner[j]-p_Corner[j+1];
         dist[3] = dist[6] + p_down[j]*5 -p_rd[j]-p_rd[j+1];
         
-        absMin = dist[0];
-        if(fabsf(dist[1])<fabsf(absMin)) absMin = dist[1];
-        if(fabsf(dist[2])<fabsf(absMin)) absMin = dist[2];
-        if(fabsf(dist[3])<fabsf(absMin)) absMin = dist[3];
+        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+        if(fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
+        if(fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
         
-        p[j] += (scaled_stepsize*absMin);
+        p[j] += (scaled_stepsize*dist[0]);
     }
 }
 
@@ -1287,17 +1273,18 @@ inline float DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex)
     // return (2.5(a+c)+5*e)-b-d)/8.0;
     register float dist[4];
     register float tmp = 8*p[i];
-    dist[3] = 2.5f*(p_pre[i]+p_nex[i]) - tmp;
-    dist[2] = 2.5f*(p[i-1]+p[i+1]) - tmp;
+    register float com_one, com_two;
+    com_one = 2.5f*(p_pre[i]+p_nex[i]) - tmp;
+    com_two = 2.5f*(p[i-1]+p[i+1]) - tmp;
 
-    dist[0] = dist[3] + 5*p[i+1] - p_pre[i+1] - p_nex[i+1];
-    dist[1] = dist[3] + 5*p[i-1] - p_pre[i-1] - p_nex[i-1];
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    dist[0] = com_one + 5*p[i+1] - p_pre[i+1] - p_nex[i+1];
+    dist[1] = com_one + 5*p[i-1] - p_pre[i-1] - p_nex[i-1];
+    dist[2] = com_two - p_nex[i-1] + 5*p_nex[i] - p_nex[i+1];
+    dist[3] = com_two - p_pre[i-1] + 5*p_pre[i] - p_pre[i+1];
 
-    dist[1] = dist[2] - p_nex[i-1] + 5*p_nex[i] - p_nex[i+1];
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-    dist[1] = dist[2] - p_pre[i-1] + 5*p_pre[i] - p_pre[i+1];
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    if(fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
+    if(fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
 
     dist[0] /= 8;
     
