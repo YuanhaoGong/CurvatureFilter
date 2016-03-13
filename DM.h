@@ -35,7 +35,7 @@ public:
     void MC_new(const Mat & img, Mat & MC);//new scheme, Eq.6.12 in my thesis
     //compute GC
     void GC(const Mat & img, Mat & GC);
-    void GC_new(const Mat & img, Mat & MC);//new scheme, Eq.6.16 in my thesis
+    void GC_new(const Mat & img, Mat & GC);//new scheme, Eq.6.16 in my thesis
     //compute energy for given TV, MC, or GC image
     double energy(const Mat& img);
     //compute data fitting energy between image and imgF
@@ -299,57 +299,52 @@ void DM::GC(const Mat & imgF, Mat &GC)
 }
 
 //new scheme, Eq.6.16 in my thesis
-void DM::GC_new(const Mat & img, Mat & MC)
+void DM::GC_new(const Mat & img, Mat & GC)
 {
-    const float * p_row, *pn_row, *pp_row;
-    float * p_d;
-    float six[6];
-    float sum_ud, sum_lr, sum_diag_one, sum_diag_two;
-    float diff_ud, diff_lr, diff_diag_one, diff_diag_two;
-    float tmp, tmp2;
-    for(int i = 1; i < imgF.rows-1; ++i)
-    {
-        p_row = imgF.ptr<float>(i);
-        pn_row = imgF.ptr<float>(i+1);
-        pp_row = imgF.ptr<float>(i-1);
-        p_d = MC.ptr<float>(i);
-        
-        for(int j = 1; j < imgF.cols-1; ++j)
-        {
-            sum_lr = p_row[j-1] + p_row[j+1];
-            diff_lr= p_row[j-1] - p_row[j+1];
-            sum_ud = pp_row[j] + pn_row[j];
-            diff_ud= pp_row[j] - pn_row[j];
-            sum_diag_one = pp_row[j-1] + pn_row[j+1];
-            diff_diag_one= pp_row[j-1] - pn_row[j+1];
-            sum_diag_two = pp_row[j+1] + pn_row[j-1];
-            diff_diag_two= pp_row[j+1] - pn_row[j-1];
+    Mat tmp = Mat::zeros(M,N,CV_32FC1);
+    //six kernel from Eq.6.16
+    Mat kernel_one = (Mat_<float>(3,3) << 
+        0.002104f, 0.254187f, 0.002104f,
+        0.254187f, -1.02516f, 0.254187f,
+        0.002104f, 0.254187f, 0.002104f);
+    Mat kernel_two = (Mat_<float>(3,3) << 
+        0.25f, 0.0f, -0.25f,
+        -0.5f, 0.0f, 0.5f,
+        0.25f, 0.0f, -0.25f);
+    Mat kernel_three = (Mat_<float>(3,3) << 
+        -0.25f, 0.5f, -0.25f,
+        0.0f, 0.0f, 0.0f,
+        0.25f, -0.5f, 0.25f);
+    Mat kernel_four = (Mat_<float>(3,3) << 
+        -0.286419f, 0.229983f, -0.286419f,
+        0.229983f, 0.225743f, 0.229983f,
+        -0.286419f, 0.229983f, -0.286419f);
+    Mat kernel_five = (Mat_<float>(3,3) << 
+        -0.306186f, 0.0f, 0.306186f,
+        0.0f, 0.0f, 0.0f,
+        0.306186f, 0.0f, -0.306186f);
+    Mat kernel_six = (Mat_<float>(3,3) << 
+        0.0f, -0.176777f, 0.0f,
+        0.176777f, 0.0f, 0.176777f,
+        0.0f, -0.176777f, 0.0f);
 
-            tmp = sum_lr + sum_ud;
-            tmp2= sum_diag_one + sum_diag_two;
-
-            six[0] = tmp*0.254187f + tmp2*0.00210414f - 1.02516f*p[j];
-            six[1] = tmp*0.229983f - tmp2*0.286419f - 0.225743f*p[j]; 
-            six[2] = (sum_diag_two - sum_diag_one)*0.306186f;
-            six[3] = (sum_lr - sum_ud)*0.176777f;
-            six[4] = (diff_diag_one - diff_diag_two)/4 - diff_lr/2;
-            six[5] = diff_ud/2 - (diff_diag_one+diff_diag_two)/4;
-
-            six[0]*=six[0];
-            six[1]*=six[1];
-            six[2]*=six[2];
-            six[3]*=six[3];
-            six[4]*=six[4];
-            six[5]*=six[5];
-
-            six[4] += six[5];
-            six[3] += six[4];
-            six[2] += six[3];
-            six[1] += six[2];
-            six[0] -= six[1];
-            p_d[j] = six[0];
-        }   
-    }
+    filter2D(imgF, GC, CV_32F, kernel_one);
+    filter2D(imgF, tmp, CV_32F, kernel_two);
+    pow(GC, 2, GC);
+    pow(tmp, 2, tmp);
+    GC -= tmp;
+    filter2D(imgF, tmp, CV_32F, kernel_three);
+    pow(tmp, 2, tmp);
+    GC -= tmp;
+    filter2D(imgF, tmp, CV_32F, kernel_four);
+    pow(tmp, 2, tmp);
+    GC -= tmp;
+    filter2D(imgF, tmp, CV_32F, kernel_five);
+    pow(tmp, 2, tmp);
+    GC -= tmp;
+    filter2D(imgF, tmp, CV_32F, kernel_six);
+    pow(tmp, 2, tmp);
+    GC -= tmp;
 }
 
 //compute the curvature energy
