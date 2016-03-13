@@ -261,25 +261,11 @@ void DM::MC(const Mat& imgF, Mat & MC)
 //compute Mean Curvature, Eq.6.12 in my thesis
 void DM::MC_new(const Mat& imgF, Mat & MC)
 {
-    //new scheme used
-    const float * p_row, *pn_row, *pp_row;
-    float * p_d;
-    float one, five;
-    for(int i = 1; i < imgF.rows-1; i++)
-    {
-        p_row = imgF.ptr<float>(i);
-        pn_row = imgF.ptr<float>(i+1);
-        pp_row = imgF.ptr<float>(i-1);
-        p_d = MC.ptr<float>(i);
-        
-        for(int j = 1; j < imgF.cols-1; j++)
-        {
-            one = pp_row[j-1] + pp_row[j+1] + pn_row[j-1] + pn_row[j+1];
-            five = pp_row[j] + p[j-1] + p[j+1] + pn_row[j];
-
-            p_d[j] = 0.3125f*five - 0.0625f*one - p_row[j];
-        }   
-    }
+    //separate kernel from Eq.6.12, add the center pixel later
+    Mat kernel = (Mat_<float>(1,3) << 0.25f, -1.25f, 0.25f); 
+    sepFilter2D(imgF, MC, CV_32F, kernel, kernel,Point(-1,-1),0,BORDER_REPLICATE);
+    MC *= -1;
+    MC += (0.5625f*imgF);//the center pixel
 }
 
 //compute Gaussian curvature
