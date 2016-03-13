@@ -252,7 +252,7 @@ void DM::MC(const Mat& imgF, Mat & MC)
             
             num = (1+Ix*Ix)*Iyy - 2*Ix*Iy*Ixy + (1+Iy*Iy)*Ixx;
             tmp = 1.0f + Ix*Ix + Iy*Iy;
-            den = sqrt(tmp)*tmp/2;
+            den = sqrt(tmp)*tmp*2;
             p_d[j] = num/den;
         }   
     }
