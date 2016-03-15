@@ -156,10 +156,10 @@ function en = curv_TV(im)
 en = sum(g(:));
 function en = curv_MC(im)
 [gx,gy]=gradient(im);[gxx,gxy]=gradient(gx);[gyx,gyy]=gradient(gy);
-%the pow 1.25 comes from the sqrt(area), called 'mean curvature half-density'
-g = ((1+gy.^2).*gxx - gx.*gy.*(gxy+gyx)+ (1+gx.^2).*gyy)./((1+gx.^2+gy.^2).^1.25)/2;
+%standard scheme
+g = ((1+gy.^2).*gxx - gx.*gy.*(gxy+gyx)+ (1+gx.^2).*gyy)./((1+gx.^2+gy.^2).^1.5)/2;
 en = sum(abs(g(:)));
 function en = curv_GC(im)
 [gx,gy]=gradient(im);[gxx,gxy]=gradient(gx);[gyx,gyy]=gradient(gy);
-%the pow 1.5 comes from the area element
-g = (gxx.*gyy-gxy.*gyx)./((1+gx.^2+gy.^2).^1.5); en = sum(abs(g(:)));
+%standard scheme
+g = (gxx.*gyy-gxy.*gyx)./((1+gx.^2+gy.^2).^2); en = sum(abs(g(:)));
