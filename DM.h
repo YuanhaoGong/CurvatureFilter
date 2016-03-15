@@ -49,6 +49,8 @@ public:
     //////////////////////////////////////////////////////////
     void Filter(const int Type, double & time, const int ItNum = 10, const float stepsize=1);//with split
     void FilterNoSplit(const int Type, double & time, const int ItNum = 10, const float stepsize=1);//direct on imgF 
+	/******************* curvature specification *****************************/
+	void Specify(const Mat & curv, const int Type, double & time, const int ItNum = 10, const float stepsize=1);
     /******************* generic solver for variational models *****************************/
     //solve |U - I|^DataFitOrder + lambda * |curvature(U)|
     void Solver(const int Type, double & time, const int MaxItNum, const float lambda = 2, const float DataFitOrder = 1, const float stepsize=1);
@@ -86,11 +88,11 @@ private:
     inline void LS_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
 
     /*************************************** Direct on imgF (no split) ***********************/
-    inline float Scheme_GC(int i, float * p_pre, float * p, float * p_nex);
-    inline float Scheme_MC(int i, float * p_pre, float * p, float * p_nex);
-    inline float Scheme_TV(int i, float * p_pre, float * p, float * p_nex);
-    inline float Scheme_DC(int i, float * p_pre, float * p, float * p_nex);
-    inline float Scheme_LS(int i, float * p_pre, float * p, float * p_nex);
+    inline float Scheme_GC(int i, float * p_pre, float * p, float * p_nex, const float * p_curv = NULL);
+    inline float Scheme_MC(int i, float * p_pre, float * p, float * p_nex, const float * p_curv = NULL);
+    inline float Scheme_TV(int i, float * p_pre, float * p, float * p_nex, const float * p_curv = NULL);
+    inline float Scheme_DC(int i, float * p_pre, float * p, float * p_nex, const float * p_curv = NULL);
+    inline float Scheme_LS(int i, float * p_pre, float * p, float * p_nex, const float * p_curv = NULL);
 };
 
 double DM::PSNR()
@@ -495,7 +497,7 @@ void DM::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
 {
     clock_t Tstart, Tend;
 
-    float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex);
+    float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex, const float * p_curv);
 
     switch(Type)
     {
@@ -537,7 +539,7 @@ void DM::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
             p_down = imgF.ptr<float>(i+1);
             for (int j = 1; j < N-1; ++j, ++j)
             {
-                d = (this->*Local)(j,p_pre,p,p_down);
+                d = (this->*Local)(j,p_pre,p,p_down,NULL);
                 p[j] += (stepsize*d);
             }
         }
@@ -550,7 +552,7 @@ void DM::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
             p_down = imgF.ptr<float>(i+1);
             for (int j = 2; j < N-1; ++j, ++j)
             {
-                d = (this->*Local)(j,p_pre,p,p_down);
+                d = (this->*Local)(j,p_pre,p,p_down,NULL);
                 p[j] += (stepsize*d);
             }
         }
@@ -563,7 +565,7 @@ void DM::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
             p_down = imgF.ptr<float>(i+1);
             for (int j = 2; j < N-1; ++j, ++j)
             {
-                d = (this->*Local)(j,p_pre,p,p_down);
+                d = (this->*Local)(j,p_pre,p,p_down,NULL);
                 p[j] += (stepsize*d);
             }
         }
@@ -576,7 +578,107 @@ void DM::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
             p_down = imgF.ptr<float>(i+1);
             for (int j = 1; j < N-1; ++j, ++j)
             {
-                d = (this->*Local)(j,p_pre,p,p_down);
+                d = (this->*Local)(j,p_pre,p,p_down,NULL);
+                p[j] += (stepsize*d);
+            }
+        }
+    }
+    Tend = clock() - Tstart;   
+    time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
+}
+
+//curvature specification
+void DM::Specify(const Mat & curv, const int Type, double & time, const int ItNum, const float stepsize)
+{
+	clock_t Tstart, Tend;
+
+    float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex, const float * p_curv);
+
+    switch(Type)
+    {
+        case 0:
+        {
+            Local = &DM::Scheme_TV; cout<<"TV Filter: "; break;
+        }
+        case 1:
+        {
+            Local = &DM::Scheme_MC; cout<<"MC Filter: "; break;
+        }
+        case 2:
+        {
+            Local = &DM::Scheme_GC; cout<<"GC Filter: "; break;
+        }
+        case 3:
+        {
+         Local = &DM::Scheme_DC; cout<<"DC Filter: "; break;
+        }
+        case 4:
+        {
+         Local = &DM::Scheme_LS; cout<<"Bernstein Filter: "; break;
+        }
+        default:
+        {
+            cout<<"The filter type is wrong. Do nothing."<<endl;
+            return;
+        }
+    }
+    Tstart = clock();
+    float d;
+	const float * p_curv;
+    for(int it=0;it<ItNum;++it)
+    {
+        //black circle
+        for (int i = 1; i < M-1; ++i,++i)
+        {
+            p = imgF.ptr<float>(i);
+            p_pre = imgF.ptr<float>(i-1);
+            p_down = imgF.ptr<float>(i+1);
+			p_curv = curv.ptr<float>(i);
+            for (int j = 1; j < N-1; ++j, ++j)
+            {
+                d = (this->*Local)(j,p_pre,p,p_down,p_curv);
+                p[j] += (stepsize*d);
+            }
+        }
+
+        //black triangle
+        for (int i = 2; i < M-1; ++i,++i)
+        {
+            p = imgF.ptr<float>(i);
+            p_pre = imgF.ptr<float>(i-1);
+            p_down = imgF.ptr<float>(i+1);
+			p_curv = curv.ptr<float>(i);
+            for (int j = 2; j < N-1; ++j, ++j)
+            {
+                d = (this->*Local)(j,p_pre,p,p_down,p_curv);
+                p[j] += (stepsize*d);
+            }
+        }
+
+        //white circle
+        for (int i = 1; i < M-1; ++i,++i)
+        {
+            p = imgF.ptr<float>(i);
+            p_pre = imgF.ptr<float>(i-1);
+            p_down = imgF.ptr<float>(i+1);
+			p_curv = curv.ptr<float>(i);
+            for (int j = 2; j < N-1; ++j, ++j)
+            {
+                d = (this->*Local)(j,p_pre,p,p_down,p_curv);
+                p[j] += (stepsize*d);
+            }
+        }
+
+        //white triangle
+        for (int i = 2; i < M-1; ++i,++i)
+        {
+            p = imgF.ptr<float>(i);
+            p_pre = imgF.ptr<float>(i-1);
+            p_down = imgF.ptr<float>(i+1);
+			p_curv = curv.ptr<float>(i);
+            for (int j = 1; j < N-1; ++j, ++j)
+            {
+                d = (this->*Local)(j,p_pre,p,p_down,p_curv);
                 p[j] += (stepsize*d);
             }
         }
@@ -590,7 +692,7 @@ void DM::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
 void DM::Solver(const int Type, double & time, const int MaxItNum, const float lambda, const float DataFitOrder, const float stepsize)
 {
     clock_t Tstart, Tend;
-    float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex);
+    float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex, const float * p_curv);
     void (DM::* curvature_compute)(const Mat& img, Mat& curv);
 
     Mat curvature = Mat::zeros(M, N, CV_32FC1);
@@ -659,7 +761,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
             p_data = image.ptr<float>(i);
             for (int j = 1; j < N-1; ++j, ++j)
             {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
                 dist_orig = fabsf(p[j] - p_data[j]);
                 dist_proj_orig = fabsf(p[j] + d - p_data[j]);
                 energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
@@ -676,7 +778,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
             p_data = image.ptr<float>(i);
             for (int j = 2; j < N-1; ++j, ++j)
             {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
                 dist_orig = fabsf(p[j] - p_data[j]);
                 dist_proj_orig = fabsf(p[j] + d - p_data[j]);
                 energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
@@ -693,7 +795,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
             p_data = image.ptr<float>(i);
             for (int j = 2; j < N-1; ++j, ++j)
             {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
                 dist_orig = fabsf(p[j] - p_data[j]);
                 dist_proj_orig = fabsf(p[j] + d - p_data[j]);
                 energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
@@ -710,7 +812,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
             p_data = image.ptr<float>(i);
             for (int j = 1; j < N-1; ++j, ++j)
             {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
                 dist_orig = fabsf(p[j] - p_data[j]);
                 dist_proj_orig = fabsf(p[j] + d - p_data[j]);
                 energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
@@ -745,7 +847,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
  void DM::BlackBoxSolver(const int Type, double & time, const int MaxItNum, const float lambda, float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d), const float stepsize)
  {
      clock_t Tstart, Tend;
-    float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex);
+    float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex, const float * p_curv);
     void (DM::* curvature_compute)(const Mat& img, Mat& curv);
 
     Mat curvature = Mat::zeros(M, N, CV_32FC1);
@@ -818,7 +920,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
             p_down = imgF.ptr<float>(i+1);
             for (int j = 1; j < N-1; ++j, ++j)
             {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
                 dist_orig = BlackBox(i,j,imgF,image,zero);
                 dist_proj_orig = BlackBox(i,j,imgF,image,d);
                 energy_increase = dist_proj_orig - dist_orig;
@@ -834,7 +936,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
             p_down = imgF.ptr<float>(i+1);
             for (int j = 2; j < N-1; ++j, ++j)
             {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
                 dist_orig = BlackBox(i,j,imgF,image,zero);
                 dist_proj_orig = BlackBox(i,j,imgF,image,d);
                 energy_increase = dist_proj_orig - dist_orig;
@@ -850,7 +952,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
             p_down = imgF.ptr<float>(i+1);
             for (int j = 2; j < N-1; ++j, ++j)
             {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
                 dist_orig = BlackBox(i,j,imgF,image,zero);
                 dist_proj_orig = BlackBox(i,j,imgF,image,d);
                 energy_increase = dist_proj_orig - dist_orig;
@@ -866,7 +968,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
             p_down = imgF.ptr<float>(i+1);
             for (int j = 1; j < N-1; ++j, ++j)
             {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down);
+                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
                 dist_orig = BlackBox(i,j,imgF,image,zero);
                 dist_proj_orig = BlackBox(i,j,imgF,image,d);
                 energy_increase = dist_proj_orig - dist_orig;
@@ -1215,11 +1317,13 @@ inline void DM::DC_two(float* __restrict p, float* __restrict p_right, float* __
 /********************** scheme at each pixel ************************/
 /********************** only for noSplit case ***********************/
 /********************************************************************/
-inline float DM::Scheme_GC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex)
+inline float DM::Scheme_GC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex, const float * p_curv)
 {
     register float dist[4];
     register float tmp, min_value;
     tmp = -2*p[i];
+    //specify the curvature if provided
+    if (p_curv != NULL) tmp = -2*(p[i] + p_curv[i]);
     min_value = p_pre[i] + p_nex[i] + tmp;
     dist[1] = p[i-1] + p[i+1] + tmp;
     dist[2] = p_pre[i-1] + p_nex[i+1] + tmp;
@@ -1245,7 +1349,7 @@ inline float DM::Scheme_GC(int i, float * __restrict p_pre, float * __restrict p
     return min_value;
 }
 
-inline float DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex)
+inline float DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex, const float * p_curv)
 {
     //compute the movement according to half window
     //       a   b
@@ -1253,8 +1357,11 @@ inline float DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex)
     //       c   d
     // return (2.5(a+c)+5*e)-b-d)/8.0;
     register float dist[4];
-    register float tmp = 8*p[i];
-    register float com_one, com_two;
+    register float tmp, com_one, com_two;
+    tmp = 8*p[i];
+    //specify the curvature if provided
+    if (p_curv != NULL) tmp = 8*(p[i] + p_curv[i]);
+
     com_one = 2.5f*(p_pre[i]+p_nex[i]) - tmp;
     com_two = 2.5f*(p[i-1]+p[i+1]) - tmp;
 
@@ -1272,7 +1379,7 @@ inline float DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex)
     return dist[0];
 }
 
-inline float DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex)
+inline float DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex, const float * p_curv)
 {
     //compute the movement according to half window
     //   f   a   b            0 1/2 0               3/7 1/7 -1/7
@@ -1284,8 +1391,10 @@ inline float DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex)
     //       c   d              1/3 0                        3/10
 
     register float dist[4];
-    register float tmp = 2*p[i], min_value;
-    register float tmp_one, tmp_two;
+    register float tmp, min_value, tmp_one, tmp_two;
+    tmp = 2*p[i];
+    //specify the curvature if provided
+    if (p_curv != NULL) tmp = 2*(p[i] + p_curv[i]);
 
     min_value = p_pre[i]+p_nex[i] - tmp;
     dist[0] = p[i-1] + p[i+1] - tmp;
@@ -1310,7 +1419,7 @@ inline float DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex)
     return min_value/10;//here 10 means including central pixel while 7 means exclusion
 }
 
-inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
+inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex, const float * p_curv)
 {
     //       a   b
     //       I   e
@@ -1318,7 +1427,12 @@ inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
     // return (a+b+c+d+e)/5.0;
     register float dist[4], tmp[4];
      //old fashion, need 5*8 times plus or minus
-    register float scaledP = 5*p[i], min_value;
+    register float scaledP, min_value;
+    scaledP = 5*p[i];
+    //specify the curvature if provided
+    if (p_curv != NULL) scaledP = 5*(p[i] + p_curv[i]);
+
+
     tmp[0] = p_pre[i-1]+p[i-1] + p_nex[i-1] - scaledP;
     tmp[1] = p_pre[i+1]+p[i+1] + p_nex[i+1] - scaledP;
     tmp[2] = p[i-1]+p[i+1] - scaledP;
@@ -1400,19 +1514,21 @@ inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex)
     
 }
 
-inline float DM::Scheme_DC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex)
+inline float DM::Scheme_DC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex, const float * p_curv)
 {
     float dist[2];
     float weight = -0.225603f;
+    float scaledP = p[i];
+    if (p_curv != NULL) scaledP = p[i] + p_curv[i];
 
-    dist[0] = (p_pre[i] + p_nex[i])/2 + (p_pre[i+1] + p_nex[i+1] - 2*p[i+1])*weight - p[i];
-    dist[1] = (p_pre[i] + p_nex[i])/2 + (p_pre[i-1] + p_nex[i-1] - 2*p[i-1])*weight - p[i];
+    dist[0] = (p_pre[i] + p_nex[i])/2 + (p_pre[i+1] + p_nex[i+1] - 2*p[i+1])*weight - scaledP;
+    dist[1] = (p_pre[i] + p_nex[i])/2 + (p_pre[i-1] + p_nex[i-1] - 2*p[i-1])*weight - scaledP;
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-    dist[1] = (p[i-1] + p[i+1])/2 + (p_pre[i-1] + p_pre[i+1] - 2*p_pre[i])*weight - p[i];
+    dist[1] = (p[i-1] + p[i+1])/2 + (p_pre[i-1] + p_pre[i+1] - 2*p_pre[i])*weight - scaledP;
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-    dist[1] = (p[i-1] + p[i+1])/2 + (p_nex[i-1] + p_nex[i+1] - 2*p_nex[i])*weight - p[i];
+    dist[1] = (p[i-1] + p[i+1])/2 + (p_nex[i-1] + p_nex[i+1] - 2*p_nex[i])*weight - scaledP;
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
     return dist[0];
