@@ -49,8 +49,10 @@ public:
     //////////////////////////////////////////////////////////
     void Filter(const int Type, double & time, const int ItNum = 10, const float stepsize=1);//with split
     void FilterNoSplit(const int Type, double & time, const int ItNum = 10, const float stepsize=1);//direct on imgF 
-	/******************* curvature specification *****************************/
-	void Specify(const Mat & curv, const int Type, double & time, const int ItNum = 10, const float stepsize=1);
+	/******************* Curvature Guided Filter *****************************/
+    //compute the curvature from the guided image (scaled to the size of imgF)
+    Mat GuideCurvature(const char * FileName, const int Type);
+	void CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, const int ItNum = 10, const float stepsize=1);
     /******************* generic solver for variational models *****************************/
     //solve |U - I|^DataFitOrder + lambda * |curvature(U)|
     void Solver(const int Type, double & time, const int MaxItNum, const float lambda = 2, const float DataFitOrder = 1, const float stepsize=1);
@@ -587,8 +589,44 @@ void DM::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
     time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
 }
 
-//curvature specification
-void DM::Specify(const Mat & curv, const int Type, double & time, const int ItNum, const float stepsize)
+//compute the guide curvature from a given image
+Mat DM::GuideCurvature(const char * FileName, const int Type)
+{
+    Mat tmp = imread(FileName, CV_8UC1);
+    if (abs(tmp.rows - M)>2 || abs(tmp.cols - N)>2)
+    {
+        cout<<"warning: the guided image is rescaled."<<endl;
+    }
+    Mat tmp2 = Mat::zeros(M, N, CV_8UC1);
+    resize(tmp, tmp2, tmp2.size());
+    Mat tmp3 = Mat::zeros(M, N, CV_32FC1);
+    tmp2.convertTo(tmp3, CV_32FC1);
+    tmp3 /= 255.0f;
+    Mat curv = Mat::zeros(M, N, CV_32FC1);
+    switch(Type)
+    {
+        case 0:
+        {
+            TV(tmp3, curv); break;
+        }
+        case 1:
+        {
+            MC(tmp3, curv); break;
+        }
+        case 2:
+        {
+            GC(tmp3, curv); break;
+        }
+        default:
+        {
+            cout<<"The type in GuideCurvature is wrong. Do nothing."<<endl;
+        }
+    }
+    return curv;
+}
+
+//curvature guided filter
+void DM::CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, const int ItNum, const float stepsize)
 {
 	clock_t Tstart, Tend;
 
