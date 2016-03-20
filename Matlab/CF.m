@@ -86,7 +86,7 @@ dist(:,:,8) = tmp4 + im(BT_r,BT_rig) + im(BT_pre,BT_rig);
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3);
-index = sub2ind(size(dist), row, col, ind);
+index = sub2ind(size(dist), row, col, uint32(ind));
 dm = step/5*dist(index); 
 %update current pixels
 res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
@@ -103,7 +103,7 @@ dist(:,:,4) = tmp2  + 5*im(BT_nex,BT_c) - im(BT_nex,BT_lef) - im(BT_nex,BT_rig);
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3);
-index = sub2ind(size(dist),row,col,ind);
+index = sub2ind(size(dist),row,col,uint32(ind));
 dm = step/8*dist(index); 
 %update current pixels
 res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
@@ -123,7 +123,7 @@ dist(:,:,1:4) = dist(:,:,1:4)*1.5; %% scale to the same level
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3); 
-index = sub2ind(size(dist),row,col,ind);
+index = sub2ind(size(dist),row,col,uint32(ind));
 dm = single(step/3)*dist(index); 
 %update current pixels
 res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
@@ -144,7 +144,7 @@ dist(:,:,1:2) = 10/3*dist(:,:,1:2); %% scale to the same level
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3);
-index = sub2ind(size(dist),row,col,ind);
+index = sub2ind(size(dist),row,col,uint32(ind));
 dm = step/10*dist(index); 
 %update current pixels
 res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
