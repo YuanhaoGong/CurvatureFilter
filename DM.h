@@ -49,11 +49,11 @@ public:
     //////////////////////////////////////////////////////////
     void Filter(const int Type, double & time, const int ItNum = 10, const float stepsize=1);//with split
     void FilterNoSplit(const int Type, double & time, const int ItNum = 10, const float stepsize=1);//direct on imgF 
-	/******************* Curvature Guided Filter *****************************/
+    /******************* Curvature Guided Filter *****************************/
     //compute the curvature from the guided image (scaled to the size of imgF)
     Mat GuideCurvature(const char * FileName, const int Type);
-	//filter the image such that the result is close to the specified curvature
-	void CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, const int ItNum = 10, const float stepsize=1);
+    //filter the image such that the result is close to the specified curvature
+    void CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, const int ItNum = 10, const float stepsize=1);
     /******************* generic solver for variational models *****************************/
     //solve |U - I|^DataFitOrder + lambda * |curvature(U)|
     void Solver(const int Type, double & time, const int MaxItNum, const float lambda = 2, const float DataFitOrder = 1, const float stepsize=1);
@@ -637,7 +637,7 @@ Mat DM::GuideCurvature(const char * FileName, const int Type)
 //curvature guided filter
 void DM::CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, const int ItNum, const float stepsize)
 {
-	clock_t Tstart, Tend;
+    clock_t Tstart, Tend;
 
     float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex, const float * p_curv);
 
@@ -671,7 +671,7 @@ void DM::CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, 
     }
     Tstart = clock();
     float d;
-	const float * p_curv;
+    const float * p_curv;
     for(int it=0;it<ItNum;++it)
     {
         //black circle
@@ -680,7 +680,7 @@ void DM::CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, 
             p = imgF.ptr<float>(i);
             p_pre = imgF.ptr<float>(i-1);
             p_down = imgF.ptr<float>(i+1);
-			p_curv = curv.ptr<float>(i);
+            p_curv = curv.ptr<float>(i);
             for (int j = 1; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down,p_curv);
@@ -694,7 +694,7 @@ void DM::CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, 
             p = imgF.ptr<float>(i);
             p_pre = imgF.ptr<float>(i-1);
             p_down = imgF.ptr<float>(i+1);
-			p_curv = curv.ptr<float>(i);
+            p_curv = curv.ptr<float>(i);
             for (int j = 2; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down,p_curv);
@@ -708,7 +708,7 @@ void DM::CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, 
             p = imgF.ptr<float>(i);
             p_pre = imgF.ptr<float>(i-1);
             p_down = imgF.ptr<float>(i+1);
-			p_curv = curv.ptr<float>(i);
+            p_curv = curv.ptr<float>(i);
             for (int j = 2; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down,p_curv);
@@ -722,7 +722,7 @@ void DM::CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, 
             p = imgF.ptr<float>(i);
             p_pre = imgF.ptr<float>(i-1);
             p_down = imgF.ptr<float>(i+1);
-			p_curv = curv.ptr<float>(i);
+            p_curv = curv.ptr<float>(i);
             for (int j = 1; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down,p_curv);
@@ -1029,7 +1029,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
 
     cout<<"stop after "<<count<<" Iterations and ";
 
-	(this->*curvature_compute)(imgF, curvature);
+    (this->*curvature_compute)(imgF, curvature);
     energyRecord_Curvature.push_back(lambda*energy(curvature));
     for (int i = 1; i < M-1; ++i)
         for (int j = 1; j < N-1; ++j)

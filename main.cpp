@@ -35,7 +35,7 @@ float DataFitOrder = 1.0f;
 //If use these filters to solve a complex data fitting term, define the data fitting as the blackbox function
 float BlackBox(int row, int col, Mat& U, Mat & img_orig, float & d)
 {
-	//this is an example of adaptive norm
+    //this is an example of adaptive norm
     float diff = fabs(U.at<float>(row,col)+d - img_orig.at<float>(row,col));
     float order = 2 - (fabs(U.at<float>(row+1,col) - U.at<float>(row,col)) + fabs(U.at<float>(row,col+1) - U.at<float>(row,col)));
     return pow(diff, order);
@@ -96,21 +96,19 @@ int main(int argc, char** argv)
       DualMesh.BlackBoxSolver(Type, mytime, ItNum, lambda, BlackBox);
       cout<<"runtime is "<<mytime<<" milliseconds."<<endl;
       DualMesh.write("CF_BlackBox.png");
-
     }
     
     //solve a variational model
     if (argc==6)
     {
-		lambda = (float)atof(argv[4]);
-		DataFitOrder = (float)atof(argv[5]);
-		//filter solver for the variational models
-		DualMesh.read(argv[1]);
-		DualMesh.Solver(Type, mytime, ItNum, lambda, DataFitOrder);
-		cout<<"runtime is "<<mytime<<" milliseconds."<<endl;
-		DualMesh.write("CF_Solver.png");
+      lambda = (float)atof(argv[4]);
+      DataFitOrder = (float)atof(argv[5]);
+      //filter solver for the variational models
+      DualMesh.read(argv[1]);
+      DualMesh.Solver(Type, mytime, ItNum, lambda, DataFitOrder);
+      cout<<"runtime is "<<mytime<<" milliseconds."<<endl;
+      DualMesh.write("CF_Solver.png");
     }
-
 
     return 0;
 }
