@@ -52,6 +52,7 @@ public:
 	/******************* Curvature Guided Filter *****************************/
     //compute the curvature from the guided image (scaled to the size of imgF)
     Mat GuideCurvature(const char * FileName, const int Type);
+	//filter the image such that the result is close to the specified curvature
 	void CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, const int ItNum = 10, const float stepsize=1);
     /******************* generic solver for variational models *****************************/
     //solve |U - I|^DataFitOrder + lambda * |curvature(U)|
@@ -305,7 +306,6 @@ void DM::GC(const Mat & imgF, Mat &GC)
 //new scheme, Eq.6.16 in my thesis
 void DM::GC_new(const Mat & img, Mat & GC)
 {
-    Mat tmp = Mat::zeros(M,N,CV_32FC1);
     //six kernel from Eq.6.16
     Mat kernel_one = (Mat_<float>(3,3) << 
         0.002104f, 0.254187f, 0.002104f,
@@ -332,23 +332,32 @@ void DM::GC_new(const Mat & img, Mat & GC)
         0.176777f, 0.0f, 0.176777f,
         0.0f, -0.176777f, 0.0f);
 
+    Mat tmp_two = Mat::zeros(M,N,CV_32FC1);
+    Mat tmp_three = Mat::zeros(M,N,CV_32FC1);
+    Mat tmp_four = Mat::zeros(M,N,CV_32FC1);
+    Mat tmp_five = Mat::zeros(M,N,CV_32FC1);
+    Mat tmp_six = Mat::zeros(M,N,CV_32FC1);
+
     filter2D(imgF, GC, CV_32F, kernel_one);
-    filter2D(imgF, tmp, CV_32F, kernel_two);
+    filter2D(imgF, tmp_two, CV_32F, kernel_two);
+    filter2D(imgF, tmp_three, CV_32F, kernel_three);
+    filter2D(imgF, tmp_four, CV_32F, kernel_four);
+    filter2D(imgF, tmp_five, CV_32F, kernel_five);
+    filter2D(imgF, tmp_six, CV_32F, kernel_six);
+
+
     pow(GC, 2, GC);
-    pow(tmp, 2, tmp);
-    GC -= tmp;
-    filter2D(imgF, tmp, CV_32F, kernel_three);
-    pow(tmp, 2, tmp);
-    GC -= tmp;
-    filter2D(imgF, tmp, CV_32F, kernel_four);
-    pow(tmp, 2, tmp);
-    GC -= tmp;
-    filter2D(imgF, tmp, CV_32F, kernel_five);
-    pow(tmp, 2, tmp);
-    GC -= tmp;
-    filter2D(imgF, tmp, CV_32F, kernel_six);
-    pow(tmp, 2, tmp);
-    GC -= tmp;
+    pow(tmp_two, 2, tmp_two);
+    pow(tmp_three, 2, tmp_three);
+    pow(tmp_four, 2, tmp_four);
+    pow(tmp_five, 2, tmp_five);
+    pow(tmp_six, 2, tmp_six);
+    
+    GC -= tmp_two;
+    GC -= tmp_three;
+    GC -= tmp_four;
+    GC -= tmp_five;
+    GC -= tmp_six;
 }
 
 //compute the curvature energy
@@ -884,7 +893,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
 //solve BlackBox() + lambda * |curvature(U)|
  void DM::BlackBoxSolver(const int Type, double & time, const int MaxItNum, const float lambda, float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d), const float stepsize)
  {
-     clock_t Tstart, Tend;
+    clock_t Tstart, Tend;
     float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex, const float * p_curv);
     void (DM::* curvature_compute)(const Mat& img, Mat& curv);
 
@@ -1019,6 +1028,17 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
     time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
 
     cout<<"stop after "<<count<<" Iterations and ";
+
+	(this->*curvature_compute)(imgF, curvature);
+    energyRecord_Curvature.push_back(lambda*energy(curvature));
+    for (int i = 1; i < M-1; ++i)
+        for (int j = 1; j < N-1; ++j)
+        {
+            dataFit.at<float>(i,j) = BlackBox(i,j, imgF, image,zero);
+        }
+    Scalar tmp_scalar = sum(dataFit);
+    energyRecord_DataFit.push_back(tmp_scalar(0));
+    
 
     //output the total energy profile
     ofstream energyProfile;

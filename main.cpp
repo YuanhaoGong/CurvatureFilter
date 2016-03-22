@@ -35,7 +35,10 @@ float DataFitOrder = 1.0f;
 //If use these filters to solve a complex data fitting term, define the data fitting as the blackbox function
 float BlackBox(int row, int col, Mat& U, Mat & img_orig, float & d)
 {
-    return fabs(U.at<float>(row,col)+d - img_orig.at<float>(row,col));
+	//this is an example of adaptive norm
+    float diff = fabs(U.at<float>(row,col)+d - img_orig.at<float>(row,col));
+    float order = 2 - (fabs(U.at<float>(row+1,col) - U.at<float>(row,col)) + fabs(U.at<float>(row,col+1) - U.at<float>(row,col)));
+    return pow(diff, order);
 }
 
 int main(int argc, char** argv)
