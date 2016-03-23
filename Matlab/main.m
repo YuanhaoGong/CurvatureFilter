@@ -110,6 +110,7 @@ figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('TV Energy'),title
 % (these filters only minimize the regularization term. When they are used as
 % solver for generic variational models, data fitting term has to be considered.)
 %
+%             one instance of Algorithm 17 in my PhD thesis
 %% ************************************************************************
 
 im = imread(im_name);
