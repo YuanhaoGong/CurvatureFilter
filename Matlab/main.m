@@ -105,7 +105,10 @@ figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('TV Energy'),title
 
 %% ************************************************************************
 %
-%              Local Filter Solver for Variational Models
+%              Filter Solver for Variational Models
+%
+% (these filters only minimize the regularization term. When they are used as
+% solver for generic variational models, data fitting term has to be considered.)
 %
 %% ************************************************************************
 
