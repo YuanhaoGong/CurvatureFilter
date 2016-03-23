@@ -36,8 +36,8 @@ switch FilterType
 end
 %pad to even size
 orig = single(im); [orig_r, orig_c, orig_z]=size(orig); m=ceil(orig_r/2)*2; n=ceil(orig_c/2)*2;
-im = zeros(m,n,orig_z,'single'); 
-im(m,:,:) = im(m-1,:,:); im(:,n,:) = im(:,n-1,:); im(1:orig_r,1:orig_c,1:orig_z)=orig; 
+im = zeros(m,n,orig_z,'single'); im(1:orig_r,1:orig_c,1:orig_z)=orig; 
+im(m,:,:) = im(m-1,:,:); im(:,n,:) = im(:,n-1,:); 
 %init
 result = im; Energy = zeros(ItNum,1);
 
