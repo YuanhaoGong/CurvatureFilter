@@ -36,6 +36,8 @@ public:
     //compute GC
     void GC(const Mat & img, Mat & GC);
     void GC_new(const Mat & img, Mat & GC);//new scheme, Eq.6.16 in my thesis
+    void GC_LUT_Init();
+    void GC_LUT(const Mat & img, Mat & GC);
     //compute energy for given TV, MC, or GC image
     double energy(const Mat& img);
     //compute data fitting energy between image and imgF
@@ -43,6 +45,9 @@ public:
     //PSNR
     double PSNR();
     double PSNR(const Mat& I1, const Mat& I2);
+    //compute naturalness factor
+    double Naturalness(){return Naturalness(imgF);}
+    double Naturalness(const Mat & img);
     /******************* filters *****************************/
     // Type=0, TV; Type=1, MC; Type=2, GC; (Type=3, DC, experimental);
     // the stepsize parameter is in (0,1]:smaller means more iterations, but reaches lower energy level; larger means less iterations, but converges at higher energy level
@@ -65,16 +70,21 @@ private:
     Mat image, imgF, result;
     //four sets, be aware that position is fixed, see split() or Yuanhao Gong's PhD thesis
     Mat WC, WT, BC, BT;
+    //image size
     int M, N, M_orig, N_orig, M_half, N_half;
     //six pointers
     float* p, *p_right, *p_down, *p_rd, *p_pre, *p_Corner;
     //pointer to the data
     const float* p_data;
+    //Look Up Table for fast computing GC
+    Mat LUT;
 private:
     //split imgF into four sets
     void split();
     //merge four sets back to imgF
     void merge();
+    //naturalness evaluation
+    double Naturalness_search(float* data, int N, int offset);
     /*************************************** Split into 4 sets *********************************/
     //one is for BT and WC, two is for BC and WT
     inline void GC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
@@ -120,6 +130,84 @@ double DM::PSNR(const Mat& I1, const Mat& I2)
          double psnr = - 10*log10(mse);
          return psnr;
      }
+}
+
+double DM::Naturalness(const Mat& imgF)
+{
+    //compute naturalness factor
+    const float * p_row ;
+    const float * pp_row;
+    short int indexX, indexY;
+    short int Offset = 256;
+    short int N = 512;
+    double eps = 0.0001;
+    double left(0), right(1), mid_left(0), mid_right(0);
+
+    Mat GradCDF = Mat::zeros(2, N, CV_32FC1);
+    float * Gradx = GradCDF.ptr<float>(0);
+    float * Grady = GradCDF.ptr<float>(1);
+    double f = 1.0/((imgF.rows-1)*(imgF.cols-1));
+
+    //not efficient but safe way
+    for(int i = 0; i < imgF.rows - 1; i++)
+    {
+        p_row = imgF.ptr<float>(i);
+        pp_row = imgF.ptr<float>(i+1);
+
+        for(int j = 0; j < imgF.cols - 1; j++)
+        {
+            //scale back to 255
+            indexX = Offset + (p_row[j+1] - p_row[j])*255;
+            indexY = Offset + (pp_row[j] - p_row[j])*255;            
+            Gradx[indexX] += f;
+            Grady[indexY] += f;
+        }
+    }
+    //convert Grad PDF into CDF
+    for (int j = 1; j < N; ++j)
+    {
+        Gradx[j] += Gradx[j-1];
+        Grady[j] += Grady[j-1];
+    }
+    //scale the data
+    GradCDF -= 0.5f;
+    GradCDF *= 3.14159f;
+
+    //search parameter T for x component
+    double Natural_x = Naturalness_search(Gradx, N, Offset);
+    double Natural_y = Naturalness_search(Grady, N, Offset);
+
+    //the final naturalness factor
+    return (Natural_x+Natural_y)/(0.7508);
+}
+
+double DM::Naturalness_search(float* data, int N, int offset)
+{
+    //Ternary search
+    float * p_d, *p_d2;
+    double left(0), right(1), mid_left, mid_right;
+    double eps(0.0001), tmp, tmp2, error_left, error_right;
+    while(right-left>=eps)
+    {
+        mid_left=left+(right-left)/3;
+        mid_right=right-(right-left)/3;
+
+        error_left = 0; error_right = 0;
+        p_d = data; p_d2 = data;
+        for (int i=-offset+1; i<N-offset; ++i) 
+        {
+            tmp = atan(mid_left*(i)) - (*p_d++);
+            tmp2 = atan(mid_right*(i)) - (*p_d2++);
+            error_left += (tmp*tmp);
+            error_right += (tmp2*tmp2);
+        }
+
+        if(error_left <= error_right)
+            right=mid_right;
+        else
+            left=mid_left;
+    }
+    return (mid_left+mid_right)/2;
 }
 
 void DM::read(const char* FileName)
@@ -306,6 +394,8 @@ void DM::GC(const Mat & imgF, Mat &GC)
 //new scheme, Eq.6.16 in my thesis
 void DM::GC_new(const Mat & img, Mat & GC)
 {
+    Mat tmp = Mat::zeros(M,N,CV_32FC1);
+    
     //six kernel from Eq.6.16
     Mat kernel_one = (Mat_<float>(3,3) << 
         0.002104f, 0.254187f, 0.002104f,
@@ -332,32 +422,123 @@ void DM::GC_new(const Mat & img, Mat & GC)
         0.176777f, 0.0f, 0.176777f,
         0.0f, -0.176777f, 0.0f);
 
-    Mat tmp_two = Mat::zeros(M,N,CV_32FC1);
-    Mat tmp_three = Mat::zeros(M,N,CV_32FC1);
-    Mat tmp_four = Mat::zeros(M,N,CV_32FC1);
-    Mat tmp_five = Mat::zeros(M,N,CV_32FC1);
-    Mat tmp_six = Mat::zeros(M,N,CV_32FC1);
-
-    filter2D(imgF, GC, CV_32F, kernel_one);
-    filter2D(imgF, tmp_two, CV_32F, kernel_two);
-    filter2D(imgF, tmp_three, CV_32F, kernel_three);
-    filter2D(imgF, tmp_four, CV_32F, kernel_four);
-    filter2D(imgF, tmp_five, CV_32F, kernel_five);
-    filter2D(imgF, tmp_six, CV_32F, kernel_six);
-
-
+    filter2D(img, GC, CV_32F, kernel_one);
     pow(GC, 2, GC);
-    pow(tmp_two, 2, tmp_two);
-    pow(tmp_three, 2, tmp_three);
-    pow(tmp_four, 2, tmp_four);
-    pow(tmp_five, 2, tmp_five);
-    pow(tmp_six, 2, tmp_six);
+    filter2D(img, tmp, CV_32F, kernel_two);
+    pow(tmp, 2, tmp);
+    GC -= tmp;
+    filter2D(img, tmp, CV_32F, kernel_three);
+    pow(tmp, 2, tmp);
+    GC -= tmp;
+    filter2D(img, tmp, CV_32F, kernel_four);
+    pow(tmp, 2, tmp);
+    GC -= tmp;
+    filter2D(img, tmp, CV_32F, kernel_five);
+    pow(tmp, 2, tmp);
+    GC -= tmp;
+    filter2D(img, tmp, CV_32F, kernel_six);
+    pow(tmp, 2, tmp);
+    GC -= tmp;
+    /*
+    //
+    Mat kernel_one_sep = (Mat_<float>(1,3)<<0.0458709f, 5.54135f,0.0458709f); //center pixel -31.7317
+    Mat kernel_two_sep_h = (Mat_<float>(1,3)<<1.0f, 0.0f, -1.0f);
+    Mat kernel_two_sep_v = (Mat_<float>(1,3)<<0.25f, -0.5f, 0.25f);
+    Mat kernel_three_sep_h = kernel_two_sep_v;
+    Mat kernel_three_sep_v = (Mat_<float>(1,3)<<-1.0f, 0.0f, 1.0f);
+    Mat kernel_four_sep_h = (Mat_<float>(1,3)<<0.535181f, -0.429729f, 0.535181f);//0.410410
+    Mat kernel_four_sep_v = - kernel_four_sep_h;
+    Mat kernel_five_sep_h = (Mat_<float>(1,3)<<-0.553341f,0.0f,0.553341f);
+    Mat kernel_five_sep_v = - kernel_five_sep_h;
     
-    GC -= tmp_two;
-    GC -= tmp_three;
-    GC -= tmp_four;
-    GC -= tmp_five;
-    GC -= tmp_six;
+    sepFilter2D(img, GC, img.depth(), kernel_one_sep, kernel_one_sep);
+    GC -= (31.7317f*img);
+    pow(GC, 2, GC);
+    sepFilter2D(img, tmp, img.depth(), kernel_two_sep_h, kernel_two_sep_v);
+    pow(tmp, 2, tmp);
+    GC -= tmp;
+    sepFilter2D(img, tmp, img.depth(), kernel_three_sep_h, kernel_three_sep_v);
+    pow(tmp, 2, tmp);
+    GC -= tmp;
+    sepFilter2D(img, tmp, img.depth(), kernel_four_sep_h, kernel_four_sep_v);
+    tmp += 0.41041f*img;
+    pow(tmp, 2, tmp);
+    GC -= tmp;
+    sepFilter2D(img, tmp, img.depth(), kernel_five_sep_h, kernel_five_sep_v);
+    pow(tmp, 2, tmp);
+    GC -= tmp;
+    */
+    
+}
+
+void DM::GC_LUT_Init()
+{
+    const int scale = 255*255;
+    const int scale2 = 2*scale;
+    int num;
+    float den; 
+
+    LUT = Mat::zeros(512, 512, CV_32FC1);
+    float * p_LUT;
+    for (int i = -255; i < 1; ++i)
+    {
+        p_LUT = LUT.ptr<float>(i+255);
+        for (int j = -255; j < 255; ++j)
+        {
+            num = i*j + scale;
+            den = sqrt(i*i+scale)*sqrt(j*j+scale2);//avoid integer overflow
+            p_LUT[j+255] = num/den;
+            if (abs(p_LUT[j+255])>1)
+            {
+                cout<<i<<" "<<j<<" "<<p_LUT[j+255]<<endl;
+            }
+            p_LUT[j+255] = acos(p_LUT[j+255]);
+            LUT.at<float>(255-i,j+255) = p_LUT[j+255];
+        }
+    }
+}
+
+//approimate GC by LUT
+void DM::GC_LUT(const Mat & img, Mat & GC)
+{
+    const float * p_row, *pp_row, *pn_row;
+    float *g, *p_LUT;
+    float total;
+    int row[4], col[4], offset;
+    for (int i = 1; i < img.rows-1; ++i)
+    {
+        p_row = img.ptr<float>(i);
+        pp_row = img.ptr<float>(i-1);
+        pn_row = img.ptr<float>(i+1);
+        g = GC.ptr<float>(i);
+        for (int j = 1; j < img.cols-1; ++j)
+        {
+            total = 0;
+            offset = int(255 - 255*p_row[j]);
+            row[0] = int(pp_row[j]*255) + offset;
+            col[0] = int(pp_row[j-1]*255) + offset;
+            col[1] = int(pp_row[j+1]*255) + offset;
+            row[1] = int(p_row[j-1]*255) + offset;
+            row[2] = int(p_row[j+1]*255) + offset;
+            row[3] = int(pn_row[j]*255) + offset;
+            col[2] = int(pn_row[j-1]*255) + offset;
+            col[3] = int(pn_row[j+1]*255) + offset;
+            //top two
+            p_LUT = LUT.ptr<float>(row[0]);
+            total += (p_LUT[col[0]] + p_LUT[col[1]]);
+            //left two
+            p_LUT = LUT.ptr<float>(row[1]);
+            total += (p_LUT[col[0]] + p_LUT[col[2]]);
+            //right two
+            p_LUT = LUT.ptr<float>(row[2]);
+            total += (p_LUT[col[1]] + p_LUT[col[3]]);
+            //bottom two
+            p_LUT = LUT.ptr<float>(row[3]);
+            total += (p_LUT[col[2]] + p_LUT[col[3]]);
+
+            g[j] = 6.283185f - total;
+        }
+    }
 }
 
 //compute the curvature energy
