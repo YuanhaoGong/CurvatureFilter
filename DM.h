@@ -33,9 +33,12 @@ public:
     //compute MC
     void MC(const Mat & img, Mat & MC);
     void MC_new(const Mat & img, Mat & MC);//new scheme, Eq.6.12 in my thesis
+    void MC_fit(const Mat & img, Mat & MC);
+    void MC_isoLine(const Mat & img, Mat & MC);
     //compute GC
     void GC(const Mat & img, Mat & GC);
     void GC_new(const Mat & img, Mat & GC);//new scheme, Eq.6.16 in my thesis
+    void GC_fit(const Mat & img, Mat & GC);
     void GC_LUT_Init();
     void GC_LUT(const Mat & img, Mat & GC);
     //compute energy for given TV, MC, or GC image
@@ -85,6 +88,8 @@ private:
     void merge();
     //naturalness evaluation
     double Naturalness_search(float* data, int N, int offset);
+    //fit coefficients 
+    void FiveCoefficient(const Mat & img, Mat & x2, Mat &y2, Mat & xy, Mat & x, Mat & y);
     /*************************************** Split into 4 sets *********************************/
     //one is for BT and WC, two is for BC and WT
     inline void GC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
@@ -359,6 +364,113 @@ void DM::MC_new(const Mat& imgF, Mat & MC)
     sepFilter2D(imgF, MC, CV_32F, kernel, kernel,Point(-1,-1),0,BORDER_REPLICATE);
     MC *= -1;
     MC += (0.5625f*imgF);//the center pixel
+}
+
+//fit coefficients 
+void DM::FiveCoefficient(const Mat & img, Mat & x2, Mat &y2, Mat & xy, Mat & x, Mat & y)
+{
+    Mat kernel_one = (Mat_<float>(1,3) << 1.0f, 1.0f, 1.0f);
+    Mat kernel_one_h = (Mat_<float>(1,3) << 0.1666667f, -0.333333f, 0.1666667f);
+    Mat kernel_three_h = (Mat_<float>(1,3) << -0.25f, 0.0f, 0.25f);
+    Mat kernel_three_v = (Mat_<float>(1,3) << 1.0f, 0.0f, -1.0f);
+    Mat kernel_four_h = - kernel_three_v;
+    Mat kernel_four_v = (Mat_<float>(1,3)<<0.1666667f,0.1666667f,0.1666667f);
+
+    sepFilter2D(img, x2, img.depth(), kernel_one_h, kernel_one);
+    sepFilter2D(img, y2, img.depth(), kernel_one, kernel_one_h);
+    sepFilter2D(img, xy, img.depth(), kernel_three_h, kernel_three_v);
+    sepFilter2D(img, x, img.depth(), kernel_four_h, kernel_four_v);
+    sepFilter2D(img, y, img.depth(), kernel_four_v, kernel_three_v);//reuse the same kernel
+}
+
+//compute Mean Curvature by fitting quad function
+void DM::MC_fit(const Mat & img, Mat & MC)
+{
+    Mat x2, y2, xy, x, y;
+    x2 = Mat::zeros(img.rows, img.cols, CV_32FC1);
+    y2 = Mat::zeros(img.rows, img.cols, CV_32FC1);
+    xy = Mat::zeros(img.rows, img.cols, CV_32FC1);
+    x  = Mat::zeros(img.rows, img.cols, CV_32FC1);
+    y  = Mat::zeros(img.rows, img.cols, CV_32FC1);
+
+    FiveCoefficient(img, x2, y2, xy, x, y);
+    float* p_x2, *p_y2, *p_xy, *p_x, *p_y, *p_d;
+    float num, den;
+    for (int i = 1; i < img.rows-1; ++i)
+    {
+        p_x2 = x2.ptr<float>(i);
+        p_y2 = y2.ptr<float>(i);
+        p_xy = xy.ptr<float>(i);
+        p_x  = x.ptr<float>(i);
+        p_y  = y.ptr<float>(i);
+        p_d  = MC.ptr<float>(i);
+        for (int j = 1; j < img.cols-1; ++j)
+        {
+            num = (1+p_x[j]*p_x[j])*p_y2[j] - p_x[j]*p_y[j]*p_xy[j] + (1+p_y[j]*p_y[j])*p_x2[j];
+            den = 1+p_x[j]*p_x[j] + p_y[j]*p_y[j];
+            den = sqrt(den)*den;
+            p_d[j] = num/den; 
+        }
+    }
+}
+
+void DM::MC_isoLine(const Mat & img, Mat & MC)
+{
+    //compute the MC by iso lines scheme
+    const float * p_row, *pn_row, *pp_row;
+    float *p_d;
+    float Ix, Iy, Ixy, Ixx, Iyy, num, den, tmp;
+    for(int i = 1; i < imgF.rows-1; i++)
+    {
+        p_row = imgF.ptr<float>(i);
+        pn_row = imgF.ptr<float>(i+1);
+        pp_row = imgF.ptr<float>(i-1);
+        p_d = MC.ptr<float>(i);
+        
+        for(int j = 1; j < imgF.cols-1; j++)
+        {
+            Ix = (p_row[j+1] - p_row[j-1])/2;
+            Iy = (pn_row[j] - pp_row[j])/2;
+            Ixx = p_row[j+1] - 2*p_row[j] + p_row[j-1];
+            Iyy = pn_row[j] - 2*p_row[j] + pp_row[j];
+            Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])/4;
+            
+            num = Ix*Ix*Iyy - 2*Ix*Iy*Ixy + Iy*Iy*Ixx;
+            den = Ix*Ix + Iy*Iy + 0.000001f;
+            p_d[j] = num/den;
+        }   
+    }
+}
+
+//compute Gaussian Curvature by fitting quad function
+void DM::GC_fit(const Mat & img, Mat & GC)
+{
+    Mat x2, y2, xy, x, y;
+    x2 = Mat::zeros(img.rows, img.cols, CV_32FC1);
+    y2 = Mat::zeros(img.rows, img.cols, CV_32FC1);
+    xy = Mat::zeros(img.rows, img.cols, CV_32FC1);
+    x  = Mat::zeros(img.rows, img.cols, CV_32FC1);
+    y  = Mat::zeros(img.rows, img.cols, CV_32FC1);
+
+    FiveCoefficient(img, x2, y2, xy, x, y);
+    float* p_x2, *p_y2, *p_xy, *p_x, *p_y, *p_d;
+    float num, den;
+    for (int i = 1; i < img.rows-1; ++i)
+    {
+        p_x2 = x2.ptr<float>(i);
+        p_y2 = y2.ptr<float>(i);
+        p_xy = xy.ptr<float>(i);
+        p_x  = x.ptr<float>(i);
+        p_y  = y.ptr<float>(i);
+        p_d  = GC.ptr<float>(i);
+        for (int j = 1; j < img.cols-1; ++j)
+        {
+            num = p_x2[j] * p_y2[j] *4 - p_xy[j]*p_xy[j];
+            den = 1+p_x[j]*p_x[j] + p_y[j]*p_y[j];
+            den *= den;
+            p_d[j] = num/den; 
+        }
+    }
 }
 
 //compute Gaussian curvature
