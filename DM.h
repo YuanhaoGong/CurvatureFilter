@@ -53,16 +53,26 @@ public:
     double Naturalness(const Mat & img);
     /******************* filters *****************************/
     // Type=0, TV; Type=1, MC; Type=2, GC; (Type=3, DC, experimental);
-    // the stepsize parameter is in (0,1]:smaller means more iterations, but reaches lower energy level; larger means less iterations, but converges at higher energy level
+    // the stepsize parameter is in (0,1]:smaller means more iterations, but reaches lower energy level; 
+    // larger means less iterations, but converges at higher energy level
     //////////////////////////////////////////////////////////
+
     void Filter(const int Type, double & time, const int ItNum = 10, const float stepsize=1);//with split
     void FilterNoSplit(const int Type, double & time, const int ItNum = 10, const float stepsize=1);//direct on imgF 
+    
+    /******************* Half-window Regression *****************************/
+    
+    void HalfWindow(double & time, int ItNum=10, Mat kernel=Mat::ones(1,5,CV_32FC1), const float stepsize=1);
+
     /******************* Curvature Guided Filter *****************************/
+    
     //compute the curvature from the guided image (scaled to the size of imgF)
     Mat GuideCurvature(const char * FileName, const int Type);
     //filter the image such that the result is close to the specified curvature
     void CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, const int ItNum = 10, const float stepsize=1);
+    
     /******************* generic solver for variational models *****************************/
+    
     //solve |U - I|^DataFitOrder + lambda * |curvature(U)|
     void Solver(const int Type, double & time, const int MaxItNum, const float lambda = 2, const float DataFitOrder = 1, const float stepsize=1);
     //solve BlackBox(U,I) + lambda * |curvature(U)|
@@ -88,8 +98,10 @@ private:
     void merge();
     //naturalness evaluation
     double Naturalness_search(float* data, int N, int offset);
-    //fit coefficients 
+    //fit coefficients for quad function
     void FiveCoefficient(const Mat & img, Mat & x2, Mat &y2, Mat & xy, Mat & x, Mat & y);
+    //keep the value that has smaller absolute value
+    inline void KeepMinAbs(Mat& dm, Mat& d_other);
     /*************************************** Split into 4 sets *********************************/
     //one is for BT and WC, two is for BC and WT
     inline void GC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
@@ -708,6 +720,20 @@ void DM::merge()
     }
 }
 
+//keep the value that has minimum absolute value in dm
+inline void DM::KeepMinAbs(Mat& dm, Mat& d_other)
+{
+    for (int i = 0; i < dm.rows; ++i)
+    {
+        p=dm.ptr<float>(i);
+        p_pre = d_other.ptr<float>(i);
+        for (int j = 0; j < dm.cols; ++j)
+        {
+            if(fabsf(p_pre[j])<fabsf(p[j])) p[j] = p_pre[j];
+        }
+    }
+}
+
 void DM::Filter(const int Type, double & time, const int ItNum, const float stepsize)
 {
     clock_t Tstart, Tend;
@@ -890,6 +916,56 @@ void DM::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
     Tend = clock() - Tstart;   
     time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
 }
+
+//perform half window regression for given kernel
+void DM::HalfWindow(double & time, int ItNum, Mat kernel, const float stepsize)
+{
+    clock_t Tstart, Tend;
+    if(kernel.cols % 2 == 0) {cout<<"The kernel size must be odd."<<endl; return;}
+    const int r = (kernel.cols-1)/2;//window radius
+    //two half kernels
+    Mat kernel_left = Mat::zeros(1,2*r+1,CV_32FC1);
+    Mat kernel_right = Mat::zeros(1,2*r+1,CV_32FC1);
+    //two distance fields
+    Mat dist_1 = Mat::zeros(M,N,CV_32FC1);
+    Mat dist_2 = Mat::zeros(M,N,CV_32FC1);
+
+    //normalize the two kernels
+    double total_left = 0; double total_right = 0;
+    for (int i = 0; i < r+1; ++i)
+    {
+        kernel_left.at<float>(0,i) = kernel.at<float>(0,i);
+        total_left += kernel.at<float>(0,i);
+
+        kernel_right.at<float>(0,i+r) = kernel.at<float>(0,i+r);
+        total_right += kernel.at<float>(0,i+r);
+    }
+    kernel_left /= total_left;
+    kernel_right /= total_right;
+    kernel /= (total_left + total_right - kernel.at<float>(0,r));
+
+    Tstart = clock();
+    for(int it=0;it<ItNum;++it)
+    {
+        //compute four distance fields and find the minimal projection
+        sepFilter2D(imgF, dist_1, imgF.depth(), kernel, kernel_left);
+        sepFilter2D(imgF, dist_2, imgF.depth(), kernel, kernel_right);
+        dist_1 -= imgF;
+        dist_2 -= imgF;
+        KeepMinAbs(dist_1, dist_2);
+        sepFilter2D(imgF, dist_2, imgF.depth(), kernel_left, kernel);
+        dist_2 -= imgF;
+        KeepMinAbs(dist_1, dist_2);
+        sepFilter2D(imgF, dist_2, imgF.depth(), kernel_right, kernel);
+        dist_2 -= imgF;
+        KeepMinAbs(dist_1, dist_2);
+
+        imgF += (stepsize*dist_1);
+    }
+    Tend = clock() - Tstart;   
+    time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
+}
+
 
 //compute the guide curvature from a given image
 Mat DM::GuideCurvature(const char * FileName, const int Type)
