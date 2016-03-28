@@ -66,10 +66,21 @@ int main(int argc, char** argv)
     DualMesh.read(argv[1]);
 
     char * filterType = argv[2];
-    if (*filterType == 't') Type = 0;
-    if (*filterType == 'm') Type = 1;
-    if (*filterType == 'd') Type = 3;
-    if (*filterType == 'b') Type = 4;
+    switch(*filterType)
+    {
+        case 't':
+            { Type = 0; break; }
+        case 'm':
+            { Type = 1; break; }
+        case 'g':
+            { Type = 2; break; }
+        case 'd':
+            { Type = 3; break; }
+        case 'b':
+            { Type = 4; break; }
+        default:
+            { cout<<"Filter Type is NOT correct."<<endl; return -1; }
+    }
 
     ItNum = atoi(argv[3]);
     double mytime;
