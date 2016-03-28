@@ -142,16 +142,16 @@ double DM::Naturalness(const Mat& imgF)
     //compute naturalness factor
     const float * p_row ;
     const float * pp_row;
-    short int indexX, indexY;
-    short int Offset = 256;
-    short int N = 512;
+    int indexX, indexY;
+    int Offset = 256;
+    int N = 512;
     double eps = 0.0001;
     double left(0), right(1), mid_left(0), mid_right(0);
 
     Mat GradCDF = Mat::zeros(2, N, CV_32FC1);
     float * Gradx = GradCDF.ptr<float>(0);
     float * Grady = GradCDF.ptr<float>(1);
-    double f = 1.0/((imgF.rows-1)*(imgF.cols-1));
+    float f = 1.0f/((imgF.rows-1)*(imgF.cols-1));
 
     //not efficient but safe way
     for(int i = 0; i < imgF.rows - 1; i++)
@@ -162,8 +162,8 @@ double DM::Naturalness(const Mat& imgF)
         for(int j = 0; j < imgF.cols - 1; j++)
         {
             //scale back to 255
-            indexX = Offset + (p_row[j+1] - p_row[j])*255;
-            indexY = Offset + (pp_row[j] - p_row[j])*255;            
+            indexX = Offset + int((p_row[j+1] - p_row[j])*255);
+            indexY = Offset + int((pp_row[j] - p_row[j])*255);            
             Gradx[indexX] += f;
             Grady[indexY] += f;
         }
@@ -419,7 +419,7 @@ void DM::MC_isoLine(const Mat & img, Mat & MC)
     //compute the MC by iso lines scheme
     const float * p_row, *pn_row, *pp_row;
     float *p_d;
-    float Ix, Iy, Ixy, Ixx, Iyy, num, den, tmp;
+    float Ix, Iy, Ixy, Ixx, Iyy, num, den;
     for(int i = 1; i < imgF.rows-1; i++)
     {
         p_row = imgF.ptr<float>(i);
@@ -598,7 +598,7 @@ void DM::GC_LUT_Init()
         for (int j = -255; j < 255; ++j)
         {
             num = i*j + scale;
-            den = sqrt(i*i+scale)*sqrt(j*j+scale2);//avoid integer overflow
+            den = sqrt(float(i*i+scale))*sqrt(float(j*j+scale2));//avoid integer overflow
             p_LUT[j+255] = num/den;
             if (abs(p_LUT[j+255])>1)
             {
