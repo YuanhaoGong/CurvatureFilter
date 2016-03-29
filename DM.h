@@ -63,7 +63,7 @@ public:
     /******************* Half-window Regression *****************************/
     
     void HalfWindow(double & time, int ItNum=10, Mat kernel=Mat::ones(1,5,CV_32FC1), const float stepsize=1);
-    void HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r, const float eps);
+    void HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float eps=0.04);
 
     /******************* Curvature Guided Filter *****************************/
     
@@ -1023,6 +1023,12 @@ void DM::HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat
         results[i] = mean_a.mul(guide) + mean_b;
         var_a[i] = mean_aa - mean_a.mul(mean_a);
     }
+
+    //imwrite("debug0.png", results[0]*255);
+    //imwrite("debug1.png", results[1]*255);
+    //imwrite("debug2.png", results[2]*255);
+    //imwrite("debug3.png", results[3]*255);
+    
     //take the smallest var_a
     Mat index = Mat::ones(src.size(), CV_8UC1);
     float *p, *p_d;
@@ -1048,7 +1054,8 @@ void DM::HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat
             p_d[j] = results[p_ind[j]].at<float>(i,j);
         }
     }
-
+    //imwrite("debug4.png", index*50);
+    //imwrite("debug5.png", dst*255);
 }
 
 //compute the guide curvature from a given image
