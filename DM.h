@@ -448,7 +448,8 @@ void DM::MC_isoLine(const Mat & img, Mat & MC)
             Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])/4;
             
             num = Ix*Ix*Iyy - 2*Ix*Iy*Ixy + Iy*Iy*Ixx;
-            den = Ix*Ix + Iy*Iy + 0.000001f;
+            den = Ix*Ix + Iy*Iy;
+            den = sqrt(den)*den + 0.000001f;
             p_d[j] = num/den;
         }   
     }
