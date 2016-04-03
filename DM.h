@@ -67,7 +67,8 @@ public:
     void HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float eps=0.04);
     //not ready
     void L1GuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float lambda=0.01);
-    
+    //not ready, perform half window morphology
+    void HalfMorph(double & time, const Mat & src, Mat & dst, int op, int radius);
     /******************* Curvature Guided Filter *****************************/
     
     //compute the curvature from the guided image (scaled to the size of imgF)
@@ -1104,7 +1105,31 @@ void DM::L1GuidedFilter(double & time, const Mat & src, const Mat & guide, Mat &
     result = mean_one.mul(guide) + mean_zero;
 }
 
+void DM::HalfMorph(double & time, const Mat & src, Mat & dst, int op, int radius)
+{
+    const int w = 2*radius+1; 
+    Mat kernel_left = Mat::zeros(w,w,CV_8UC1);
+    Mat kernel_right = Mat::zeros(w,w,CV_8UC1);
+    Mat kernel_up = Mat::zeros(w,w,CV_8UC1);
+    Mat kernel_down = Mat::zeros(w,w,CV_8UC1);
+    for (int i = 0; i <= radius; ++i)
+    {
+        kernel_left.col(i) = 1;
+        kernel_right.col(w-i-1) = 1;
+        kernel_up.row(i) = 1;
+        kernel_down.row(w-i-1) = 1;
+    }
+    //perform four and select one
+    Mat result_left = Mat::zeros(src.size(), CV_32FC1);
+    Mat result_right = Mat::zeros(src.size(), CV_32FC1);
+    Mat result_up = Mat::zeros(src.size(), CV_32FC1);
+    Mat result_down = Mat::zeros(src.size(), CV_32FC1);
+    morphologyEx(src, result_left, op, kernel_left); 
+    morphologyEx(src, result_right, op, kernel_right); 
+    morphologyEx(src, result_up, op, kernel_up); 
+    morphologyEx(src, result_down, op, kernel_down); 
 
+}
 //compute the guide curvature from a given image
 Mat DM::GuideCurvature(const char * FileName, const int Type)
 {
