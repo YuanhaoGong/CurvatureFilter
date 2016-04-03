@@ -61,10 +61,13 @@ public:
     void FilterNoSplit(const int Type, double & time, const int ItNum = 10, const float stepsize=1);//direct on imgF 
     
     /******************* Half-window Regression *****************************/
-    
-    void HalfWindow(double & time, int ItNum=10, Mat kernel=Mat::ones(1,5,CV_32FC1), const float stepsize=1);
-    void HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float eps=0.04);
 
+    void HalfWindow(double & time, int ItNum=10, Mat kernel=getGaussianKernel(5, -1, CV_32F ).t(), const float stepsize=1);
+    //not ready
+    void HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float eps=0.04);
+    //not ready
+    void L1GuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float lambda=0.01);
+    
     /******************* Curvature Guided Filter *****************************/
     
     //compute the curvature from the guided image (scaled to the size of imgF)
@@ -77,7 +80,8 @@ public:
     //solve |U - I|^DataFitOrder + lambda * |curvature(U)|
     void Solver(const int Type, double & time, const int MaxItNum, const float lambda = 2, const float DataFitOrder = 1, const float stepsize=1);
     //solve BlackBox(U,I) + lambda * |curvature(U)|
-    void BlackBoxSolver(const int Type, double & time, const int MaxItNum, const float lambda, float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d), const float stepsize=1);
+    void BlackBoxSolver(const int Type, double & time, const int MaxItNum, const float lambda, 
+                            float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d), const float stepsize=1);
 
 private:
     //padded original, tmp, result
@@ -1057,6 +1061,49 @@ void DM::HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat
     //imwrite("debug4.png", index*50);
     //imwrite("debug5.png", dst*255);
 }
+
+void DM::L1GuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r, const float lambda)
+{
+    Size kernel = Size(2*r+1, 2*r+1);
+    Mat mean_guide = Mat::zeros(guide.size(), CV_32FC1);
+    Mat grad = Mat::zeros(guide.size(), CV_32FC1);
+    Mat mean_grad = Mat::zeros(guide.size(), CV_32FC1);
+    Mat mean_gg = Mat::zeros(guide.size(), CV_32FC1);
+    Mat den = Mat::zeros(guide.size(), CV_32FC1);
+    Mat num = Mat::zeros(guide.size(), CV_32FC1);
+    Mat mean_gs = Mat::zeros(guide.size(), CV_32FC1);
+    Mat mean_src = Mat::zeros(src.size(), CV_32FC1);
+    Mat C_one = Mat::zeros(src.size(), CV_32FC1);
+    Mat C_zero = Mat::zeros(src.size(), CV_32FC1);
+
+    TV(guide, grad);
+    boxFilter(grad, mean_grad, grad.depth(), kernel);
+    boxFilter(guide.mul(guide), mean_gg, guide.depth(), kernel);
+    boxFilter(guide, mean_guide, guide.depth(), kernel);
+    boxFilter(guide.mul(src), mean_gs, guide.depth(), kernel);
+    boxFilter(src, mean_src, src.depth(), kernel);
+    num = mean_gs - mean_src.mul(mean_guide) - lambda*mean_grad;
+    den = mean_gg - mean_guide.mul(mean_guide);
+    C_one = num/den;
+    C_zero = mean_src - C_one.mul(mean_guide);
+    float *p;
+    for (int i = 0; i < C_one.rows; ++i)
+    {
+        p = C_one.ptr<float>(i);
+        for (int j = 0; j < C_one.cols; ++j)
+        {
+            if(p[j]<0) p[j] = 0;
+        }
+    }
+
+    //imwrite("debug_grad.png", C_one*255);
+    Mat mean_one = Mat::zeros(guide.size(), CV_32FC1);
+    Mat mean_zero = Mat::zeros(guide.size(), CV_32FC1);
+    boxFilter(C_one, mean_one, C_one.depth(), kernel);
+    boxFilter(C_zero, mean_zero, C_zero.depth(), kernel);
+    result = mean_one.mul(guide) + mean_zero;
+}
+
 
 //compute the guide curvature from a given image
 Mat DM::GuideCurvature(const char * FileName, const int Type)
