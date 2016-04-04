@@ -63,12 +63,14 @@ public:
     /******************* Half-window Regression *****************************/
 
     void HalfWindow(double & time, int ItNum=10, Mat kernel=getGaussianKernel(5, -1, CV_32F ).t(), const float stepsize=1);
+    //select half window with smallest var
+    void HalfWindowVar(double & time, const Mat & img, Mat & result, Mat & label, const int radius = 2);
     //not ready
     void HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float eps=0.04);
     //not ready
     void L1GuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float lambda=0.01);
     //not ready, perform half window morphology
-    void HalfMorph(double & time, const Mat & src, Mat & dst, int op, int radius);
+    void HalfMorph(double & time, const Mat & src, Mat & dst, int op, const int radius=2);
     /******************* Curvature Guided Filter *****************************/
     
     //compute the curvature from the guided image (scaled to the size of imgF)
@@ -108,6 +110,9 @@ private:
     void FiveCoefficient(const Mat & img, Mat & x2, Mat &y2, Mat & xy, Mat & x, Mat & y);
     //keep the value that has smaller absolute value
     inline void KeepMinAbs(Mat& dm, Mat& d_other);
+    //compute half window mean
+    inline void HalfBoxFilter(const int direction, const Mat & img, Mat & result, const int radius=1);
+    
     /*************************************** Split into 4 sets *********************************/
     //one is for BT and WC, two is for BC and WT
     inline void GC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
@@ -741,6 +746,77 @@ inline void DM::KeepMinAbs(Mat& dm, Mat& d_other)
     }
 }
 
+//compute half window mean
+inline void DM::HalfBoxFilter(const int direct, const Mat & img, Mat & result, const int radius)
+{
+    const int w = 2*radius + 1;
+    //two separable kernels
+    Mat k_h=Mat::ones(1,w,CV_32FC1);
+    Mat k_v=Mat::ones(1,w,CV_32FC1);
+    switch(direct)
+    {
+        case 0://left half box
+            k_v.colRange(radius+1,w) = 0.0f;
+            k_v /= (radius + 1);
+            k_h /= w;
+            break;
+        case 1://right half box
+            k_v.colRange(0,radius) = 0.0f;
+            k_v /= (radius + 1);
+            k_h /= w;
+            break;
+        case 2://top half box
+            k_h.colRange(radius+1,w) = 0.0f;
+            k_h /= (radius + 1);
+            k_v /= w;
+            break;
+        case 3://bottom half box
+            k_h.colRange(0,radius) = 0.0f;
+            k_h /= (radius + 1);
+            k_v /= w;
+            break;
+    }
+    sepFilter2D(img, result, img.depth(), k_h, k_v);
+}
+
+//half window with smallest var
+inline void DM::HalfWindowVar(double & time, const Mat & img, Mat & result, Mat & label, const int radius)
+{
+    clock_t Tstart, Tend;
+    Mat sq = img.mul(img);
+    Mat mean_sq = Mat::zeros(img.size(), CV_32FC1);
+    Mat mean_half = Mat::zeros(img.size(), CV_32FC1);
+    Mat var = Mat::ones(img.size(), CV_32FC1)*(4*radius);
+    Mat tmp = Mat::ones(img.size(), CV_32FC1);
+    float *p, *p_var, *p_value, *p_mean;
+    unsigned char *p_label;
+    Tstart = clock();
+    for (int d = 0; d < 4; ++d)
+    {
+        HalfBoxFilter(d, sq, mean_sq, radius);
+        HalfBoxFilter(d, img, mean_half, radius);
+        tmp = mean_sq - mean_half.mul(mean_half);
+        for (int i = 0; i < img.rows; ++i)
+        {
+            p = tmp.ptr<float>(i);
+            p_var = var.ptr<float>(i);
+            p_label = label.ptr<unsigned char>(i);
+            p_mean = mean_half.ptr<float>(i);
+            p_value = result.ptr<float>(i);
+            for (int j = 0; j < img.cols; ++j)
+            {
+                if (p[j] < p_var[j])
+                {
+                    p_var[j] = p[j];
+                    p_label[j] = d;
+                    p_value[j] = p_mean[j];
+                }
+            }
+        }
+    }
+    Tend = clock() - Tstart;
+    time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
+}
 void DM::Filter(const int Type, double & time, const int ItNum, const float stepsize)
 {
     clock_t Tstart, Tend;
@@ -976,19 +1052,7 @@ void DM::HalfWindow(double & time, int ItNum, Mat kernel, const float stepsize)
 //guided filter with half window regression
 void DM::HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & dst, const int r, const float eps)
 {
-    Point anchor[4];//four different half windows
-    anchor[0]=Point(-1,0);
-    anchor[1]=Point(-1,r);
-    anchor[2]=Point(0,-1);
-    anchor[3]=Point(r,-1);
-
-    Size fourSize[4];
-    fourSize[0]=Size(r,2*r+1);
-    fourSize[1]=Size(r,2*r+1);
-    fourSize[2]=Size(2*r+1,r);
-    fourSize[3]=Size(2*r+1,r);
-
-    Mat results[4];//save four results
+    Mat results[4];//four results
     Mat var_a[4];//save four variance of a
     for (int i = 0; i < 4; ++i) 
     {
@@ -1010,20 +1074,19 @@ void DM::HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat
 
     for (int i = 0; i < 4; ++i)
     {
-        boxFilter(guide, mean_guide, guide.depth(), fourSize[i], anchor[i]);
-        boxFilter(src, mean_src, src.depth(), fourSize[i], anchor[i]); 
-        boxFilter(guide.mul(src), mean_gs, guide.depth(), fourSize[i], anchor[i]);
-        boxFilter(guide.mul(guide), mean_gg, guide.depth(), fourSize[i], anchor[i]);
-
+        HalfBoxFilter(i, guide, mean_guide, r);
+        HalfBoxFilter(i, src, mean_src, r); 
+        HalfBoxFilter(i, guide.mul(src), mean_gs, r);
+        HalfBoxFilter(i, guide.mul(guide), mean_gg, r);
 
         var_g = mean_gg - mean_guide.mul(mean_guide);
         cov = mean_gs - mean_guide.mul(mean_src); // covariance of (guide, src) in each patch
         a = cov / (var_g + eps); // Eqn. (5) in the paper
         b = mean_src - a.mul(mean_guide); // Eqn. (6) in the paper
 
-        boxFilter(a, mean_a, a.depth(), fourSize[i], anchor[i]);
-        boxFilter(b, mean_b, b.depth(), fourSize[i], anchor[i]);
-        boxFilter(a.mul(a), mean_aa, a.depth(), fourSize[i], anchor[i]);
+        HalfBoxFilter(i, a, mean_a, r);
+        HalfBoxFilter(i, b, mean_b, r);
+        HalfBoxFilter(i, a.mul(a), mean_aa, r);
 
         results[i] = mean_a.mul(guide) + mean_b;
         var_a[i] = mean_aa - mean_a.mul(mean_a);
@@ -1036,20 +1099,10 @@ void DM::HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat
     
     //take the smallest var_a
     Mat index = Mat::ones(src.size(), CV_8UC1);
-    float *p, *p_d;
+    HalfWindowVar(time, src, var_a[0], index, r);
+    float *p_d;
     unsigned char *p_ind;
-    for (int i = 1; i < 4; ++i)
-    {
-        for (int j = 0; j < src.rows; ++j)
-        {
-            p = var_a[i].ptr<float>(j);
-            p_ind = index.ptr<unsigned char>(j);
-            for (int k = 0; k < src.cols; ++k)
-            {
-                if(p[k]<var_a[p_ind[k]].at<float>(j,k)) p_ind[k] = i;
-            }
-        }
-    }
+    
     for (int i = 0; i < src.rows; ++i)
     {
         p_d = dst.ptr<float>(i);
@@ -1105,30 +1158,57 @@ void DM::L1GuidedFilter(double & time, const Mat & src, const Mat & guide, Mat &
     result = mean_one.mul(guide) + mean_zero;
 }
 
-void DM::HalfMorph(double & time, const Mat & src, Mat & dst, int op, int radius)
+void DM::HalfMorph(double & time, const Mat & src, Mat & dst, int op, const int radius)
 {
     const int w = 2*radius+1; 
-    Mat kernel_left = Mat::zeros(w,w,CV_8UC1);
-    Mat kernel_right = Mat::zeros(w,w,CV_8UC1);
-    Mat kernel_up = Mat::zeros(w,w,CV_8UC1);
-    Mat kernel_down = Mat::zeros(w,w,CV_8UC1);
+    Mat kernel[4], result[4];
+    for (int i = 0; i < 4; ++i)
+    {
+        kernel[i] = Mat::zeros(w,w,CV_8UC1);
+        result[i] = Mat::zeros(src.size(), CV_32FC1);
+    }
     for (int i = 0; i <= radius; ++i)
     {
-        kernel_left.col(i) = 1;
-        kernel_right.col(w-i-1) = 1;
-        kernel_up.row(i) = 1;
-        kernel_down.row(w-i-1) = 1;
+        //the order should be exactly the same as HalfBoxFilter
+        kernel[0].col(i) = 1;            //left
+        kernel[1].col(w-i-1) = 1;        //right
+        kernel[2].row(i) = 1;            //up
+        kernel[3].row(w-i-1) = 1;        //down
     }
-    //perform four and select one
-    Mat result_left = Mat::zeros(src.size(), CV_32FC1);
-    Mat result_right = Mat::zeros(src.size(), CV_32FC1);
-    Mat result_up = Mat::zeros(src.size(), CV_32FC1);
-    Mat result_down = Mat::zeros(src.size(), CV_32FC1);
-    morphologyEx(src, result_left, op, kernel_left); 
-    morphologyEx(src, result_right, op, kernel_right); 
-    morphologyEx(src, result_up, op, kernel_up); 
-    morphologyEx(src, result_down, op, kernel_down); 
-
+    //perform four morph operations
+    for (int i = 0; i < 4; ++i)
+    {
+        morphologyEx(src, result[i], op, kernel[i]); 
+    }
+    
+    //find the smallest var and set values
+    Mat sq = src.mul(src);
+    Mat mean_sq = Mat::zeros(src.size(), CV_32FC1);
+    Mat mean_half = Mat::zeros(src.size(), CV_32FC1);
+    Mat var = Mat::ones(src.size(), CV_32FC1)*(4*radius);
+    Mat tmp = Mat::ones(src.size(), CV_32FC1);
+    float *p, *p_var, *p_value, *p_m;
+    for (int d = 0; d < 4; ++d)
+    {
+        HalfBoxFilter(d, sq, mean_sq, radius);
+        HalfBoxFilter(d, src, mean_half, radius);
+        tmp = mean_sq - mean_half.mul(mean_half);
+        for (int i = 0; i < src.rows; ++i)
+        {
+            p = tmp.ptr<float>(i);
+            p_var = var.ptr<float>(i);
+            p_value = dst.ptr<float>(i);
+            p_m = result[d].ptr<float>(i);
+            for (int j = 0; j < src.cols; ++j)
+            {
+                if (p[j] < p_var[j])
+                {
+                    p_var[j] = p[j];//record the smallest value
+                    p_value[j] = p_m[j];//update the morph result
+                }
+            }
+        }
+    }
 }
 //compute the guide curvature from a given image
 Mat DM::GuideCurvature(const char * FileName, const int Type)
