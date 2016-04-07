@@ -68,8 +68,8 @@ public:
     void HalfWindowVar(double & time, const Mat & img, Mat & result, Mat & label, const int radius = 2);
     //not ready
     void HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float eps=0.04);
-    //not ready
-    void L1GuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float lambda=0.01);
+    //how to set the parameters?
+    void L1GuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float lambda=0.05);
     //not ready, perform half window morphology
     void HalfMorph(double & time, const Mat & src, Mat & dst, int op, const int radius=2);
     /******************* Curvature Guided Filter *****************************/
@@ -113,6 +113,8 @@ private:
     inline void KeepMinAbs(Mat& dm, Mat& d_other);
     //compute half window mean
     inline void HalfBoxFilter(const int direction, const Mat & img, Mat & result, const int radius=1);
+    //choose the best one from four half window mean
+    void HalfBoxFilterAdaptive(const Mat & img, Mat & result, const int radius=1);
     
     /*************************************** Split into 4 sets *********************************/
     //one is for BT and WC, two is for BC and WT
@@ -780,6 +782,22 @@ inline void DM::HalfBoxFilter(const int direct, const Mat & img, Mat & result, c
     sepFilter2D(img, result, img.depth(), k_h, k_v);
 }
 
+//choose the best one from four half window mean
+void DM::HalfBoxFilterAdaptive(const Mat & img, Mat & result, const int radius)
+{
+    Mat dm = Mat::zeros(img.size(), CV_32FC1);
+    Mat tmp = Mat::zeros(img.size(), CV_32FC1);
+    HalfBoxFilter(0, img, dm, radius);
+    dm -= img;
+    for (int i = 1; i < 4; ++i)
+    {
+        HalfBoxFilter(i, img, tmp, radius);
+        tmp -= img;
+        KeepMinAbs(dm, tmp);
+    }
+    result = img + dm;
+}
+
 //half window with smallest var
 inline void DM::HalfWindowVar(double & time, const Mat & img, Mat & result, Mat & label, const int radius)
 {
@@ -1140,7 +1158,7 @@ void DM::L1GuidedFilter(double & time, const Mat & src, const Mat & guide, Mat &
     num = mean_gs - mean_src.mul(mean_guide) - lambda*mean_grad;
     den = mean_gg - mean_guide.mul(mean_guide);
     C_one = num/den;
-    C_zero = mean_src - C_one.mul(mean_guide);
+    //set negative to zero before computing C_zero
     float *p;
     for (int i = 0; i < C_one.rows; ++i)
     {
@@ -1150,8 +1168,8 @@ void DM::L1GuidedFilter(double & time, const Mat & src, const Mat & guide, Mat &
             if(p[j]<0) p[j] = 0;
         }
     }
+    C_zero = mean_src - C_one.mul(mean_guide);
 
-    //imwrite("debug_grad.png", C_one*255);
     Mat mean_one = Mat::zeros(guide.size(), CV_32FC1);
     Mat mean_zero = Mat::zeros(guide.size(), CV_32FC1);
     boxFilter(C_one, mean_one, C_one.depth(), kernel);
