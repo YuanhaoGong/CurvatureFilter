@@ -64,6 +64,7 @@ public:
 
     void HalfWindow(double & time, int ItNum=10, Mat kernel=getGaussianKernel(7, -1, CV_32F ).t(), const float stepsize=1);
     //select half window with smallest var
+    void HalfWindowVar(double & time, Mat & result, Mat & label, const int radius = 2){HalfWindowVar(time, imgF, result, label, radius);}
     void HalfWindowVar(double & time, const Mat & img, Mat & result, Mat & label, const int radius = 2);
     //not ready
     void HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float eps=0.04);
