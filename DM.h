@@ -62,16 +62,20 @@ public:
     
     /******************* Half-window Regression *****************************/
 
+    //select half window with small intensity change for given kernel
     void HalfWindow(double & time, int ItNum=10, Mat kernel=getGaussianKernel(7, -1, CV_32F ).t(), const float stepsize=1);
-    //select half window with smallest var
-    void HalfWindowVar(double & time, Mat & result, Mat & label, const int radius = 2){HalfWindowVar(time, imgF, result, label, radius);}
-    void HalfWindowVar(double & time, const Mat & img, Mat & result, Mat & label, const int radius = 2);
+    //select half window for box kernel
+    //Type = 0, only smallest intensity change; Type = 1, both intensity and var; Type = 2, only var
+    void HalfWindowBox(const int Type, double & time, Mat & result, Mat & label, const int radius = 2)
+                          {HalfWindowBox(Type, time, imgF, result, label, radius);}
+    void HalfWindowBox(const int Type, double & time, const Mat & img, Mat & result, Mat & label, const int radius = 2);
     //not ready
     void HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float eps=0.04);
     //how to set the parameters?
     void L1GuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float lambda=0.05);
     //not ready, perform half window morphology
     void HalfMorph(double & time, const Mat & src, Mat & dst, int op, const int radius=2);
+
     /******************* Curvature Guided Filter *****************************/
     
     //compute the curvature from the guided image (scaled to the size of imgF)
@@ -799,43 +803,59 @@ void DM::HalfBoxFilterAdaptive(const Mat & img, Mat & result, const int radius)
 }
 
 //half window with smallest var
-inline void DM::HalfWindowVar(double & time, const Mat & img, Mat & result, Mat & label, const int radius)
+//Type = 0, only smallest intensity change; Type = 1, both intensity and var; Type = 2, only var
+inline void DM::HalfWindowBox(const int Type, double & time, const Mat & img, Mat & result, Mat & label, const int radius)
 {
     clock_t Tstart, Tend;
     Mat sq = img.mul(img);
     Mat mean_sq = Mat::zeros(img.size(), CV_32FC1);
     Mat mean_half = Mat::zeros(img.size(), CV_32FC1);
-    Mat var = Mat::ones(img.size(), CV_32FC1)*(4*radius);
-    Mat tmp = Mat::ones(img.size(), CV_32FC1);
-    float *p, *p_var, *p_value, *p_mean;
+    Mat criterion = Mat::ones(img.size(), CV_32FC1)*(4*radius*radius+512); //init larg number
+    Mat tmp = Mat::zeros(img.size(), CV_32FC1);
+    float *p, *p_criterion, *p_value, *p_mean;
     unsigned char *p_label;
     Tstart = clock();
+
     for (int d = 0; d < 4; ++d)
     {
         HalfBoxFilter(d, sq, mean_sq, radius);
         HalfBoxFilter(d, img, mean_half, radius);
-        tmp = mean_sq - mean_half.mul(mean_half);
+        switch(Type)
+        {
+            case 0: //intensity
+            tmp = abs(mean_half - img); break;
+            case 1: //hybrid the two
+            tmp = mean_half - img;
+            tmp = tmp.mul(tmp);
+            tmp += (mean_sq - mean_half.mul(mean_half)); break;
+            case 2: //var
+            tmp = mean_sq - mean_half.mul(mean_half); break;
+            default:
+            cout<<"The Type in HalfWindowBox is not correct."<<endl; return;
+        }
         for (int i = 0; i < img.rows; ++i)
         {
             p = tmp.ptr<float>(i);
-            p_var = var.ptr<float>(i);
+            p_criterion = criterion.ptr<float>(i);
             p_label = label.ptr<unsigned char>(i);
             p_mean = mean_half.ptr<float>(i);
             p_value = result.ptr<float>(i);
             for (int j = 0; j < img.cols; ++j)
             {
-                if (p[j] < p_var[j])
+                if (p[j] < p_criterion[j])
                 {
-                    p_var[j] = p[j];
+                    p_criterion[j] = p[j];
                     p_label[j] = d;
                     p_value[j] = p_mean[j];
                 }
             }
         }
     }
+
     Tend = clock() - Tstart;
     time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
 }
+
 void DM::Filter(const int Type, double & time, const int ItNum, const float stepsize)
 {
     clock_t Tstart, Tend;
@@ -1117,8 +1137,8 @@ void DM::HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat
     //imwrite("debug3.png", results[3]*255);
     
     //take the smallest var_a
-    Mat index = Mat::ones(src.size(), CV_8UC1);
-    HalfWindowVar(time, src, var_a[0], index, r);
+    Mat index = Mat::zeros(src.size(), CV_8UC1);
+    HalfWindowBox(2, time, src, var_a[0], index, r);
     float *p_d;
     unsigned char *p_ind;
     
