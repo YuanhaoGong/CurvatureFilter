@@ -1,0 +1,6 @@
+*.m linguist-language=Matlab
+*.h linguist-language=C++
+*.cpp linguist-language=C++
+*.cxx linguist-language=C++
+*.py linguist-language=Python
+*.ipynb linguist-language=Python
