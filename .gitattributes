@@ -2,5 +2,4 @@
 *.h linguist-language=C++
 *.cxx linguist-language=C++
 *.py linguist-language=Python
-*.ipynb linguist-language=Python
 *.cpp linguist-language=C++
