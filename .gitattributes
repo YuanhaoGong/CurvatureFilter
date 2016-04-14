@@ -3,3 +3,4 @@
 *.cxx linguist-language=C++
 *.py linguist-language=Python
 *.cpp linguist-language=C++
+*.ipynb linguist-language=C++
