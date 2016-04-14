@@ -754,13 +754,13 @@ inline void DM::KeepMinAbs(Mat& dm, Mat& d_other)
 }
 
 //compute half window mean
-inline void DM::HalfBoxFilter(const int direct, const Mat & img, Mat & result, const int radius)
+inline void DM::HalfBoxFilter(const int direction, const Mat & img, Mat & result, const int radius)
 {
     const int w = 2*radius + 1;
     //two separable kernels
     Mat k_h=Mat::ones(1,w,CV_32FC1);
     Mat k_v=Mat::ones(1,w,CV_32FC1);
-    switch(direct)
+    switch(direction)
     {
         case 0://left half box
             k_v.colRange(radius+1,w) = 0.0f;
