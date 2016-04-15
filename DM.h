@@ -90,6 +90,8 @@ public:
     //solve BlackBox(U,I) + lambda * |curvature(U)|
     void BlackBoxSolver(const int Type, double & time, const int MaxItNum, const float lambda, 
                             float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d), const float stepsize=1);
+    //compute negative gradient for mean curvature regularization energy
+    Mat NegativeGradient(const Mat & img);
 
 private:
     //padded original, tmp, result
@@ -122,25 +124,25 @@ private:
     
     /*************************************** Split into 4 sets *********************************/
     //one is for BT and WC, two is for BC and WT
-    inline void GC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-    inline void GC_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
+    inline void GC_one(float* p, const float* p_right, const float* p_down, const float *p_rd, const float* p_pre, const float* p_Corner, const float& stepsize);
+    inline void GC_two(float* p, const float* p_right, const float* p_down, const float *p_rd, const float* p_pre, const float* p_Corner, const float& stepsize);
 
-    inline void MC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-    inline void MC_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-    inline void TV_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-    inline void TV_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
+    inline void MC_one(float* p, const float* p_right, const float* p_down, const float *p_rd, const float* p_pre, const float* p_Corner, const float& stepsize);
+    inline void MC_two(float* p, const float* p_right, const float* p_down, const float *p_rd, const float* p_pre, const float* p_Corner, const float& stepsize);
+    inline void TV_one(float* p, const float* p_right, const float* p_down, const float *p_rd, const float* p_pre, const float* p_Corner, const float& stepsize);
+    inline void TV_two(float* p, const float* p_right, const float* p_down, const float *p_rd, const float* p_pre, const float* p_Corner, const float& stepsize);
 
-    inline void DC_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-    inline void DC_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-    inline void LS_one(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-    inline void LS_two(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
+    inline void DC_one(float* p, const float* p_right, const float* p_down, const float *p_rd, const float* p_pre, const float* p_Corner, const float& stepsize);
+    inline void DC_two(float* p, const float* p_right, const float* p_down, const float *p_rd, const float* p_pre, const float* p_Corner, const float& stepsize);
+    inline void LS_one(float* p, const float* p_right, const float* p_down, const float *p_rd, const float* p_pre, const float* p_Corner, const float& stepsize);
+    inline void LS_two(float* p, const float* p_right, const float* p_down, const float *p_rd, const float* p_pre, const float* p_Corner, const float& stepsize);
 
     /*************************************** Direct on imgF (no split) ***********************/
-    inline float Scheme_GC(int i, float * p_pre, float * p, float * p_nex, const float * p_curv = NULL);
-    inline float Scheme_MC(int i, float * p_pre, float * p, float * p_nex, const float * p_curv = NULL);
-    inline float Scheme_TV(int i, float * p_pre, float * p, float * p_nex, const float * p_curv = NULL);
-    inline float Scheme_DC(int i, float * p_pre, float * p, float * p_nex, const float * p_curv = NULL);
-    inline float Scheme_LS(int i, float * p_pre, float * p, float * p_nex, const float * p_curv = NULL);
+    inline float Scheme_GC(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_curv = NULL);
+    inline float Scheme_MC(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_curv = NULL);
+    inline float Scheme_TV(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_curv = NULL);
+    inline float Scheme_DC(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_curv = NULL);
+    inline float Scheme_LS(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_curv = NULL);
 };
 
 double DM::PSNR()
@@ -862,8 +864,8 @@ void DM::Filter(const int Type, double & time, const int ItNum, const float step
     //split imgF into four sets
     split();
 
-    void (DM::* Local_one)(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
-    void (DM::* Local_two)(float* p, float* p_right, float* p_down, float *p_rd, float* p_pre, float* p_Corner, const float& stepsize);
+    void (DM::* Local_one)(float* p, const float* p_right, const float* p_down, const float *p_rd, const float* p_pre, const float* p_Corner, const float& stepsize);
+    void (DM::* Local_two)(float* p, const float* p_right, const float* p_down, const float *p_rd, const float* p_pre, const float* p_Corner, const float& stepsize);
 
     switch(Type)
     {
@@ -949,7 +951,7 @@ void DM::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
 {
     clock_t Tstart, Tend;
 
-    float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex, const float * p_curv);
+    float (DM::* Local)(int i, const float* p_pre, const float* p, const float* p_nex, const float * p_curv);
 
     switch(Type)
     {
@@ -1290,7 +1292,7 @@ void DM::CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, 
 {
     clock_t Tstart, Tend;
 
-    float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex, const float * p_curv);
+    float (DM::* Local)(int i, const float* p_pre, const float* p, const float* p_nex, const float * p_curv);
 
     switch(Type)
     {
@@ -1390,7 +1392,7 @@ void DM::CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, 
 void DM::Solver(const int Type, double & time, const int MaxItNum, const float lambda, const float DataFitOrder, const float stepsize)
 {
     clock_t Tstart, Tend;
-    float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex, const float * p_curv);
+    float (DM::* Local)(int i, const float* p_pre, const float* p, const float* p_nex, const float * p_curv);
     void (DM::* curvature_compute)(const Mat& img, Mat& curv);
 
     Mat curvature = Mat::zeros(M, N, CV_32FC1);
@@ -1545,7 +1547,7 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
  void DM::BlackBoxSolver(const int Type, double & time, const int MaxItNum, const float lambda, float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d), const float stepsize)
  {
     clock_t Tstart, Tend;
-    float (DM::* Local)(int i, float* p_pre, float* p, float* p_nex, const float * p_curv);
+    float (DM::* Local)(int i, const float* p_pre, const float* p, const float* p_nex, const float * p_curv);
     void (DM::* curvature_compute)(const Mat& img, Mat& curv);
 
     Mat curvature = Mat::zeros(M, N, CV_32FC1);
@@ -1702,11 +1704,32 @@ void DM::Solver(const int Type, double & time, const int MaxItNum, const float l
     energyProfile.close();
  }
 
+ Mat DM::NegativeGradient(const Mat & img)
+ {
+    Mat dm = Mat::zeros(img.size(), CV_32FC1);
+    const float *p, *p_pre, *p_nex;
+	float *p_d;
+    for(int i=1; i<img.rows-1; ++i)
+    {
+        p_pre = img.ptr<float>(i-1);
+        p = img.ptr<float>(i);
+        p_nex = img.ptr<float>(i+1);
+        p_d = dm.ptr<float>(i);
+        for (int j = 1; j < img.cols-1; ++j)
+        {
+            p_d[j] = Scheme_MC(j, p_pre, p, p_nex);
+        }
+    }
+    dm *= 2;
+    return dm;
+ }
+
 //*************************** Do NOT change anything! *****************************//
 //************************* these filters are optimized ***************************//
 //********** contact Yuanhao Gong if you need to change anything ******************//
 //*************************** gongyuanhao@gmail.com *******************************//
-inline void DM::GC_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
+inline void DM::GC_one(float* __restrict p, const float* __restrict p_right, const float* __restrict p_down, 
+    const float * __restrict p_rd, const float* __restrict p_pre, const float* __restrict p_Corner, const float& stepsize)
 {
     register float dist[4];
     register float scaled_stepsize = stepsize/3;
@@ -1742,7 +1765,8 @@ inline void DM::GC_one(float* __restrict p, float* __restrict p_right, float* __
      }
 }
 
-inline void DM::GC_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
+inline void DM::GC_two(float* __restrict p, const float* __restrict p_right, const float* __restrict p_down, 
+    const float * __restrict p_rd, const float* __restrict p_pre, const float* __restrict p_Corner, const float& stepsize)
 {
     register float dist[4];
     register float scaled_stepsize = stepsize/3;
@@ -1778,7 +1802,8 @@ inline void DM::GC_two(float* __restrict p, float* __restrict p_right, float* __
      }
 }
 
-inline void DM::MC_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
+inline void DM::MC_one(float* __restrict p, const float* __restrict p_right, const float* __restrict p_down, 
+    const float * __restrict p_rd, const float* __restrict p_pre, const float* __restrict p_Corner, const float& stepsize)
 {
     register float dist[8];
     register float scaled_stepsize = stepsize/8;
@@ -1802,7 +1827,8 @@ inline void DM::MC_one(float* __restrict p, float* __restrict p_right, float* __
      }
 }
 
-inline void DM::MC_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
+inline void DM::MC_two(float* __restrict p, const float* __restrict p_right, const float* __restrict p_down, 
+    const float * __restrict p_rd, const float* __restrict p_pre, const float* __restrict p_Corner, const float& stepsize)
 {
     register float dist[8];
     register float scaled_stepsize = stepsize/8;
@@ -1827,7 +1853,8 @@ inline void DM::MC_two(float* __restrict p, float* __restrict p_right, float* __
     }
 }
 
-inline void DM::LS_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
+inline void DM::LS_one(float* __restrict p, const float* __restrict p_right, const float* __restrict p_down, 
+    const float * __restrict p_rd, const float* __restrict p_pre, const float* __restrict p_Corner, const float& stepsize)
 {
     //one is for BT and WC, two is for BC and WT
     register float dist[4];
@@ -1864,7 +1891,8 @@ inline void DM::LS_one(float* __restrict p, float* __restrict p_right, float* __
     }
 }
 
-inline void DM::LS_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
+inline void DM::LS_two(float* __restrict p, const float* __restrict p_right, const float* __restrict p_down, 
+    const float * __restrict p_rd, const float* __restrict p_pre, const float* __restrict p_Corner, const float& stepsize)
 {
     //one is for BT and WC, two is for BC and WT
     register float dist[4];
@@ -1899,7 +1927,8 @@ inline void DM::LS_two(float* __restrict p, float* __restrict p_right, float* __
     }
 }
 
-inline void DM::TV_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
+inline void DM::TV_one(float* __restrict p, const float* __restrict p_right, const float* __restrict p_down, 
+    const float * __restrict p_rd, const float* __restrict p_pre, const float* __restrict p_Corner, const float& stepsize)
 {
     register float dist[8], tmp[4];
     // if use 6, the scheme includes central pixel;
@@ -1936,7 +1965,8 @@ inline void DM::TV_one(float* __restrict p, float* __restrict p_right, float* __
      }
 }
 
-inline void DM::TV_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float* __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
+inline void DM::TV_two(float* __restrict p, const float* __restrict p_right, const float* __restrict p_down, 
+    const float * __restrict p_rd, const float* __restrict p_pre, const float* __restrict p_Corner, const float& stepsize)
 {
     register float dist[8], tmp[4];
     // if use 6, the scheme includes central pixel;
@@ -1973,7 +2003,8 @@ inline void DM::TV_two(float* __restrict p, float* __restrict p_right, float* __
 }
 
 
-inline void DM::DC_one(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
+inline void DM::DC_one(float* __restrict p, const float* __restrict p_right, const float* __restrict p_down, 
+    const float * __restrict p_rd, const float* __restrict p_pre, const float* __restrict p_Corner, const float& stepsize)
 {
     register float dist[4];
     register float weight = -0.225603f;
@@ -1997,7 +2028,8 @@ inline void DM::DC_one(float* __restrict p, float* __restrict p_right, float* __
      }
 }
 
-inline void DM::DC_two(float* __restrict p, float* __restrict p_right, float* __restrict p_down, float * __restrict p_rd, float* __restrict p_pre, float* __restrict p_Corner, const float& stepsize)
+inline void DM::DC_two(float* __restrict p, const float* __restrict p_right, const float* __restrict p_down, 
+    const float * __restrict p_rd, const float* __restrict p_pre, const float* __restrict p_Corner, const float& stepsize)
 {
     register float dist[4];
     register float weight = -0.225603f;
@@ -2026,7 +2058,7 @@ inline void DM::DC_two(float* __restrict p, float* __restrict p_right, float* __
 /********************** scheme at each pixel ************************/
 /********************** only for noSplit case ***********************/
 /********************************************************************/
-inline float DM::Scheme_GC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex, const float * p_curv)
+inline float DM::Scheme_GC(int i, const float * __restrict p_pre, const float * __restrict p, const float * __restrict p_nex, const float * p_curv)
 {
     register float dist[4];
     register float tmp, min_value;
@@ -2058,7 +2090,7 @@ inline float DM::Scheme_GC(int i, float * __restrict p_pre, float * __restrict p
     return min_value;
 }
 
-inline float DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex, const float * p_curv)
+inline float DM::Scheme_MC(int i, const float * __restrict p_pre, const float * __restrict p, const float * __restrict p_nex, const float * p_curv)
 {
     //compute the movement according to half window
     //       a   b
@@ -2088,7 +2120,7 @@ inline float DM::Scheme_MC(int i, float* p_pre, float* p, float* p_nex, const fl
     return dist[0];
 }
 
-inline float DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex, const float * p_curv)
+inline float DM::Scheme_LS(int i, const float * __restrict p_pre, const float * __restrict p, const float * __restrict p_nex, const float * p_curv)
 {
     //compute the movement according to half window
     //   f   a   b            0 1/2 0               3/7 1/7 -1/7
@@ -2128,7 +2160,7 @@ inline float DM::Scheme_LS(int i, float* p_pre, float* p, float* p_nex, const fl
     return min_value/10;//here 10 means including central pixel while 7 means exclusion
 }
 
-inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex, const float * p_curv)
+inline float DM::Scheme_TV(int i, const float * __restrict p_pre, const float * __restrict p, const float * __restrict p_nex, const float * p_curv)
 {
     //       a   b
     //       I   e
@@ -2223,7 +2255,7 @@ inline float DM::Scheme_TV(int i, float* p_pre, float* p, float* p_nex, const fl
     
 }
 
-inline float DM::Scheme_DC(int i, float * __restrict p_pre, float * __restrict p, float * __restrict p_nex, const float * p_curv)
+inline float DM::Scheme_DC(int i, const float * __restrict p_pre, const float * __restrict p, const float * __restrict p_nex, const float * p_curv)
 {
     float dist[2];
     float weight = -0.225603f;
