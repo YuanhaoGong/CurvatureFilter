@@ -121,6 +121,8 @@ private:
     inline void HalfBoxFilter(const int direction, const Mat & img, Mat & result, const int radius=1);
     //choose the best one from four half window mean
     void HalfBoxFilterAdaptive(const Mat & img, Mat & result, const int radius=1);
+    //similar to median filter
+    void MinMaxShrink(Mat& U, const Mat& src, const Mat& dst);
     
     /*************************************** Split into 4 sets *********************************/
     //one is for BT and WC, two is for BC and WT
@@ -802,6 +804,29 @@ void DM::HalfBoxFilterAdaptive(const Mat & img, Mat & result, const int radius)
         KeepMinAbs(dm, tmp);
     }
     result = img + dm;
+}
+
+//similar to median filter
+void DM::MinMaxShrink(Mat& U, const Mat& src, const Mat& dst)
+{
+    float *p;
+    const float *p_s, *p_d;
+    float local_min, local_max;
+    for (int i = 0; i < src.rows; ++i)
+    {
+        p = U.ptr<float>(i);
+        p_s = src.ptr<float>(i);
+        p_d = dst.ptr<float>(i);
+        for (int j = 0; j < src.cols; ++j)
+        {
+            if(p_s[j]>p_d[j]) {local_min=p_d[j], local_max=p_s[j];}
+            else{local_min=p_s[j], local_max=p_d[j];}
+
+            if(p[j] > local_max) p[j] = local_max;
+            if(p[j] < local_min) p[j] = local_min; 
+            //otherwise keep the U
+        }
+    }
 }
 
 //half window with smallest var
