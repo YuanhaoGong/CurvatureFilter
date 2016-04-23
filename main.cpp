@@ -31,7 +31,7 @@ int Type = 2;
 float lambda = 1.0f;
 float DataFitOrder = 1.0f;
 
-#include "DM.h"
+#include "CF.h"
 //If use these filters to solve a complex data fitting term, define the data fitting as the blackbox function
 float BlackBox(int row, int col, Mat& U, Mat & img_orig, float & d)
 {
@@ -44,7 +44,7 @@ float BlackBox(int row, int col, Mat& U, Mat & img_orig, float & d)
 int main(int argc, char** argv)
 {
     
-    DM DualMesh;
+    CF DualMesh;
     if ((argc<4) || (argc>6))
     {
        cout<<endl;
