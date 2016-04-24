@@ -1,4 +1,4 @@
-function [result, Energy] = CF(im, FilterType, ItNum, step)
+function [result, Energy] = CF(im, FilterType, ItNum, stepsize)
 % =========================================================================
 % 
 %                           Curvature Filter 
@@ -19,7 +19,7 @@ if (nargin~=3) && (nargin~=4)
     disp('Input are not correct.'), return;
 end
 if nargin==3
-    step = 1;
+    stepsize = 1;
 end
 
 switch FilterType
@@ -58,10 +58,10 @@ for ch = 1:orig_z
         if (i>1) && Energy(i,1) > Energy(i-1,1) % if the energy start to increase
             break;
         end
-        result(:,:,ch) = myfun(result(:,:,ch),BC_r,BC_c,BC_pre,BC_nex,BC_lef,BC_rig,row,col,step);
-        result(:,:,ch) = myfun(result(:,:,ch),BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step);
-        result(:,:,ch) = myfun(result(:,:,ch),WC_r,WC_c,WC_pre,WC_nex,WC_lef,WC_rig,row,col,step);
-        result(:,:,ch) = myfun(result(:,:,ch),WT_r,WT_c,WT_pre,WT_nex,WT_lef,WT_rig,row,col,step);
+        result(:,:,ch) = myfun(result(:,:,ch),BC_r,BC_c,BC_pre,BC_nex,BC_lef,BC_rig,row,col,stepsize);
+        result(:,:,ch) = myfun(result(:,:,ch),BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,stepsize);
+        result(:,:,ch) = myfun(result(:,:,ch),WC_r,WC_c,WC_pre,WC_nex,WC_lef,WC_rig,row,col,stepsize);
+        result(:,:,ch) = myfun(result(:,:,ch),WT_r,WT_c,WT_pre,WT_nex,WT_lef,WT_rig,row,col,stepsize);
     end
 end
 %unpad
