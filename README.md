@@ -1,13 +1,42 @@
 ### Curvature filters are efficient solvers for variational models.
-Curvature filter was developed by Yuanhao Gong during his PhD at MOSAIC Group. Please cite Yuanhao's PhD thesis if you use curvature filter in your work. Thank you!
+Curvature filter was developed by Yuanhao Gong during his PhD at MOSAIC Group. Please cite following papers if you use curvature filter in your work. Thank you!
 ***
 ```text
 @phdthesis{gong:phd, 
-title={Spectrally regularized surfaces}, 
-author={Gong, Yuanhao}, 
-year={2015}, 
-school={ETH Zurich, Nr. 22616},
-note={http://dx.doi.org/10.3929/ethz-a-010438292}}
+  title={Spectrally regularized surfaces}, 
+  author={Gong, Yuanhao}, 
+  year={2015}, 
+  school={ETH Zurich, Nr. 22616},
+  note={http://dx.doi.org/10.3929/ethz-a-010438292}}
+
+@ARTICLE{gong:gdp, 
+  author={Gong, Y. and Sbalzarini, I.F.}, 
+  journal={Selected Topics in Signal Processing, IEEE Journal of}, 
+  title={A Natural-Scene Gradient Distribution Prior and 
+  its Application in Light-Microscopy Image Processing}, 
+  year={2016}, 
+  volume={10}, 
+  number={1}, 
+  pages={99-114}, 
+  doi={10.1109/JSTSP.2015.2506122}, 
+  ISSN={1932-4553}, 
+  month={Feb}}
+
+@article{gong:Bernstein,
+	Author = {Yuanhao Gong},
+	Journal = {ICASSP},
+	Month = {March},
+	Pages = {534--538},
+	Title = {BERNSTEIN FILTER: A NEW SOLVER FOR MEAN CURVATURE REGULARIZED MODELS},
+	Year = {2016}}
+	
+@article{gong:gc,
+	Author = {Yuanhao Gong and Ivo F. Sbalzarini},
+	Journal = {Intl. Conf. Image Proc. (ICIP)},
+	Month = {September},
+	Pages = {534--538},
+	Title = {Local weighted {G}aussian curvature for image processing},
+	Year = {2013}}
 ```
 ***
 :books: Chapter **Six** in **<a href="http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf" target="_blank">PhD thesis</a>** (downloaded **1800+** since June, 2015, from **40** different countries), Gaussian Curvature Filter (Talk Slides): **<a href="https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0" target="_blank">Dropbox</a>** or **<a href="http://pan.baidu.com/s/1qWrcfqG" target="_blank">Baidu</a>**, **[Bernstein Filter(poster)](images/BernsteinFilter.pdf)**, **source code** in **C++** and **Java** can also be found at **<a href="http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters", target="_blank">MOSAIC group</a>**(:de:), a short introduction in Chinese: **<a href="http://www.zhihu.com/question/35499791" target="_blank">Zhihu</a>**(:cn:). The kernels summary and one example how to get the kernel can be found **[here](images/CF_Kernels.pdf)**.
