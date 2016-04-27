@@ -28,73 +28,97 @@ public:
     //write the result to disk
     void write();
     void write(const char* FileName);
+
     //compute TV
     void TV(const Mat & img, Mat & T);
+
     //compute MC
     void MC(const Mat & img, Mat & MC);
     void MC_new(const Mat & img, Mat & MC);//new scheme, Eq.6.12 in my thesis
     void MC_fit(const Mat & img, Mat & MC);
     void MC_isoLine(const Mat & img, Mat & MC);
+
     //compute GC
     void GC(const Mat & img, Mat & GC);
     void GC_new(const Mat & img, Mat & GC);//new scheme, Eq.6.16 in my thesis
     void GC_fit(const Mat & img, Mat & GC);
     void GC_LUT_Init();
     void GC_LUT(const Mat & img, Mat & GC);
+
     //compute energy for given TV, MC, or GC image
     double energy(const Mat& img);
+
     //compute data fitting energy between image and imgF
     double DataFitEnergy(Mat& tmp, double order);
+
     //PSNR
     double PSNR();
     double PSNR(const Mat& I1, const Mat& I2);
+
     //compute naturalness factor
     double Naturalness(){return Naturalness(imgF);}
     double Naturalness(const Mat & img);
-    /******************* curvature filters *****************************/
-    // Type=0, TV; Type=1, MC; Type=2, GC; (Type=3, DC, experimental);
-    // the stepsize parameter is in (0,1]:smaller means more iterations, but reaches lower energy level; 
-    // larger means less iterations, but converges at higher energy level
-    //////////////////////////////////////////////////////////
+
+    /**************************** curvature filters *******************************************
+    Type=0, TV; Type=1, MC; Type=2, GC; Type=3, DC; Type=4, Bernstein;
+    the stepsize parameter is in (0,1]:smaller means more iterations, but reaches lower energy level; 
+    larger means less iterations, but converges at higher energy level
+    *********************************************************************************************/
 
     void Filter(const int Type, double & time, const int ItNum = 10, const float stepsize=1);//with split
     void FilterNoSplit(const int Type, double & time, const int ItNum = 10, const float stepsize=1);//direct on imgF 
     
-    /******************* Half-window Regression *****************************/
+    /**************************** Half-window Regression *************************************
+    select half window and perform regression on it, this section should be reorgnized in future
+    *********************************************************************************************/
 
-    //select half window with small intensity change for given kernel
-    //Type = 0, only half window; Type = 1, half window and quarter window; Type = 2, only quarter window
+    //general kernel: Type = 0, only half window; Type = 1, half window and quarter window; Type = 2, only quarter window
     void HalfWindow(const int Type, double & time, int ItNum=10, Mat kernel=getGaussianKernel(7, -1, CV_32F ).t(), const float stepsize=1);
-
-    //select half window for box kernel
-    //Type = 0, only smallest intensity change; Type = 1, both intensity and var; Type = 2, only var
+    //box kernel: Type = 0, only smallest intensity change; Type = 1, both intensity and var; Type = 2, only var
     void HalfWindowBox(const int Type, double & time, Mat & result, Mat & label, const int radius = 2)
                           {HalfWindowBox(Type, time, imgF, result, label, radius);}
     void HalfWindowBox(const int Type, double & time, const Mat & img, Mat & result, Mat & label, const int radius = 2);
     //not ready
     void HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float eps=0.04);
-    //how to set the parameters?
+    //parameter set is not clear
     void L1GuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float lambda=0.05);
     //not ready, perform half window morphology
     void HalfMorph(double & time, const Mat & src, Mat & dst, int op, const int radius=2);
 
-    /******************* Curvature Guided Filter *****************************/
-    
+    /*********************************************************************************************
+    **************************** Curvature Guided Filter ************************************
+    *********************************************************************************************/
+
     //compute the curvature from the guided image (scaled to the size of imgF)
     Mat GuideCurvature(const char * FileName, const int Type);
     //filter the image such that the result is close to the specified curvature
     void CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, const int ItNum = 10, const float stepsize=1);
     
-    /******************* generic solver for variational models *****************************/
-    
+    /*********************************************************************************************
+    ******************* generic solver for variational models *****************************
+    solve variational models by the curvature filter, just reduce the total energy
+    convergence is guaranteed, but not necessarily to a local minimum 
+    *********************************************************************************************/
+
     //solve |U - I|^DataFitOrder + lambda * |curvature(U)|
     void Solver(const int Type, double & time, const int MaxItNum, const float lambda = 2, const float DataFitOrder = 1, const float stepsize=1);
     //solve BlackBox(U,I) + lambda * |curvature(U)|
     void BlackBoxSolver(const int Type, double & time, const int MaxItNum, const float lambda, 
                             float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d), const float stepsize=1);
-    //compute negative gradient for the regularization energy. Type = 0, mean curvature; Type = 2, Gaussian curvature
-    void NegativeGradient(const int Type, const Mat & img, Mat & dm);
+    
+    /*********************************************************************************************
+    ******       negative gradient of regularization energy(without lambda)        ******
+    another way to solve variational models
+    *********************************************************************************************/
 
+    //Type = 1, mean curvature; Type = 2, Gaussian curvature; grad is the result
+    void NegativeGradient(const int Type, const Mat & img, Mat & grad);
+
+    /********************************************************************************************
+    *********************************************************************************************
+    ********************************* end of all functions ***********************************
+    *********************************************************************************************
+    *********************************************************************************************/
 private:
     //padded original, tmp, result
     Mat image, imgF, result;
@@ -831,7 +855,7 @@ void CF::MinMaxShrink(Mat& U, const Mat& src, const Mat& dst)
     }
 }
 
-//half window with smallest var
+//half window regression
 //Type = 0, only smallest intensity change; Type = 1, both intensity and var; Type = 2, only var
 inline void CF::HalfWindowBox(const int Type, double & time, const Mat & img, Mat & result, Mat & label, const int radius)
 {
@@ -1792,8 +1816,10 @@ void CF::Solver(const int Type, double & time, const int MaxItNum, const float l
  }
 
 void CF::NegativeGradient(const int Type, const Mat & img, Mat& dm)
- {
-    const float *p, *p_pre, *p_nex;
+{
+    //perform one iteration of curvature filter and return the offset minimal distance
+    const float *p, *p_pre, *p_down;
+    float *p_d;
     float (CF::* Local)(int i, const float* p_pre, const float* p, const float* p_nex, const float * p_curv);
     switch(Type)
     {
@@ -1811,20 +1837,65 @@ void CF::NegativeGradient(const int Type, const Mat & img, Mat& dm)
             return;
         }
     }
-	float *p_d;
-    for(int i=1; i<img.rows-1; ++i)
+    img.copyTo(dm, CV_32FC1);
+    int M = img.rows;
+    int N = img.cols; 
+    //black circle
+    for (int i = 1; i < M-1; ++i,++i)
     {
-        p_pre = img.ptr<float>(i-1);
-        p = img.ptr<float>(i);
-        p_nex = img.ptr<float>(i+1);
+        p = dm.ptr<float>(i);
         p_d = dm.ptr<float>(i);
-        for (int j = 1; j < img.cols-1; ++j)
+        p_pre = dm.ptr<float>(i-1);
+        p_down = dm.ptr<float>(i+1);
+        for (int j = 1; j < N-1; ++j, ++j)
         {
-            p_d[j] = (this->*Local)(j, p_pre, p, p_nex, NULL);
+            p_d[j] += (this->*Local)(j,p_pre,p,p_down,NULL);
         }
     }
+
+    //black triangle
+    for (int i = 2; i < M-1; ++i,++i)
+    {
+        p = dm.ptr<float>(i);
+        p_d = dm.ptr<float>(i);
+        p_pre = dm.ptr<float>(i-1);
+        p_down = dm.ptr<float>(i+1);
+        for (int j = 2; j < N-1; ++j, ++j)
+        {
+            p_d[j] += (this->*Local)(j,p_pre,p,p_down,NULL);
+        }
+    }
+
+    //white circle
+    for (int i = 1; i < M-1; ++i,++i)
+    {
+        p = dm.ptr<float>(i);
+        p_d = dm.ptr<float>(i);
+        p_pre = dm.ptr<float>(i-1);
+        p_down = dm.ptr<float>(i+1);
+        for (int j = 2; j < N-1; ++j, ++j)
+        {
+            p_d[j] += (this->*Local)(j,p_pre,p,p_down,NULL);
+        }
+    }
+
+    //white triangle
+    for (int i = 2; i < M-1; ++i,++i)
+    {
+        p = dm.ptr<float>(i);
+        p_d = dm.ptr<float>(i);
+        p_pre = dm.ptr<float>(i-1);
+        p_down = dm.ptr<float>(i+1);
+        for (int j = 1; j < N-1; ++j, ++j)
+        {
+            p_d[j] += (this->*Local)(j,p_pre,p,p_down,NULL);
+        }
+    }
+    //the distance
+    dm -= img;
+    //statistically equivalent integer 
     if(Type==1) dm *= 2;
-    if(Type==2) dm *= 30;
+    if(Type==2) dm *= 30; //GC filter is super efficient
  }
 
 //*************************** Do NOT change anything! *****************************//
