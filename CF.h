@@ -444,7 +444,7 @@ void CF::MC_fit(const Mat & img, Mat & MC)
         {
             num = (1+p_x[j]*p_x[j])*p_y2[j] - p_x[j]*p_y[j]*p_xy[j] + (1+p_y[j]*p_y[j])*p_x2[j];
             den = 1+p_x[j]*p_x[j] + p_y[j]*p_y[j];
-            den = sqrt(den)*den;
+            den = sqrt(den)*den;//no multiply 2 here
             p_d[j] = num/den; 
         }
     }
