@@ -51,7 +51,7 @@ public:
     //compute naturalness factor
     double Naturalness(){return Naturalness(imgF);}
     double Naturalness(const Mat & img);
-    /******************* filters *****************************/
+    /******************* curvature filters *****************************/
     // Type=0, TV; Type=1, MC; Type=2, GC; (Type=3, DC, experimental);
     // the stepsize parameter is in (0,1]:smaller means more iterations, but reaches lower energy level; 
     // larger means less iterations, but converges at higher energy level
@@ -92,7 +92,7 @@ public:
     //solve BlackBox(U,I) + lambda * |curvature(U)|
     void BlackBoxSolver(const int Type, double & time, const int MaxItNum, const float lambda, 
                             float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d), const float stepsize=1);
-    //compute negative gradient for the regularization energy
+    //compute negative gradient for the regularization energy. Type = 0, mean curvature; Type = 2, Gaussian curvature
     void NegativeGradient(const int Type, const Mat & img, Mat & dm);
 
 private:
