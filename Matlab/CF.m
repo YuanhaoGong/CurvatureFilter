@@ -39,7 +39,7 @@ orig = single(im); [orig_r, orig_c, orig_z]=size(orig); m=ceil(orig_r/2)*2; n=ce
 im = zeros(m,n,orig_z,'single'); im(1:orig_r,1:orig_c,1:orig_z)=orig; 
 im(m,:,:) = im(m-1,:,:); im(:,n,:) = im(:,n-1,:); 
 %init
-result = im; Energy = zeros(ItNum,1);
+result = im; Energy = zeros(ItNum,orig_z);
 
 %% row and column subscript for four types of pixels 
 %B = black, W = white, C = circle, T = triangle; r and c indicate row and column
@@ -54,8 +54,8 @@ WT_pre = WT_r-1; WT_nex = WT_r+1; WT_lef = WT_c-1; WT_rig = WT_c+1;
 %% Dual Mesh optimization
 for ch = 1:orig_z
     for i = 1:ItNum
-        Energy(i) = mycurv(result); 
-        if (i>1) && Energy(i,1) > Energy(i-1,1) % if the energy start to increase
+        Energy(i, ch) = mycurv(result); %record curvature energy for each channel
+        if (i>1) && Energy(i,ch) > Energy(i-1,ch) % if the energy start to increase
             break;
         end
         result(:,:,ch) = myfun(result(:,:,ch),BC_r,BC_c,BC_pre,BC_nex,BC_lef,BC_rig,row,col,stepsize);
@@ -124,7 +124,7 @@ dist(:,:,1:4) = dist(:,:,1:4)*1.5; %% scale to the same level
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3); 
 index = sub2ind(size(dist),row,col,uint32(ind));
-dm = single(step/3)*dist(index); 
+dm = step/3*dist(index); 
 %update current pixels
 res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 
@@ -157,9 +157,16 @@ en = sum(g(:));
 function en = curv_MC(im)
 [gx,gy]=gradient(im);[gxx,gxy]=gradient(gx);[gyx,gyy]=gradient(gy);
 %standard scheme
-g = ((1+gy.^2).*gxx - gx.*gy.*(gxy+gyx)+ (1+gx.^2).*gyy)./((1+gx.^2+gy.^2).^1.5)/2;
+num = (1+gy.^2).*gxx - gx.*gy.*(gxy+gyx)+ (1+gx.^2).*gyy;
+den = (1+gx.^2+gy.^2);
+den = sqrt(den).*den*2;
+g = num./den;
 en = sum(abs(g(:)));
 function en = curv_GC(im)
 [gx,gy]=gradient(im);[gxx,gxy]=gradient(gx);[gyx,gyy]=gradient(gy);
 %standard scheme
-g = (gxx.*gyy-gxy.*gyx)./((1+gx.^2+gy.^2).^2); en = sum(abs(g(:)));
+num = gxx.*gyy-gxy.*gyx;
+den = 1+gx.^2+gy.^2;
+den = den.*den;
+g = num./den; 
+en = sum(abs(g(:)));
