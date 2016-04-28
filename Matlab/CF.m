@@ -65,8 +65,7 @@ for ch = 1:orig_z
     end
 end
 %unpad
-result = result(1:orig_r,1:orig_c,1:orig_z);
-Energy = Energy(1:i,:); 
+result = result(1:orig_r,1:orig_c,1:orig_z); %the iteration on each channel might be different
 %% %%%%%%%%%%%%%%%%%%%% three projection operaters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function res = proj_TV(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; BT5 = 5*im(BT_r,BT_c); dist = zeros([size(BT5),8],'single');
