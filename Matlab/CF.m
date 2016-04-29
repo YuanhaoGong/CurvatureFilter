@@ -85,7 +85,8 @@ dist(:,:,8) = tmp4 + im(BT_r,BT_rig) + im(BT_pre,BT_rig);
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3);
-index = sub2ind(size(dist), row, col, uint32(ind));
+%turn sub to index, but faster than sub2ind
+index = row + (col-1).*size(dist,1)+uint32(ind-1).*size(dist,1)*size(dist,2);
 dm = step/5*dist(index); 
 %update current pixels
 res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
@@ -102,7 +103,8 @@ dist(:,:,4) = tmp2  + 5*im(BT_nex,BT_c) - im(BT_nex,BT_lef) - im(BT_nex,BT_rig);
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3);
-index = sub2ind(size(dist),row,col,uint32(ind));
+%turn sub to index, but faster than sub2ind
+index = row + (col-1).*size(dist,1)+uint32(ind-1).*size(dist,1)*size(dist,2);
 dm = step/8*dist(index); 
 %update current pixels
 res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
@@ -122,7 +124,8 @@ dist(:,:,1:4) = dist(:,:,1:4)*1.5; %% scale to the same level
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3); 
-index = sub2ind(size(dist),row,col,uint32(ind));
+%turn sub to index, but faster than sub2ind
+index = row + (col-1).*size(dist,1)+uint32(ind-1).*size(dist,1)*size(dist,2);
 dm = step/3*dist(index); 
 %update current pixels
 res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
@@ -143,7 +146,8 @@ dist(:,:,1:2) = 10/3*dist(:,:,1:2); %% scale to the same level
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3);
-index = sub2ind(size(dist),row,col,uint32(ind));
+%turn sub to index, but faster than sub2ind
+index = row + (col-1).*size(dist,1)+uint32(ind-1).*size(dist,1)*size(dist,2);
 dm = step/10*dist(index); 
 %update current pixels
 res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
@@ -151,10 +155,13 @@ res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 %% %%%%%%%%%%%%%%%%%%%% curvature energy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %these energies are just for observation (so, formula can be changed by user)
 function en = curv_TV(im)
-[gx,gy]=gradient(im); g = abs(gx) + abs(gy);
+[gx,gy]=gradient(im); 
+g = abs(gx) + abs(gy);
 en = sum(g(:));
 function en = curv_MC(im)
-[gx,gy]=gradient(im);[gxx,gxy]=gradient(gx);[gyx,gyy]=gradient(gy);
+[gx,gy]=gradient(im);
+[gxx,gxy]=gradient(gx);
+[gyx,gyy]=gradient(gy);
 %standard scheme
 num = (1+gy.^2).*gxx - gx.*gy.*(gxy+gyx)+ (1+gx.^2).*gyy;
 den = (1+gx.^2+gy.^2);
@@ -162,7 +169,9 @@ den = sqrt(den).*den*2;
 g = num./den;
 en = sum(abs(g(:)));
 function en = curv_GC(im)
-[gx,gy]=gradient(im);[gxx,gxy]=gradient(gx);[gyx,gyy]=gradient(gy);
+[gx,gy]=gradient(im);
+[gxx,gxy]=gradient(gx);
+[gyx,gyy]=gradient(gy);
 %standard scheme
 num = gxx.*gyy-gxy.*gyx;
 den = 1+gx.^2+gy.^2;
