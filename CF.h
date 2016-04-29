@@ -75,9 +75,9 @@ public:
     //general kernel: Type = 0, only half window; Type = 1, half window and quarter window; Type = 2, only quarter window
     void HalfWindow(const int Type, double & time, int ItNum=10, Mat kernel=getGaussianKernel(7, -1, CV_32F ).t(), const float stepsize=1);
     //box kernel: Type = 0, only smallest intensity change; Type = 1, both intensity and var; Type = 2, only var
-    void HalfWindowBox(const int Type, double & time, Mat & result, Mat & label, const int radius = 2)
-                          {HalfWindowBox(Type, time, imgF, result, label, radius);}
-    void HalfWindowBox(const int Type, double & time, const Mat & img, Mat & result, Mat & label, const int radius = 2);
+    void HalfBox(const int Type, double & time, Mat & result, Mat & label, const int radius = 2)
+                          {HalfBox(Type, time, imgF, result, label, radius);}
+    void HalfBox(const int Type, double & time, const Mat & img, Mat & result, Mat & label, const int radius = 2);
     //not ready
     void HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float eps=0.04);
     //parameter set is not clear
@@ -857,7 +857,7 @@ void CF::MinMaxShrink(Mat& U, const Mat& src, const Mat& dst)
 
 //half window regression
 //Type = 0, only smallest intensity change; Type = 1, both intensity and var; Type = 2, only var
-inline void CF::HalfWindowBox(const int Type, double & time, const Mat & img, Mat & result, Mat & label, const int radius)
+inline void CF::HalfBox(const int Type, double & time, const Mat & img, Mat & result, Mat & label, const int radius)
 {
     clock_t Tstart, Tend;
     Mat sq = img.mul(img);
@@ -884,7 +884,7 @@ inline void CF::HalfWindowBox(const int Type, double & time, const Mat & img, Ma
             case 2: //var
             tmp = mean_sq - mean_half.mul(mean_half); break;
             default:
-            cout<<"The Type in HalfWindowBox is not correct."<<endl; return;
+            cout<<"The Type in HalfBox is not correct."<<endl; return;
         }
         for (int i = 0; i < img.rows; ++i)
         {
@@ -1251,7 +1251,7 @@ void CF::HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat
     
     //take the smallest var_a
     Mat index = Mat::zeros(src.size(), CV_8UC1);
-    HalfWindowBox(2, time, src, var_a[0], index, r);
+    HalfBox(2, time, src, var_a[0], index, r);
     float *p_d;
     unsigned char *p_ind;
     
