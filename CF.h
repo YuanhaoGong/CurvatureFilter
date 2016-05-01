@@ -74,7 +74,7 @@ public:
 
     //general kernel: Type = 0, only half window; Type = 1, half window and quarter window; Type = 2, only quarter window
     void HalfWindow(const int Type, double & time, int ItNum=10, Mat kernel=getGaussianKernel(7, -1, CV_32F ).t(), const float stepsize=1);
-    //box kernel: Type = 0, only smallest intensity change; Type = 1, both intensity and var; Type = 2, only var
+    //box kernel: Type = 0, only intensity change; Type = 1, both intensity and var; Type = 2, only var
     void HalfBox(const int Type, double & time, Mat & result, Mat & label, const int radius = 2)
                           {HalfBox(Type, time, imgF, result, label, radius);}
     void HalfBox(const int Type, double & time, const Mat & img, Mat & result, Mat & label, const int radius = 2);
@@ -107,12 +107,10 @@ public:
                             float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d), const float stepsize=1);
     
     /*********************************************************************************************
-    ******       negative gradient of regularization energy(without lambda)        ******
-    another way to solve variational models
+    ******       approximate gradient of regularization energy                      ******
     *********************************************************************************************/
-
-    //Type = 1, mean curvature; Type = 2, Gaussian curvature; grad is the result
-    void NegativeGradient(const int Type, const Mat & img, Mat & grad);
+    //not ready
+    
 
     /********************************************************************************************
     *********************************************************************************************
@@ -148,7 +146,9 @@ private:
     //choose the best one from four half window mean
     void HalfBoxFilterAdaptive(const Mat & img, Mat & result, const int radius=1);
     //similar to median filter
-    void MinMaxShrink(Mat& U, const Mat& src, const Mat& dst);
+    void MinMaxShrink(Mat& U, const Mat& src, const Mat& another);
+    //Type = 1, mean curvature; Type = 2, Gaussian curvature; grad is the result
+    void NegativeGradient(const int Type, const Mat & img, Mat & grad);
     
     /*************************************** Split into 4 sets *********************************/
     //one is for BT and WC, two is for BC and WT
