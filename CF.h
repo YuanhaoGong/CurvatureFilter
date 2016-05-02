@@ -111,7 +111,6 @@ public:
     *********************************************************************************************/
     //not ready
     
-
     /********************************************************************************************
     *********************************************************************************************
     ********************************* end of all functions ***********************************
@@ -147,8 +146,8 @@ private:
     void HalfBoxFilterAdaptive(const Mat & img, Mat & result, const int radius=1);
     //similar to median filter
     void MinMaxShrink(Mat& U, const Mat& src, const Mat& another);
-    //Type = 1, mean curvature; Type = 2, Gaussian curvature; grad is the result
-    void NegativeGradient(const int Type, const Mat & img, Mat & grad);
+    //Type = 1, mean curvature; Type = 2, Gaussian curvature; gradient is the result
+    void NegativeGradient(const int Type, const Mat & img, Mat & gradient);
     
     /*************************************** Split into 4 sets *********************************/
     //one is for BT and WC, two is for BC and WT
@@ -423,7 +422,7 @@ void CF::MC_new(const Mat& imgF, Mat & MC)
     Mat kernel = (Mat_<float>(1,3) << 0.25f, -1.25f, 0.25f); 
     sepFilter2D(imgF, MC, CV_32F, kernel, kernel,Point(-1,-1),0,BORDER_REPLICATE);
     MC *= -1;
-    MC += (0.5625f*imgF);//the center pixel
+    MC += (0.5625f*imgF);//add the center pixel
 }
 
 //fit coefficients 
@@ -1291,7 +1290,7 @@ void CF::L1GuidedFilter(double & time, const Mat & src, const Mat & guide, Mat &
     num = mean_gs - mean_src.mul(mean_guide) - lambda*mean_grad;
     den = mean_gg - mean_guide.mul(mean_guide);
     C_one = num/den;
-    //set negative to zero before computing C_zero
+    //set negative to zero before computing C_zero, important step
     float *p;
     for (int i = 0; i < C_one.rows; ++i)
     {
@@ -1368,7 +1367,7 @@ Mat CF::GuideCurvature(const char * FileName, const int Type)
     Mat tmp = imread(FileName, CV_8UC1);
     if (abs(tmp.rows - M)>2 || abs(tmp.cols - N)>2)
     {
-        cout<<"warning: the guided image is rescaled."<<endl;
+        cout<<"warning: the guided image is resized."<<endl;
     }
     Mat tmp2 = Mat::zeros(M, N, CV_8UC1);
     resize(tmp, tmp2, tmp2.size());
@@ -2271,19 +2270,21 @@ inline float CF::Scheme_MC(int i, const float * __restrict p_pre, const float * 
     //       I   e
     //       c   d
     // return (2.5(a+c)+5*e)-b-d)/8.0;
+    const float coeff[3] = {2.5f, 5.0f, -1.0f};//cross, 2*cross, diag
+    //const float coeff[3] = {1.0f, 2.0f, 2.0f};//the same as TV
     register float dist[4];
     register float tmp, com_one, com_two;
     tmp = 8*p[i];
     //specify the curvature if provided
     if (p_curv != NULL) tmp = 8*(p[i] + p_curv[i]);
 
-    com_one = 2.5f*(p_pre[i]+p_nex[i]) - tmp;
-    com_two = 2.5f*(p[i-1]+p[i+1]) - tmp;
+    com_one = coeff[0]*(p_pre[i]+p_nex[i]) - tmp;
+    com_two = coeff[0]*(p[i-1]+p[i+1]) - tmp;
 
-    dist[0] = com_one + 5*p[i+1] - p_pre[i+1] - p_nex[i+1];
-    dist[1] = com_one + 5*p[i-1] - p_pre[i-1] - p_nex[i-1];
-    dist[2] = com_two - p_nex[i-1] + 5*p_nex[i] - p_nex[i+1];
-    dist[3] = com_two - p_pre[i-1] + 5*p_pre[i] - p_pre[i+1];
+    dist[0] = com_one + coeff[1]*p[i+1] + coeff[2]*(p_pre[i+1] + p_nex[i+1]);
+    dist[1] = com_one + coeff[1]*p[i-1] + coeff[2]*(p_pre[i-1] + p_nex[i-1]);
+    dist[2] = com_two + coeff[1]*p_nex[i] + coeff[2]*(p_nex[i-1] + p_nex[i+1]);
+    dist[3] = com_two + coeff[1]*p_pre[i] + coeff[2]*(p_pre[i-1] + p_pre[i+1]);
 
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
     if(fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
