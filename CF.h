@@ -35,6 +35,7 @@ public:
     //compute MC
     void MC(const Mat & img, Mat & MC);
     void MC_new(const Mat & img, Mat & MC);//new scheme, Eq.6.12 in my thesis
+    void MC_new2(const Mat & img, Mat & MC);
     void MC_fit(const Mat & img, Mat & MC);
     void MC_isoLine(const Mat & img, Mat & MC);
 
@@ -425,6 +426,13 @@ void CF::MC_new(const Mat& imgF, Mat & MC)
     sepFilter2D(imgF, MC, CV_32F, kernel, kernel,Point(-1,-1),0,BORDER_REPLICATE);
     MC *= -1;
     MC += (0.5625f*imgF);//add the center pixel
+}
+
+//another way of computing MC, fastest
+void CF::MC_new2(const Mat& imgF, Mat & MC)
+{
+    boxFilter(imgF, MC, CV_32F, Size(3,3), Point(-1,-1),true,BORDER_REPLICATE);
+    MC -= (1.125f*imgF);//add the center pixel
 }
 
 //fit coefficients 
