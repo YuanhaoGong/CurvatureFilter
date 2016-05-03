@@ -140,6 +140,8 @@ private:
     void FiveCoefficient(const Mat & img, Mat & x2, Mat &y2, Mat & xy, Mat & x, Mat & y);
     //keep the value that has smaller absolute value
     inline void KeepMinAbs(Mat& dm, Mat& d_other);
+    //set negative value to zero
+    void NoNegative(Mat & img);
     //compute half window mean
     inline void HalfBoxFilter(const int direction, const Mat & img, Mat & result, const int radius=1);
     //choose the best one from four half window mean
@@ -771,14 +773,29 @@ void CF::merge()
 //keep the value that has minimum absolute value in dm
 inline void CF::KeepMinAbs(Mat& dm, Mat& d_other)
 {
+    float * p, * p_other;
     for (int i = 0; i < dm.rows; ++i)
     {
         p=dm.ptr<float>(i);
-        p_pre = d_other.ptr<float>(i);
+        p_other = d_other.ptr<float>(i);
         for (int j = 0; j < dm.cols; ++j)
         {
-            if(fabsf(p_pre[j])<fabsf(p[j])) p[j] = p_pre[j];
+            if(fabsf(p_other[j])<fabsf(p[j])) p[j] = p_other[j];
         }
+    }
+}
+
+//set negative value to zero
+void CF::NoNegative(Mat & img)
+{
+    float * p;
+    for (int i = 0; i < img.rows; ++i)
+    {
+         p = img.ptr<float>(i);
+         for (int j = 0; j < img.cols; ++j)
+         {
+             if(p[j]<0) p[j] = 0;
+         }
     }
 }
 
@@ -1291,15 +1308,8 @@ void CF::L1GuidedFilter(double & time, const Mat & src, const Mat & guide, Mat &
     den = mean_gg - mean_guide.mul(mean_guide);
     C_one = num/den;
     //set negative to zero before computing C_zero, important step
-    float *p;
-    for (int i = 0; i < C_one.rows; ++i)
-    {
-        p = C_one.ptr<float>(i);
-        for (int j = 0; j < C_one.cols; ++j)
-        {
-            if(p[j]<0) p[j] = 0;
-        }
-    }
+    NoNegative(C_one);
+    
     C_zero = mean_src - C_one.mul(mean_guide);
 
     Mat mean_one = Mat::zeros(guide.size(), CV_32FC1);
