@@ -432,7 +432,8 @@ void CF::MC_new(const Mat& imgF, Mat & MC)
 void CF::MC_new2(const Mat& imgF, Mat & MC)
 {
     boxFilter(imgF, MC, CV_32F, Size(3,3), Point(-1,-1),true,BORDER_REPLICATE);
-    MC -= (1.125f*imgF);//add the center pixel
+    MC -= imgF;
+    MC *= 1.125f;
 }
 
 //fit coefficients 
