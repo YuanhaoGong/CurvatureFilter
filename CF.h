@@ -30,21 +30,11 @@ public:
     void write(const char* FileName);
 
     //compute TV
-    void TV(const Mat & img, Mat & T);
-
+    void TV(const Mat & img, Mat & T, int scheme=1);
     //compute MC
-    void MC(const Mat & img, Mat & MC);
-    void MC_new(const Mat & img, Mat & MC);//new scheme, Eq.6.12 in my thesis
-    void MC_new2(const Mat & img, Mat & MC);
-    void MC_fit(const Mat & img, Mat & MC);
-    void MC_isoLine(const Mat & img, Mat & MC);
-
+    void MC(const Mat & img, Mat & MC, int scheme=0);
     //compute GC
-    void GC(const Mat & img, Mat & GC);
-    void GC_new(const Mat & img, Mat & GC);//new scheme, Eq.6.16 in my thesis
-    void GC_fit(const Mat & img, Mat & GC);
-    void GC_LUT_Init();
-    void GC_LUT(const Mat & img, Mat & GC);
+    void GC(const Mat & img, Mat & GC, int scheme=0);
 
     //compute energy for given TV, MC, or GC image
     double energy(const Mat& img);
@@ -79,6 +69,8 @@ public:
     void HalfBox(const int Type, double & time, Mat & result, Mat & label, const int radius = 2)
                           {HalfBox(Type, time, imgF, result, label, radius);}
     void HalfBox(const int Type, double & time, const Mat & img, Mat & result, Mat & label, const int radius = 2);
+    //constant run time with respect to kernel radius
+    void HalfBoxConst(const int Type, double & time, const Mat & img, Mat & result, const int radius = 2);
     //not ready
     void HalfGuidedFilter(double & time, const Mat & src, const Mat & guide, Mat & result, const int r=4, const float eps=0.04);
     //parameter set is not clear
@@ -89,7 +81,6 @@ public:
     /*********************************************************************************************
     **************************** Curvature Guided Filter ************************************
     *********************************************************************************************/
-
     //compute the curvature from the guided image (scaled to the size of imgF)
     Mat GuideCurvature(const char * FileName, const int Type);
     //filter the image such that the result is close to the specified curvature
@@ -137,6 +128,12 @@ private:
     void merge();
     //naturalness evaluation
     double Naturalness_search(float* data, int N, int offset);
+    //computing curvature by different schemes
+    void MC_fit(const Mat & img, Mat & MC);
+    void GC_new(const Mat & img, Mat & GC);
+    void GC_fit(const Mat & img, Mat & GC);
+    void GC_LUT_Init();
+    void GC_LUT(const Mat & img, Mat & GC);
     //fit coefficients for quad function
     void FiveCoefficient(const Mat & img, Mat & x2, Mat &y2, Mat & xy, Mat & x, Mat & y);
     //keep the value that has smaller absolute value
@@ -168,11 +165,11 @@ private:
     inline void LS_two(float* p, const float* p_right, const float* p_down, const float *p_rd, const float* p_pre, const float* p_Corner, const float& stepsize);
 
     /*************************************** Direct on imgF (no split) ***********************/
-    inline float Scheme_GC(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_curv = NULL);
-    inline float Scheme_MC(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_curv = NULL);
-    inline float Scheme_TV(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_curv = NULL);
-    inline float Scheme_DC(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_curv = NULL);
-    inline float Scheme_LS(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_curv = NULL);
+    inline float Scheme_GC(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_guide = NULL);
+    inline float Scheme_MC(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_guide = NULL);
+    inline float Scheme_TV(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_guide = NULL);
+    inline float Scheme_DC(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_guide = NULL);
+    inline float Scheme_LS(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_guide = NULL);
 };
 
 double CF::PSNR()
@@ -355,85 +352,120 @@ void CF::write(const char* FileName)
 }
 
 //compute Total Variation
-void CF::TV(const Mat & imgF, Mat & T)
+void CF::TV(const Mat & imgF, Mat & T, int type)
 {
     const float * p_row, * pn_row;
     float * p_t;
-    if (true) //the switch between TVL1 and TVL2
+    switch(type)
     {
-        for(int i = 1; i < imgF.rows-1; i++)
-        {
-            p_row = imgF.ptr<float>(i);
-            pn_row = imgF.ptr<float>(i+1);
-            p_t = T.ptr<float>(i);
-            for(int j = 1; j < imgF.cols-1; j++)
+        case 0://default using L1 norm
+            for(int i = 1; i < imgF.rows-1; i++)
             {
-                p_t[j] = fabsf(p_row[j+1] - p_row[j]) + fabsf(pn_row[j] - p_row[j]);
-            }   
-        }
-    }else //TVL2
-    {
-        float gx, gy;
-        for(int i = 1; i < imgF.rows-1; i++)
-        {
-            p_row = imgF.ptr<float>(i);
-            pn_row = imgF.ptr<float>(i+1);
-            p_t = T.ptr<float>(i);
-            for(int j = 1; j < imgF.cols-1; j++)
+                p_row = imgF.ptr<float>(i);
+                pn_row = imgF.ptr<float>(i+1);
+                p_t = T.ptr<float>(i);
+                for(int j = 1; j < imgF.cols-1; j++)
+                {
+                    p_t[j] = fabsf(p_row[j+1] - p_row[j]) + fabsf(pn_row[j] - p_row[j]);
+                }   
+            }
+            break;
+        case 2:
+            float gx, gy;
+            for(int i = 1; i < imgF.rows-1; i++)
             {
-                gx = p_row[j+1] - p_row[j]; gy = pn_row[j] - p_row[j];
-                p_t[j] = sqrt(gx*gx + gy*gy);
-            }   
-        }
+                p_row = imgF.ptr<float>(i);
+                pn_row = imgF.ptr<float>(i+1);
+                p_t = T.ptr<float>(i);
+                for(int j = 1; j < imgF.cols-1; j++)
+                {
+                    gx = p_row[j+1] - p_row[j]; gy = pn_row[j] - p_row[j];
+                    p_t[j] = sqrt(gx*gx + gy*gy);
+                }   
+            }
+            break;
+        default:
+        cout<<"The type in TV is not correct."<<endl; 
+        break;
     }
 }
 
 //compute Mean Curvature
-void CF::MC(const Mat& imgF, Mat & MC)
+void CF::MC(const Mat& imgF, Mat & MC, int type)
 {
-    //classical scheme is used
+    //classical scheme is used by default
     const float * p_row, *pn_row, *pp_row;
     float *p_d;
     float Ix, Iy, Ixy, Ixx, Iyy, num, den, tmp;
-    for(int i = 1; i < imgF.rows-1; i++)
+    Mat kernel;
+    switch(type)
     {
-        p_row = imgF.ptr<float>(i);
-        pn_row = imgF.ptr<float>(i+1);
-        pp_row = imgF.ptr<float>(i-1);
-        p_d = MC.ptr<float>(i);
-        
-        for(int j = 1; j < imgF.cols-1; j++)
-        {
-            Ix = (p_row[j+1] - p_row[j-1])/2;
-            Iy = (pn_row[j] - pp_row[j])/2;
-            Ixx = p_row[j+1] - 2*p_row[j] + p_row[j-1];
-            Iyy = pn_row[j] - 2*p_row[j] + pp_row[j];
-            Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])/4;
-            
-            num = (1+Ix*Ix)*Iyy - 2*Ix*Iy*Ixy + (1+Iy*Iy)*Ixx;
-            tmp = 1.0f + Ix*Ix + Iy*Iy;
-            den = sqrt(tmp)*tmp*2;
-            p_d[j] = num/den;
-        }   
+        case 0: //standard scheme
+            for(int i = 1; i < imgF.rows-1; i++)
+            {
+                p_row = imgF.ptr<float>(i);
+                pn_row = imgF.ptr<float>(i+1);
+                pp_row = imgF.ptr<float>(i-1);
+                p_d = MC.ptr<float>(i);
+                
+                for(int j = 1; j < imgF.cols-1; j++)
+                {
+                    Ix = (p_row[j+1] - p_row[j-1])/2;
+                    Iy = (pn_row[j] - pp_row[j])/2;
+                    Ixx = p_row[j+1] - 2*p_row[j] + p_row[j-1];
+                    Iyy = pn_row[j] - 2*p_row[j] + pp_row[j];
+                    Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])/4;
+                    
+                    num = (1+Ix*Ix)*Iyy - 2*Ix*Iy*Ixy + (1+Iy*Iy)*Ixx;
+                    tmp = 1.0f + Ix*Ix + Iy*Iy;
+                    den = sqrt(tmp)*tmp*2;
+                    p_d[j] = num/den;
+                }   
+            }
+            break;
+        case 1: //separate kernel from Eq.6.12, add the center pixel later
+            kernel = (Mat_<float>(1,3) << 0.25f, -1.25f, 0.25f); 
+            sepFilter2D(imgF, MC, CV_32F, kernel, kernel,Point(-1,-1),0,BORDER_REPLICATE);
+            MC *= -1;
+            MC += (0.5625f*imgF);//add the center pixel
+            break;
+        case 2: //another linear kernel
+            //boxFilter(imgF, MC, CV_32F, Size(3,3), Point(-1,-1),true,BORDER_REPLICATE);
+            kernel = (Mat_<float>(1,3) << 0.333333f, 0.333333f, 0.333333f); 
+            sepFilter2D(imgF, MC, CV_32F, kernel, kernel,Point(-1,-1),0,BORDER_REPLICATE);
+            MC -= imgF;
+            MC *= 1.125f;
+            break;
+        case 3: //fit by a quadratic function
+            MC_fit(imgF, MC); 
+            break;
+        case 4: //isoline schemes, be aware the difference
+            for(int i = 1; i < imgF.rows-1; i++)
+            {
+                p_row = imgF.ptr<float>(i);
+                pn_row = imgF.ptr<float>(i+1);
+                pp_row = imgF.ptr<float>(i-1);
+                p_d = MC.ptr<float>(i);
+                
+                for(int j = 1; j < imgF.cols-1; j++)
+                {
+                    Ix = (p_row[j+1] - p_row[j-1])/2;
+                    Iy = (pn_row[j] - pp_row[j])/2;
+                    Ixx = p_row[j+1] - 2*p_row[j] + p_row[j-1];
+                    Iyy = pn_row[j] - 2*p_row[j] + pp_row[j];
+                    Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])/4;
+                    
+                    num = Ix*Ix*Iyy - 2*Ix*Iy*Ixy + Iy*Iy*Ixx;
+                    den = Ix*Ix + Iy*Iy;
+                    den = sqrt(den)*den + 0.000001f;
+                    p_d[j] = num/den;
+                }   
+            }
+            break;
+        default:
+        cout<<"The type in MC is not correct."<<endl; 
+        break;
     }
-}
-
-//compute Mean Curvature, Eq.6.12 in my thesis
-void CF::MC_new(const Mat& imgF, Mat & MC)
-{
-    //separate kernel from Eq.6.12, add the center pixel later
-    Mat kernel = (Mat_<float>(1,3) << 0.25f, -1.25f, 0.25f); 
-    sepFilter2D(imgF, MC, CV_32F, kernel, kernel,Point(-1,-1),0,BORDER_REPLICATE);
-    MC *= -1;
-    MC += (0.5625f*imgF);//add the center pixel
-}
-
-//another way of computing MC, fastest
-void CF::MC_new2(const Mat& imgF, Mat & MC)
-{
-    boxFilter(imgF, MC, CV_32F, Size(3,3), Point(-1,-1),true,BORDER_REPLICATE);
-    MC -= imgF;
-    MC *= 1.125f;
 }
 
 //fit coefficients 
@@ -484,35 +516,6 @@ void CF::MC_fit(const Mat & img, Mat & MC)
     }
 }
 
-void CF::MC_isoLine(const Mat & img, Mat & MC)
-{
-    //compute the MC by iso lines scheme
-    const float * p_row, *pn_row, *pp_row;
-    float *p_d;
-    float Ix, Iy, Ixy, Ixx, Iyy, num, den;
-    for(int i = 1; i < imgF.rows-1; i++)
-    {
-        p_row = imgF.ptr<float>(i);
-        pn_row = imgF.ptr<float>(i+1);
-        pp_row = imgF.ptr<float>(i-1);
-        p_d = MC.ptr<float>(i);
-        
-        for(int j = 1; j < imgF.cols-1; j++)
-        {
-            Ix = (p_row[j+1] - p_row[j-1])/2;
-            Iy = (pn_row[j] - pp_row[j])/2;
-            Ixx = p_row[j+1] - 2*p_row[j] + p_row[j-1];
-            Iyy = pn_row[j] - 2*p_row[j] + pp_row[j];
-            Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])/4;
-            
-            num = Ix*Ix*Iyy - 2*Ix*Iy*Ixy + Iy*Iy*Ixx;
-            den = Ix*Ix + Iy*Iy;
-            den = sqrt(den)*den + 0.000001f;
-            p_d[j] = num/den;
-        }   
-    }
-}
-
 //compute Gaussian Curvature by fitting quad function
 void CF::GC_fit(const Mat & img, Mat & GC)
 {
@@ -545,32 +548,46 @@ void CF::GC_fit(const Mat & img, Mat & GC)
 }
 
 //compute Gaussian curvature
-void CF::GC(const Mat & imgF, Mat &GC)
+void CF::GC(const Mat & imgF, Mat &GC, int type)
 {
-    //classical scheme is used
+    //classical scheme is used by default
     const float * p_row, *pn_row, *pp_row;
     float *p_d;
     float Ix, Iy, Ixx, Iyy, Ixy, num, den;
-    for(int i = 1; i < imgF.rows-1; i++)
+    switch(type)
     {
-        p_row = imgF.ptr<float>(i);
-        pn_row = imgF.ptr<float>(i+1);
-        pp_row = imgF.ptr<float>(i-1);
-        p_d = GC.ptr<float>(i);
-        
-        for(int j = 1; j < imgF.cols-1; j++)
-        {
-            Ix = (p_row[j+1] - p_row[j-1])/2;
-            Iy = (pn_row[j] - pp_row[j])/2;
-            Ixx = p_row[j+1] - 2*p_row[j] + p_row[j-1];
-            Iyy = pn_row[j] -2*p_row[j] + pp_row[j];
-            Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])/4;
+        case 0: //classical schemes
+            for(int i = 1; i < imgF.rows-1; i++)
+            {
+                p_row = imgF.ptr<float>(i);
+                pn_row = imgF.ptr<float>(i+1);
+                pp_row = imgF.ptr<float>(i-1);
+                p_d = GC.ptr<float>(i);
+                
+                for(int j = 1; j < imgF.cols-1; j++)
+                {
+                    Ix = (p_row[j+1] - p_row[j-1])/2;
+                    Iy = (pn_row[j] - pp_row[j])/2;
+                    Ixx = p_row[j+1] - 2*p_row[j] + p_row[j-1];
+                    Iyy = pn_row[j] -2*p_row[j] + pp_row[j];
+                    Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])/4;
 
-            num = Ixx*Iyy - Ixy*Ixy;
-            den = (1.0f + Ix*Ix + Iy*Iy);
-            den *= den;
-            p_d[j] = num/den;
-        }   
+                    num = Ixx*Iyy - Ixy*Ixy;
+                    den = (1.0f + Ix*Ix + Iy*Iy);
+                    den *= den;
+                    p_d[j] = num/den;
+                }   
+            }
+            break;
+        case 1: // the new scheme from my thesis
+            GC_new(imgF, GC); 
+            break;
+        case 2: // fit the surface with a quadratic function
+            GC_fit(imgF, GC); 
+            break;
+        default:
+        cout<<"The type in GC is not correct."<<endl; 
+        break;
     }
 }
 
@@ -932,6 +949,93 @@ inline void CF::HalfBox(const int Type, double & time, const Mat & img, Mat & re
 
     Tend = clock() - Tstart;
     time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
+}
+
+//constant run time with respect to kernel radius
+void CF::HalfBoxConst(const int Type, double & time, const Mat & img, Mat & result, const int radius)
+{
+    //compute the average in the left and up half window
+    const int area = (2*radius+1)*(radius+1);
+    Mat sum_left = Mat::zeros(img.size(), CV_32FC1);
+    Mat sum_up = Mat::zeros(img.size(), CV_32FC1);
+    Mat row_left = Mat::zeros(1, img.cols, CV_32FC1);
+    Mat row_up = Mat::zeros(1, img.cols, CV_32FC1);
+    //init column sum in one row
+    const float *p, *p_top, *p_bottom, *p_nex;
+    float *p_row_left, *p_row_up, *p_left, *p_up, *p_d, *p_up_radius;
+    p_row_left = row_left.ptr<float>(0);
+    p_row_up = row_up.ptr<float>(0);
+    for (int i = 0; i <= radius; ++i)
+    {
+        p = img.ptr<float>(i);
+        for (int j = 0; j < img.cols; ++j)
+        {
+            p_row_left[j] += p[j];
+            p_row_up[j] += p[j];
+        }
+    }
+    for (int i = radius+1; i <= 2*radius; ++i)
+    {
+        p = img.ptr<float>(i);
+        for (int j = 0; j < img.cols; ++j)
+        {
+            p_row_left[j] += p[j];
+        }
+    }
+    //update the sum and column sume
+    for (int i = radius; i < img.rows - radius; ++i)
+    {
+        p_left = sum_left.ptr<float>(i);
+        p_up = sum_up.ptr<float>(i);
+        p_left[radius] = 0;
+        for (int k = 0; k <= radius; ++k)
+        {
+            p_left[radius] += p_row_left[k];
+        }
+        p_up[radius] = 0;
+        for (int k = 0; k <= 2*radius; ++k)
+        {
+            p_up[radius] += p_row_up[k];
+        }
+        //moving to right
+        for (int j = radius+1; j < img.cols; ++j)
+        {
+            p_left[j] = p_left[j-1] - p_row_left[j-radius-1] + p_row_left[j];
+        }
+        for (int j = radius+1; j < img.cols-radius; ++j)
+        {
+            p_up[j] = p_up[j-1] - p_row_up[j-radius-1] + p_row_up[j];
+        }
+        //update column sum
+        p_top = img.ptr<float>(i-radius);
+        p_bottom = img.ptr<float>(i+radius+1);
+        p_nex = img.ptr<float>(i+1);
+        for (int j = 0; j < img.cols; ++j)
+        {
+            p_row_left[j] += (p_bottom[j] - p_top[j]);
+            p_row_up[j] += (p_nex[j] - p_top[j]);
+        }
+    }
+    //scale to the average
+    sum_left /= area;
+    sum_up /= area;
+    //update the result
+    float dm, dm_abs;
+    for (int i = radius; i < img.rows - radius; ++i)
+    {
+        p = img.ptr<float>(i);
+        p_left = sum_left.ptr<float>(i);
+        p_up = sum_up.ptr<float>(i);
+        p_up_radius = sum_up.ptr<float>(i+radius);
+        p_d = result.ptr<float>(i);
+        for (int j = 0; j < img.cols - radius; ++j)
+        {
+            dm = p[j] - p_left[j]; dm_abs = fabsf(dm); p_d[j] = p_left[j];
+            dm = p[j] - p_left[j+radius]; if(fabsf(dm)<dm_abs) {dm_abs = fabsf(dm); p_d[j] = p_left[j+radius];}
+            dm = p[j] - p_up[j]; if(fabsf(dm)<dm_abs) {dm_abs = fabsf(dm); p_d[j] = p_up[j];}
+            dm = p[j] - p_up_radius[j]; if(fabsf(dm)<dm_abs) {dm_abs = fabsf(dm); p_d[j] = p_up_radius[j];}
+        }
+    }
 }
 
 void CF::Filter(const int Type, double & time, const int ItNum, const float stepsize)
@@ -1522,7 +1626,7 @@ void CF::Solver(const int Type, double & time, const int MaxItNum, const float l
 {
     clock_t Tstart, Tend;
     float (CF::* Local)(int i, const float* p_pre, const float* p, const float* p_nex, const float * p_curv);
-    void (CF::* curvature_compute)(const Mat& img, Mat& curv);
+    void (CF::* curvature_compute)(const Mat& img, Mat& curv, int scheme);
 
     Mat curvature = Mat::zeros(M, N, CV_32FC1);
     Mat dataFit = Mat::zeros(M, N, CV_32FC1);
@@ -1573,7 +1677,7 @@ void CF::Solver(const int Type, double & time, const int MaxItNum, const float l
     Tstart = clock();
     for(int it=0;it<MaxItNum;++it)
     {
-        (this->*curvature_compute)(imgF, curvature);
+        (this->*curvature_compute)(imgF, curvature,0);
         energyRecord_Curvature.push_back(lambda*energy(curvature));
 
         dataFit = imgF - image;
@@ -1655,7 +1759,7 @@ void CF::Solver(const int Type, double & time, const int MaxItNum, const float l
 
     cout<<"stop after "<<count<<" Iterations and ";
 
-    (this->*curvature_compute)(imgF, curvature);
+    (this->*curvature_compute)(imgF, curvature,0);
     dataFit = imgF - image;
     energyRecord_Curvature.push_back(lambda*energy(curvature));
     energyRecord_DataFit.push_back(DataFitEnergy(dataFit,DataFitOrder));
@@ -1677,7 +1781,7 @@ void CF::Solver(const int Type, double & time, const int MaxItNum, const float l
  {
     clock_t Tstart, Tend;
     float (CF::* Local)(int i, const float* p_pre, const float* p, const float* p_nex, const float * p_curv);
-    void (CF::* curvature_compute)(const Mat& img, Mat& curv);
+    void (CF::* curvature_compute)(const Mat& img, Mat& curv, int scheme);
 
     Mat curvature = Mat::zeros(M, N, CV_32FC1);
     Mat dataFit = Mat::zeros(M, N, CV_32FC1);
@@ -1728,7 +1832,7 @@ void CF::Solver(const int Type, double & time, const int MaxItNum, const float l
     Tstart = clock();
     for(int it=0;it<MaxItNum;++it)
     {
-        (this->*curvature_compute)(imgF, curvature);
+        (this->*curvature_compute)(imgF, curvature,0);
         energyRecord_Curvature.push_back(lambda*energy(curvature));
 
         for (int i = 1; i < M-1; ++i)
@@ -1811,7 +1915,7 @@ void CF::Solver(const int Type, double & time, const int MaxItNum, const float l
 
     cout<<"stop after "<<count<<" Iterations and ";
 
-    (this->*curvature_compute)(imgF, curvature);
+    (this->*curvature_compute)(imgF, curvature,0);
     energyRecord_Curvature.push_back(lambda*energy(curvature));
     for (int i = 1; i < M-1; ++i)
         for (int j = 1; j < N-1; ++j)
