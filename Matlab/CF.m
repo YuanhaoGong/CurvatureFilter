@@ -15,11 +15,19 @@ function [result, Energy] = CF(im, FilterType, ItNum, stepsize)
 % =========================================================================
 % FilterType: 0(Total Variation), 1(Mean Curvature), 2(Gaussian Curvature)
 %             4(Bernstein Filter)
-if (nargin~=3) && (nargin~=4)
-    disp('Input are not correct.'), return;
+if (nargout>1)
+    if_record_energy = true;
+else
+    if_record_energy = false;
 end
-if nargin==3
-    stepsize = 1;
+switch nargin
+    case 2
+        ItNum = 10; stepsize = 1;
+    case 3
+        stepsize = 1;
+    case 4
+    otherwise
+        disp('Input parameters are not correct.'), result=0; Energy=0; return;
 end
 
 switch FilterType
@@ -40,7 +48,6 @@ im = zeros(m,n,orig_z,'single'); im(1:orig_r,1:orig_c,1:orig_z)=orig;
 im(m,:,:) = im(m-1,:,:); im(:,n,:) = im(:,n-1,:); 
 %init
 result = im; Energy = zeros(ItNum,orig_z);
-
 %% row and column subscript for four types of pixels 
 %B = black, W = white, C = circle, T = triangle; r and c indicate row and column
 BC_r = uint32(2:2:m-2); BC_c = uint32(2:2:n-2); BT_r = uint32(3:2:m-1); BT_c = uint32(3:2:n-1);
@@ -54,9 +61,10 @@ WT_pre = WT_r-1; WT_nex = WT_r+1; WT_lef = WT_c-1; WT_rig = WT_c+1;
 %% Dual Mesh optimization
 for ch = 1:orig_z
     for i = 1:ItNum
-        Energy(i, ch) = mycurv(result); %record curvature energy for each channel
-        if (i>1) && Energy(i,ch) > Energy(i-1,ch) % if the energy start to increase
-            break;
+        if(if_record_energy) Energy(i, ch) = mycurv(result); %record curvature energy
+            if (i>1) && Energy(i,ch) > Energy(i-1,ch) % if the energy start to increase
+                break;
+            end
         end
         result(:,:,ch) = myfun(result(:,:,ch),BC_r,BC_c,BC_pre,BC_nex,BC_lef,BC_rig,row,col,stepsize);
         result(:,:,ch) = myfun(result(:,:,ch),BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,stepsize);
@@ -65,7 +73,7 @@ for ch = 1:orig_z
     end
 end
 %unpad
-result = result(1:orig_r,1:orig_c,1:orig_z); %the iteration on each channel might be different
+result = result(1:orig_r,1:orig_c,1:orig_z);
 %% %%%%%%%%%%%%%%%%%%%% three projection operaters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function res = proj_TV(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; BT5 = 5*im(BT_r,BT_c); dist = zeros([size(BT5),8],'single');
@@ -86,8 +94,10 @@ dist(:,:,8) = tmp4 + im(BT_r,BT_rig) + im(BT_pre,BT_rig);
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3);
 %turn sub to index, but faster than sub2ind
-index = row + (col-1).*size(dist,1)+uint32(ind-1).*size(dist,1)*size(dist,2);
-dm = step/5*dist(index); 
+dim1 = uint32(size(dist,1));
+dim2 = uint32(size(dist,1)*size(dist,2));
+index = row + uint32(col-1).*dim1+uint32(ind-1)*dim2;
+dm = single(step/5)*dist(index); 
 %update current pixels
 res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 
@@ -104,29 +114,35 @@ dist(:,:,4) = tmp2  + 5*im(BT_nex,BT_c) - im(BT_nex,BT_lef) - im(BT_nex,BT_rig);
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3);
 %turn sub to index, but faster than sub2ind
-index = row + (col-1).*size(dist,1)+uint32(ind-1).*size(dist,1)*size(dist,2);
-dm = step/8*dist(index); 
+dim1 = uint32(size(dist,1));
+dim2 = uint32(size(dist,1)*size(dist,2));
+index = row + uint32(col-1).*dim1+uint32(ind-1)*dim2;
+dm = single(step/8)*dist(index); 
 %update current pixels
 res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 
 function res = proj_GC(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; BT2 = 2*im(BT_r,BT_c); BT3 = 3*im(BT_r,BT_c);dist = zeros([size(BT2),8],'single');
 %compute all possible projection distances
+tmp1 = im(BT_pre,BT_c) - BT3;
+tmp2 = im(BT_nex,BT_c) - BT3;
 dist(:,:,1) = im(BT_pre,BT_c) + im(BT_nex,BT_c) - BT2; 
 dist(:,:,2) = im(BT_r,BT_lef) + im(BT_r,BT_rig) - BT2;
 dist(:,:,3) = im(BT_pre,BT_lef) + im(BT_nex,BT_rig) - BT2; 
 dist(:,:,4) = im(BT_nex,BT_lef) + im(BT_pre,BT_rig) - BT2;
-dist(:,:,5) = im(BT_pre,BT_c) + im(BT_r,BT_lef) + im(BT_pre,BT_lef) - BT3; 
-dist(:,:,6) = im(BT_pre,BT_c) + im(BT_r,BT_rig) + im(BT_pre,BT_rig) - BT3;
-dist(:,:,7) = im(BT_nex,BT_c) + im(BT_r,BT_lef) + im(BT_nex,BT_lef) - BT3; 
-dist(:,:,8) = im(BT_nex,BT_c) + im(BT_r,BT_rig) + im(BT_nex,BT_rig) - BT3;
-dist(:,:,1:4) = dist(:,:,1:4)*1.5; %% scale to the same level
+dist(:,:,5) = tmp1 + im(BT_r,BT_lef) + im(BT_pre,BT_lef); 
+dist(:,:,6) = tmp1 + im(BT_r,BT_rig) + im(BT_pre,BT_rig);
+dist(:,:,7) = tmp2 + im(BT_r,BT_lef) + im(BT_nex,BT_lef); 
+dist(:,:,8) = tmp2 + im(BT_r,BT_rig) + im(BT_nex,BT_rig);
+dist(:,:,1:4) = dist(:,:,1:4)*single(1.5); %% scale to the same level
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3); 
 %turn sub to index, but faster than sub2ind
-index = row + (col-1).*size(dist,1)+uint32(ind-1).*size(dist,1)*size(dist,2);
-dm = step/3*dist(index); 
+dim1 = uint32(size(dist,1));
+dim2 = uint32(size(dist,1)*size(dist,2));
+index = row + uint32(col-1).*dim1+uint32(ind-1)*dim2;
+dm = single(step/3)*dist(index); 
 %update current pixels
 res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 
@@ -142,13 +158,15 @@ dist(:,:,3) = im(BT_pre,BT_c) + im(BT_r,BT_lef) - im(BT_pre,BT_lef) + tmp1;
 dist(:,:,4) = im(BT_pre,BT_c) + im(BT_r,BT_rig) - im(BT_pre,BT_rig) + tmp2;
 dist(:,:,5) = im(BT_nex,BT_c) + im(BT_r,BT_lef)- im(BT_nex,BT_lef) + tmp2; 
 dist(:,:,6) = im(BT_nex,BT_c) + im(BT_r,BT_rig) - im(BT_nex,BT_rig) +tmp1;
-dist(:,:,1:2) = 10/3*dist(:,:,1:2); %% scale to the same level
+dist(:,:,1:2) = single(3.33333)*dist(:,:,1:2); %% scale to the same level
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3);
 %turn sub to index, but faster than sub2ind
-index = row + (col-1).*size(dist,1)+uint32(ind-1).*size(dist,1)*size(dist,2);
-dm = step/10*dist(index); 
+dim1 = uint32(size(dist,1));
+dim2 = uint32(size(dist,1)*size(dist,2));
+index = row + uint32(col-1).*dim1+uint32(ind-1)*dim2;
+dm = single(step/10)*dist(index); 
 %update current pixels
 res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 
