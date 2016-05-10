@@ -148,7 +148,9 @@ private:
     void MinMaxShrink(Mat& U, const Mat& src, const Mat& another);
     //Type = 1, mean curvature; Type = 2, Gaussian curvature; gradient is the result
     void NegativeGradient(const int Type, const Mat & img, Mat & gradient);
-    
+    //find the signed value with minimum abs value, dist contains FOUR floats
+    inline float SignedMin(float * dist);
+    inline float SignedMin_noSplit(float * dist);
     /*************************************** Split into 4 sets *********************************/
     //one is for BT and WC, two is for BC and WT
     inline void GC_one(float* p, const float* p_right, const float* p_down, const float *p_rd, const float* p_pre, const float* p_Corner, const float& stepsize);
@@ -2020,6 +2022,31 @@ void CF::NegativeGradient(const int Type, const Mat & img, Mat& dm)
     if(Type==2) dm *= 30; //GC filter is super efficient
  }
 
+ //find the value with minimum abs value, 4 floats
+inline float CF::SignedMin(float * dist)
+{
+    if (fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
+    if (fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
+    if (fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
+    return dist[0];
+}
+
+//find the value with minimum abs value, 4 floats
+inline float CF::SignedMin_noSplit(float * dist)
+{
+    float absMin = fabsf(dist[0]);
+    unsigned char index = 0;
+    for (unsigned char i = 1; i < 4; ++i)
+    {
+        if (fabsf(dist[i])<absMin)
+        {
+            absMin = fabsf(dist[i]);
+            index = i;
+        }
+    }
+    return dist[index];
+}
+
 //*************************** Do NOT change anything! *****************************//
 //************************* these filters are optimized ***************************//
 //********** contact Yuanhao Gong if you need to change anything ******************//
@@ -2029,7 +2056,7 @@ inline void CF::GC_one(float* __restrict p, const float* __restrict p_right, con
 {
     register float dist[4];
     register float scaled_stepsize = stepsize/3;
-    register float tmp, min_value, com_one, com_two;
+    register float tmp, min_value, com_one, com_two, min_value2;
     for (int j = 1; j < N_half; ++j)
      {
         tmp = 2*p[j];
@@ -2038,10 +2065,7 @@ inline void CF::GC_one(float* __restrict p, const float* __restrict p_right, con
         dist[2] = p_Corner[j-1]+p_rd[j] - tmp;
         dist[3] = p_Corner[j]+p_rd[j-1] - tmp;
 
-        if (fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-        if (fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
-        if (fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
-        min_value = dist[0];
+        min_value = SignedMin(dist);
 
         tmp *= 1.5f;
         min_value *= 1.5f;
@@ -2052,10 +2076,9 @@ inline void CF::GC_one(float* __restrict p, const float* __restrict p_right, con
         dist[2] = p_right[j-1] + p_rd[j-1] + com_two;
         dist[3] = p_right[j] + p_rd[j] +com_two;
 
-        if (fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-        if (fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
-        if (fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
-        if (fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
+        min_value2 = SignedMin(dist);
+
+        if (fabsf(min_value2)<fabsf(min_value)) min_value = min_value2;
 
         p[j] += (scaled_stepsize*min_value);
      }
@@ -2066,7 +2089,7 @@ inline void CF::GC_two(float* __restrict p, const float* __restrict p_right, con
 {
     register float dist[4];
     register float scaled_stepsize = stepsize/3;
-    register float tmp, min_value, com_one, com_two;
+    register float tmp, min_value, min_value2, com_one, com_two;
     for (int j = 0; j < N_half-1; ++j)
      {
         tmp = 2*p[j];
@@ -2075,10 +2098,7 @@ inline void CF::GC_two(float* __restrict p, const float* __restrict p_right, con
         dist[2] = p_Corner[j]+p_rd[j+1] - tmp;
         dist[3] = p_Corner[j+1]+p_rd[j] - tmp;
         
-        if (fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-        if (fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
-        if (fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
-        min_value = dist[0];
+        min_value = SignedMin(dist);
 
         tmp *= 1.5f;
         min_value *= 1.5f;
@@ -2089,10 +2109,8 @@ inline void CF::GC_two(float* __restrict p, const float* __restrict p_right, con
         dist[2] = p_right[j] + p_rd[j] + com_two;
         dist[3] = p_right[j+1] + p_rd[j+1] + com_two;
         
-        if (fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-        if (fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
-        if (fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
-        if (fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
+        min_value2 = SignedMin(dist);
+        if (fabsf(min_value2)<fabsf(min_value)) min_value = min_value2;
 
         p[j] += (scaled_stepsize*min_value);
      }
@@ -2103,6 +2121,7 @@ inline void CF::MC_one(float* __restrict p, const float* __restrict p_right, con
 {
     register float dist[8];
     register float scaled_stepsize = stepsize/8;
+    register float min_value;
     for (int j = 1; j < N_half; ++j)
      {
          
@@ -2115,11 +2134,9 @@ inline void CF::MC_one(float* __restrict p, const float* __restrict p_right, con
         dist[2] = dist[6] + p_pre[j]*5 -p_Corner[j-1]-p_Corner[j];
         dist[3] = dist[6] + p_down[j]*5 -p_rd[j-1]-p_rd[j];
 
-        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-        if(fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
-        if(fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
+        min_value = SignedMin(dist);
 
-        p[j] += (scaled_stepsize*dist[0]);
+        p[j] += (scaled_stepsize*min_value);
      }
 }
 
@@ -2128,6 +2145,7 @@ inline void CF::MC_two(float* __restrict p, const float* __restrict p_right, con
 {
     register float dist[8];
     register float scaled_stepsize = stepsize/8;
+    register float min_value;
     for (int j = 0; j < N_half-1; ++j)
     {
          
@@ -2141,11 +2159,9 @@ inline void CF::MC_two(float* __restrict p, const float* __restrict p_right, con
         dist[2] = dist[6] + p_pre[j]*5 -p_Corner[j]-p_Corner[j+1];
         dist[3] = dist[6] + p_down[j]*5 -p_rd[j]-p_rd[j+1];
         
-        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-        if(fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
-        if(fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
+        min_value = SignedMin(dist);
         
-        p[j] += (scaled_stepsize*dist[0]);
+        p[j] += (scaled_stepsize*min_value);
     }
 }
 
@@ -2226,38 +2242,36 @@ inline void CF::LS_two(float* __restrict p, const float* __restrict p_right, con
 inline void CF::TV_one(float* __restrict p, const float* __restrict p_right, const float* __restrict p_down, 
     const float * __restrict p_rd, const float* __restrict p_pre, const float* __restrict p_Corner, const float& stepsize)
 {
-    register float dist[8], tmp[4];
+    register float dist[8], dist2[4];
     // if use 6, the scheme includes central pixel;
     // if use 5, the scheme does not include central pixel (my PhD thesis uses five)
     register float scaled_stepsize = stepsize/6;
-    register float scaledP, absMin;
+    register float scaledP, min_value, min_value2;
     int index;
     for (int j = 1; j < N_half; ++j)
      {
         //temp var
         scaledP =  p[j]*5;
-        tmp[0] = p_pre[j]+p_down[j] - scaledP;
-        tmp[1] = p_right[j-1]+p_right[j] - scaledP;
-        tmp[2] = p_Corner[j-1]+p_Corner[j]+p_pre[j] - scaledP;
-        tmp[3] = p_rd[j-1]+p_rd[j]+p_down[j] - scaledP;
+        dist[4] = p_pre[j]+p_down[j] - scaledP;
+        dist[5] = p_right[j-1]+p_right[j] - scaledP;
+        dist[6] = p_Corner[j-1]+p_Corner[j]+p_pre[j] - scaledP;
+        dist[7] = p_rd[j-1]+p_rd[j]+p_down[j] - scaledP;
 
-        dist[0] = tmp[0] + p_Corner[j-1]+p_rd[j-1]+p_right[j-1];
-        dist[1] = tmp[0] + p_Corner[j]+p_rd[j]+p_right[j];
-        dist[2] = tmp[1] + p_Corner[j-1] + p_Corner[j] + p_pre[j];
-        dist[3] = tmp[1] + p_rd[j-1] + p_rd[j] + p_down[j];
+        dist[0] = dist[4] + p_Corner[j-1]+p_rd[j-1]+p_right[j-1];
+        dist[1] = dist[4] + p_Corner[j]+p_rd[j]+p_right[j];
+        dist[2] = dist[5] + p_Corner[j-1] + p_Corner[j] + p_pre[j];
+        dist[3] = dist[5] + p_rd[j-1] + p_rd[j] + p_down[j];
 
-        dist[4] = tmp[2] + p_right[j-1]+p_rd[j-1];
-        dist[5] = tmp[2] + p_right[j]+p_rd[j];
-        dist[6] = tmp[3] + p_right[j-1]+p_Corner[j-1];
-        dist[7] = tmp[3] + p_right[j]+p_Corner[j];
+        dist2[0] = dist[6] + p_right[j-1]+p_rd[j-1];
+        dist2[1] = dist[6] + p_right[j]+p_rd[j];
+        dist2[2] = dist[7] + p_right[j-1]+p_Corner[j-1];
+        dist2[3] = dist[7] + p_right[j]+p_Corner[j];
 
-        index = 0; absMin = fabsf(dist[0]);
-        for (int i = 1; i < 8; ++i)
-        {
-            if(fabsf(dist[i])<absMin) {absMin = fabsf(dist[i]); index = i;}
-        }
+        min_value = SignedMin(dist);
+        min_value2 = SignedMin(dist2);
+        if(fabsf(min_value2)<fabsf(min_value)) min_value = min_value2;
 
-        p[j] += (scaled_stepsize*dist[index]);
+        p[j] += (scaled_stepsize*min_value);
      }
 }
 
@@ -2268,7 +2282,7 @@ inline void CF::TV_two(float* __restrict p, const float* __restrict p_right, con
     // if use 6, the scheme includes central pixel;
     // if use 5, the scheme does not include central pixel (my PhD thesis uses five) 
     register float scaled_stepsize = stepsize/6;
-    register float scaledP, absMin;
+    register float scaledP, min_value, min_value2;
     int index;
     for (int j = 0; j < N_half-1; ++j)
      {
@@ -2288,13 +2302,10 @@ inline void CF::TV_two(float* __restrict p, const float* __restrict p_right, con
         dist[6] = tmp[3] +p_right[j]+p_Corner[j];
         dist[7] = tmp[3] +p_right[j+1]+p_Corner[j+1];
         
-        index = 0; absMin = fabsf(dist[0]);
-        for (int i = 1; i < 8; ++i)
-        {
-            if(fabsf(dist[i])<absMin) {absMin = fabsf(dist[i]); index = i;}
-        }
-        
-        p[j] += (scaled_stepsize*dist[index]);
+        min_value = SignedMin(dist);
+        min_value2 = SignedMin(dist+4);
+        if(fabsf(min_value2)<fabsf(min_value)) min_value = min_value2;
+        p[j] += (scaled_stepsize*min_value);
      }
 }
 
@@ -2357,30 +2368,25 @@ inline void CF::DC_two(float* __restrict p, const float* __restrict p_right, con
 inline float CF::Scheme_GC(int i, const float * __restrict p_pre, const float * __restrict p, const float * __restrict p_nex, const float * p_curv)
 {
     register float dist[4];
-    register float tmp, min_value;
+    register float tmp, min_value, min_value2;
     tmp = -2*p[i];
     //specify the curvature if provided
     if (p_curv != NULL) tmp = -2*(p[i] + p_curv[i]);
-    min_value = p_pre[i] + p_nex[i] + tmp;
+    dist[0] = p_pre[i] + p_nex[i] + tmp;
     dist[1] = p[i-1] + p[i+1] + tmp;
     dist[2] = p_pre[i-1] + p_nex[i+1] + tmp;
     dist[3]  = p_nex[i-1] + p_pre[i+1] + tmp;
-    for (int j = 1; j < 4; ++j)
-    {
-        if(fabsf(dist[j])<fabsf(min_value)) min_value = dist[j];
-    }
+    min_value = SignedMin_noSplit(dist);
+    min_value *= 1.5f;
     
     tmp *= 1.5f;
-    min_value *= 1.5f;
     dist[0] = p_pre[i] + p_pre[i-1] + p[i-1] + tmp;
     dist[1] = p_pre[i] + p_pre[i+1] + p[i+1] + tmp;
     dist[2] = p_nex[i] + p_nex[i-1] + p[i-1] + tmp;
     dist[3] = p_nex[i] + p_nex[i+1] + p[i+1] + tmp;
-    for (int j = 0; j < 4; ++j)
-    {
-        if(fabsf(dist[j])<fabsf(min_value)) min_value = dist[j];
-    }
+    min_value2 = SignedMin_noSplit(dist);
 
+    if(fabsf(min_value2)<fabsf(min_value)) min_value = min_value2;
     min_value /= 3;
     
     return min_value;
@@ -2396,7 +2402,7 @@ inline float CF::Scheme_MC(int i, const float * __restrict p_pre, const float * 
     const float coeff[3] = {2.5f, 5.0f, -1.0f};//cross, 2*cross, diag
     //const float coeff[3] = {1.0f, 2.0f, 2.0f};//the same as TV
     register float dist[4];
-    register float tmp, com_one, com_two;
+    register float tmp, com_one, com_two, min_value;
     tmp = 8*p[i];
     //specify the curvature if provided
     if (p_curv != NULL) tmp = 8*(p[i] + p_curv[i]);
@@ -2409,13 +2415,9 @@ inline float CF::Scheme_MC(int i, const float * __restrict p_pre, const float * 
     dist[2] = com_two + coeff[1]*p_nex[i] + coeff[2]*(p_nex[i-1] + p_nex[i+1]);
     dist[3] = com_two + coeff[1]*p_pre[i] + coeff[2]*(p_pre[i-1] + p_pre[i+1]);
 
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-    if(fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
-    if(fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
-
-    dist[0] /= 8;
+    min_value = SignedMin_noSplit(dist)/8;
     
-    return dist[0];
+    return min_value;
 }
 
 inline float CF::Scheme_LS(int i, const float * __restrict p_pre, const float * __restrict p, const float * __restrict p_nex, const float * p_curv)
@@ -2466,7 +2468,7 @@ inline float CF::Scheme_TV(int i, const float * __restrict p_pre, const float * 
     // return (a+b+c+d+e)/5.0;
     register float dist[4], tmp[4];
      //old fashion, need 5*8 times plus or minus
-    register float scaledP, min_value;
+    register float scaledP, min_value, min_value2;
     scaledP = 5*p[i];
     //specify the curvature if provided
     if (p_curv != NULL) scaledP = 5*(p[i] + p_curv[i]);
@@ -2477,30 +2479,24 @@ inline float CF::Scheme_TV(int i, const float * __restrict p_pre, const float * 
     tmp[2] = p[i-1]+p[i+1] - scaledP;
     tmp[3] = p_pre[i]+p_nex[i];
 
-    min_value = tmp[0] + tmp[3];
+    dist[0] = tmp[0] + tmp[3];
     dist[1] = tmp[1] + tmp[3];
     dist[2] = tmp[2] + p_pre[i-1] + p_pre[i] + p_pre[i+1];
     dist[3] = tmp[2] + p_nex[i-1] + p_nex[i] + p_nex[i+1];
-    for (int j = 1; j < 4; ++j)
-    {
-        if(fabsf(dist[j])<fabsf(min_value)) min_value = dist[j];
-    }
+    min_value = SignedMin_noSplit(dist);
 
     //diag
     dist[0] = tmp[0] + p_pre[i] + p_pre[i+1];
     dist[1] = tmp[0] + p_nex[i] + p_nex[i+1];
     dist[2] = tmp[1] + p_pre[i-1] + p_pre[i];
     dist[3] = tmp[1] + p_nex[i-1] + p_nex[i];
-    for (int j = 0; j < 4; ++j)
-    {
-        if(fabsf(dist[j])<fabsf(min_value)) min_value = dist[j];
-    }
+    min_value2 = SignedMin_noSplit(dist);
 
-    min_value/=6;
+    if(fabsf(min_value2)<fabsf(min_value)) min_value = min_value2;
     // if use 6, the scheme includes central pixel;
     // if use 5, the scheme does not include central pixel (my PhD thesis uses five)
 
-    return min_value;
+    return min_value/6;
 
 /*
     tmp[0] = p_pre[i-1]+p_pre[i] + p_pre[i+1] - scaledP;
