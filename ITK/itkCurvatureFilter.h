@@ -4,7 +4,7 @@
  *
  **************************************************************************  
  
-            @phdthesis{gong:phd, 
+            @phdthesis{gong:phd, 
              title={Spectrally regularized surfaces}, 
              author={Gong, Yuanhao}, 
              year={2015}, 
@@ -89,60 +89,70 @@ void CurvatureFilter(itk::Image< float, 2 >::Pointer image, int FilterType, int 
 //estimate d_m (minimal projection signed distance)
 float GC(float & cur, float & prev, float & rigUp, float & right, float & rigDn, float & down, float & lefDn, float & left, float& lefUp)
 {
-	float d_m = (prev + down)/2 - cur;
-	float tmp = (left, right)/2 - cur;
+	register float TM = 2*cur;
+	float d_m = prev + down - TM;
+	float tmp = left + right - TM;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
-	tmp = (lefUp, rigDn)/2 - cur;
+	tmp = lefUp + rigDn - TM;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
-	tmp = (lefDn, rigUp)/2 - cur;
+	tmp = lefDn + rigUp - TM;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
 
 	//hybrid
-	tmp = (left + lefUp + prev)/3 - cur;
+	d_m *= 1.5f;
+	TM *= 1.5f;
+	tmp = left + lefUp + prev - TM;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
-	tmp = (prev + rigUp + right)/3 - cur;
+	tmp = prev + rigUp + right - TM;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
-	tmp = (right + rigDn + down)/3 - cur;
+	tmp = right + rigDn + down - TM;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;  
-	tmp = (down + lefDn + left)/3 - cur;
+	tmp = down + lefDn + left - TM;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
 
-	return d_m;
+	return d_m/3;
 }
 float MC(float & cur, float & prev, float & rigUp, float & right, float & rigDn, float & down, float & lefDn, float & left, float& lefUp)
 {
-	float TM = 8*cur;
+	register float TM = 8*cur;
+	float var1 = (prev + down)*2.5f - TM;
+	float var2 = (left + right)*2.5f - TM;
 
-	float d_m = (prev + down)*2.5f - rigUp - rigDn + 5*right - TM;
-	float tmp = (prev + down)*2.5f - lefUp - lefDn + 5*left - TM;
+	float d_m = var1 - rigUp - rigDn + 5*right;
+	float tmp = var1 - lefUp - lefDn + 5*left;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
-	tmp = (left + right)*2.5f - lefUp - rigUp + 5*prev - TM;
+	tmp = var2 - lefUp - rigUp + 5*prev;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
-	tmp = (left + right)*2.5f - lefDn - rigDn + 5*down - TM;
+	tmp = var2 - lefDn - rigDn + 5*down;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
 
 	return d_m/8;
 }
 float TV(float & cur, float & prev, float & rigUp, float & right, float & rigDn, float & down, float & lefDn, float & left, float& lefUp)
 {
-	float TM = 5*cur;
+	register float TM = 5*cur;
+	float var1 = prev + lefUp + left - TM;
+	float var2 = down + rigDn + right - TM;
 
-	float d_m = prev + down + lefUp + left + lefDn - TM;
-	float tmp = prev + down + rigUp + rigDn + right - TM;
+	float d_m = var1 + down + lefDn;
+	float tmp = var2 + prev + rigUp;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
-	tmp = left + lefUp + prev + rigUp + right - TM;
+	tmp = var1 + rigUp + right;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
-	tmp = left + lefDn + down + rigDn + right - TM;
+	tmp = var2 + left + lefDn;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
 
 	//diag
-	tmp = lefUp + prev + rigUp + left + lefDn - TM;
+	var1 = lefUp + prev + rigUp - TM;
+	var2 = lefDn + down + rigDn - TM;
+
+	tmp = var1 + left + lefDn;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
-	tmp = lefUp + prev + rigUp + right + rigDn - TM;
+	tmp = var1 + right + rigDn;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
-	tmp = lefDn + down + rigDn + left + lefUp - TM;
+	tmp = var2 + left + lefUp;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
-	tmp = lefDn + down + rigDn + right + rigUp - TM;
+	tmp = var2 + right + rigUp;
 	if (fabs(tmp) < fabs(d_m)) d_m = tmp;
 
 	return d_m/5;
