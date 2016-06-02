@@ -26,7 +26,7 @@ Curvature filter was developed by Yuanhao Gong during his PhD at MOSAIC Group. P
 	Author = {Yuanhao Gong},
 	Journal = {ICASSP},
 	Month = {March},
-	Pages = {534--538},
+	Pages = {1701--1705},
 	Title = {BERNSTEIN FILTER: A NEW SOLVER FOR MEAN CURVATURE REGULARIZED MODELS},
 	Year = {2016}}
 	
