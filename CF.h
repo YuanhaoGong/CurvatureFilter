@@ -360,7 +360,7 @@ void CF::TV(const Mat & imgF, Mat & T, int type)
     float * p_t;
     switch(type)
     {
-        case 0://default using L1 norm
+        case 1://default using L1 norm
             for(int i = 1; i < imgF.rows-1; i++)
             {
                 p_row = imgF.ptr<float>(i);
@@ -2036,11 +2036,13 @@ inline float CF::SignedMin_noSplit(float * dist)
 {
     float absMin = fabsf(dist[0]);
     unsigned char index = 0;
+    float absTmp;
     for (unsigned char i = 1; i < 4; ++i)
     {
-        if (fabsf(dist[i])<absMin)
+        absTmp = fabsf(dist[i]); 
+        if (absTmp<absMin)
         {
-            absMin = fabsf(dist[i]);
+            absMin = absTmp;;
             index = i;
         }
     }
@@ -2247,7 +2249,6 @@ inline void CF::TV_one(float* __restrict p, const float* __restrict p_right, con
     // if use 5, the scheme does not include central pixel (my PhD thesis uses five)
     register float scaled_stepsize = stepsize/6;
     register float scaledP, min_value, min_value2;
-    int index;
     for (int j = 1; j < N_half; ++j)
      {
         //temp var
@@ -2283,7 +2284,6 @@ inline void CF::TV_two(float* __restrict p, const float* __restrict p_right, con
     // if use 5, the scheme does not include central pixel (my PhD thesis uses five) 
     register float scaled_stepsize = stepsize/6;
     register float scaledP, min_value, min_value2;
-    int index;
     for (int j = 0; j < N_half-1; ++j)
      {
         scaledP = p[j]*5;
