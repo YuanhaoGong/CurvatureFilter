@@ -95,7 +95,7 @@ int main(int argc, char** argv)
       DualMesh.read(argv[1]);
       DualMesh.FilterNoSplit(Type, mytime, ItNum);
       cout<<"runtime (noSplit) is "<<mytime<<" milliseconds."<<endl;
-      DualMesh.write("CF_NoSplit_result.png");
+      DualMesh.write("CF_NoSplit.png");
     }
 
     //solve a variational model (data fitting term is blackbox)
