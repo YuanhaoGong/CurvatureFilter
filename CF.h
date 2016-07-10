@@ -56,7 +56,7 @@ public:
     the stepsize parameter is in (0,1]
     *********************************************************************************************/
     void Filter(const int Type, double & time, const int ItNum = 10, const float stepsize=1);
-    void FilterNoSplit(const int Type, double & time, const int ItNum = 10, const float stepsize=1);
+    void FilterNoSplit(const int Type, double & time, const int ItNum = 10, const float stepsize=1, const bool stochastic=false);
 
     /*********************************************************************************************
     ******************* generic solver for variational models *****************************
@@ -73,7 +73,15 @@ public:
     /*********************************************************************************************
     ******            approximate gradient of regularization energy                 ******
     *********************************************************************************************/
-    //not ready, a new way to minimize the energy
+    //Th result gradient is only valid for the location type, NOT the full image
+    //FilterType = 1, mean curvature; FilterType = 2, Gaussian curvature; gradient is the result
+    //LocationType        start_row         start_col
+    //   0 (BC),                  1,               1;
+    //   1 (BT),                  2,               2;
+    //   2 (WC),                  1,               2;
+    //   3 (WT),                  2,               1;
+    void NegativeGradient(const int FilterType, const int LocationType, const Mat & img, Mat & gradient);
+    
 
     /*********************************************************************************************
     ****************************    Curvature Guided Filter   ************************************
@@ -115,13 +123,6 @@ private:
     //fit coefficients for quad function
     void FiveCoefficient(const Mat & img, Mat & x2, Mat &y2, Mat & xy, Mat & x, Mat & y);
     
-    //this is not analytical correct, but statistically correct.
-    //FilterType = 1, mean curvature; FilterType = 2, Gaussian curvature; gradient is the result
-    //LocationType: 0, BlackCircle, start_row = 1, start_col = 1;
-    //locationType: 1, BlackTriang, start_row = 2, start_clo = 2;
-    //locationType: 2, WhiteCircle, start_row = 1, start_clo = 2;
-    //locationType: 3, WhiteTriang, start_row = 2, start_clo = 1;
-    void NegativeGradient(const int FilterType, const int LocationType, const Mat & img, Mat & gradient);
     //find the signed value with minimum abs value, dist contains FOUR floats
     inline float SignedMin(float * dist);
     inline float SignedMin_noSplit(float * dist);
@@ -410,11 +411,7 @@ void CF::MC(const Mat& imgF, Mat & MC, int type)
             MC_fit(imgF, MC); 
             break;
         case 3: //another linear kernel
-            //boxFilter(imgF, MC, CV_32F, Size(3,3), Point(-1,-1),true,BORDER_REPLICATE);
-            kernel = (Mat_<float>(1,3) << 0.333333f, 0.333333f, 0.333333f); 
-            sepFilter2D(imgF, MC, CV_32F, kernel, kernel,Point(-1,-1),0,BORDER_REPLICATE);
-            MC -= imgF;
-            MC *= 1.125f;
+            Laplacian(imgF, MC, MC.depth(), 1, 0.25);
             break;
         case 4: //isoline schemes, be aware the difference
             for(int i = 1; i < imgF.rows-1; i++)
@@ -849,9 +846,11 @@ void CF::Filter(const int Type, double & time, const int ItNum, const float step
 
 //this nosplit is very useful for tasks like deconvolution, where the four sets need to be merged 
 //every iteration if we use the split scheme.
-void CF::FilterNoSplit(const int Type, double & time, const int ItNum, const float stepsize)
+void CF::FilterNoSplit(const int Type, double & time, const int ItNum, const float stepsize, const bool stochastic)
 {
     clock_t Tstart, Tend;
+    const float Max_rand_float = RAND_MAX;
+    float scaled_stepsize;
 
     float (CF::* Local)(int i, const float* p_pre, const float* p, const float* p_nex, const float * p_curv);
 
@@ -896,7 +895,12 @@ void CF::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
             for (int j = 1; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down,NULL);
-                p[j] += (stepsize*d);
+                if (stochastic)
+                {
+                    scaled_stepsize = rand()/Max_rand_float;
+                    p[j] += (scaled_stepsize*d);
+                }
+                else p[j] += (stepsize*d);
             }
         }
 
@@ -909,7 +913,12 @@ void CF::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
             for (int j = 2; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down,NULL);
-                p[j] += (stepsize*d);
+                if (stochastic)
+                {
+                    scaled_stepsize = rand()/Max_rand_float;
+                    p[j] += (scaled_stepsize*d);
+                }
+                else p[j] += (stepsize*d);
             }
         }
 
@@ -922,7 +931,12 @@ void CF::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
             for (int j = 2; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down,NULL);
-                p[j] += (stepsize*d);
+                if (stochastic)
+                {
+                    scaled_stepsize = rand()/Max_rand_float;
+                    p[j] += (scaled_stepsize*d);
+                }
+                else p[j] += (stepsize*d);
             }
         }
 
@@ -935,7 +949,12 @@ void CF::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
             for (int j = 1; j < N-1; ++j, ++j)
             {
                 d = (this->*Local)(j,p_pre,p,p_down,NULL);
-                p[j] += (stepsize*d);
+                if (stochastic)
+                {
+                    scaled_stepsize = rand()/Max_rand_float;
+                    p[j] += (scaled_stepsize*d);
+                }
+                else p[j] += (stepsize*d);
             }
         }
     }
@@ -1459,7 +1478,7 @@ void CF::NegativeGradient(const int FilterType, const int LocationType, const Ma
         }
     }
 
-    //statistically equivalent integer 
+    //statistically equivalent integer from benchmark
     if(Type==1) dm *= 2;
     if(Type==2) dm *= 30; //GC filter is super efficient
  }
@@ -1478,13 +1497,11 @@ inline float CF::SignedMin_noSplit(float * dist)
 {
     float absMin = fabsf(dist[0]);
     unsigned char index = 0;
-    float absTmp;
     for (unsigned char i = 1; i < 4; ++i)
     {
-        absTmp = fabsf(dist[i]);
-        if (absTmp<absMin)
+        if (fabsf(dist[i])<absMin)
         {
-            absMin = absTmp;
+            absMin = fabsf(dist[i]);
             index = i;
         }
     }
