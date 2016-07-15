@@ -53,7 +53,7 @@ public:
 
     /**************************** curvature filters ******************************************
     Type=0, TV; Type=1, MC; Type=2, GC; Type=3, DC; Type=4, Bernstein;
-    the stepsize parameter is in (0,1]
+    the stepsize parameter is in (0,1], stochastic step is in (0,stepsize)
     *********************************************************************************************/
     void Filter(const int Type, double & time, const int ItNum = 10, const float stepsize=1);
     void FilterNoSplit(const int Type, double & time, const int ItNum = 10, const float stepsize=1, const bool stochastic=false);
@@ -82,7 +82,6 @@ public:
     //   3 (WT),                  2,               1;
     void NegativeGradient(const int FilterType, const int LocationType, const Mat & img, Mat & gradient);
     
-
     /*********************************************************************************************
     ****************************    Curvature Guided Filter   ************************************
     *********************************************************************************************/
@@ -849,7 +848,7 @@ void CF::Filter(const int Type, double & time, const int ItNum, const float step
 void CF::FilterNoSplit(const int Type, double & time, const int ItNum, const float stepsize, const bool stochastic)
 {
     clock_t Tstart, Tend;
-    const float Max_rand_float = RAND_MAX;
+    const float Max_rand_float = stepsize/RAND_MAX;
     float scaled_stepsize;
 
     float (CF::* Local)(int i, const float* p_pre, const float* p, const float* p_nex, const float * p_curv);
@@ -897,7 +896,7 @@ void CF::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
                 d = (this->*Local)(j,p_pre,p,p_down,NULL);
                 if (stochastic)
                 {
-                    scaled_stepsize = rand()/Max_rand_float;
+                    scaled_stepsize = rand()*Max_rand_float;
                     p[j] += (scaled_stepsize*d);
                 }
                 else p[j] += (stepsize*d);
@@ -915,7 +914,7 @@ void CF::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
                 d = (this->*Local)(j,p_pre,p,p_down,NULL);
                 if (stochastic)
                 {
-                    scaled_stepsize = rand()/Max_rand_float;
+                    scaled_stepsize = rand()*Max_rand_float;
                     p[j] += (scaled_stepsize*d);
                 }
                 else p[j] += (stepsize*d);
@@ -933,7 +932,7 @@ void CF::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
                 d = (this->*Local)(j,p_pre,p,p_down,NULL);
                 if (stochastic)
                 {
-                    scaled_stepsize = rand()/Max_rand_float;
+                    scaled_stepsize = rand()*Max_rand_float;
                     p[j] += (scaled_stepsize*d);
                 }
                 else p[j] += (stepsize*d);
@@ -951,7 +950,7 @@ void CF::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
                 d = (this->*Local)(j,p_pre,p,p_down,NULL);
                 if (stochastic)
                 {
-                    scaled_stepsize = rand()/Max_rand_float;
+                    scaled_stepsize = rand()*Max_rand_float;
                     p[j] += (scaled_stepsize*d);
                 }
                 else p[j] += (stepsize*d);
