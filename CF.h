@@ -71,16 +71,15 @@ public:
                             float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d), const float stepsize=1);
     
     /*********************************************************************************************
-    ******            approximate gradient of regularization energy                 ******
+    ***** the dm at given location, which is the gradient of regularization energy ****
     *********************************************************************************************/
-    //Th result gradient is only valid for the location type, NOT the full image
-    //FilterType = 1, mean curvature; FilterType = 2, Gaussian curvature; gradient is the result
+    //Th result dm is only valid for the location type, NOT the full image
     //LocationType        start_row         start_col
     //   0 (BC),                  1,               1;
     //   1 (BT),                  2,               2;
     //   2 (WC),                  1,               2;
     //   3 (WT),                  2,               1;
-    void NegativeGradient(const int FilterType, const int LocationType, const Mat & img, Mat & gradient);
+    void DM(const int FilterType, const int LocationType, const Mat & img, Mat & dm);
     
     /*********************************************************************************************
     ****************************    Curvature Guided Filter   ************************************
@@ -151,7 +150,7 @@ private:
 
 /********************************************************************************************
 *********************************************************************************************
-*********************************  end of CF class   ****************************************
+*********************************  end of CF class   **************************************
 *********************************************************************************************
 *********************************************************************************************/
 
@@ -1421,21 +1420,28 @@ void CF::Solver(const int Type, double & time, const int MaxItNum, const float l
     energyProfile.close();
  }
 
-void CF::NegativeGradient(const int FilterType, const int LocationType, const Mat & img, Mat & dm)
+void CF::DM(const int FilterType, const int LocationType, const Mat & img, Mat & dm)
 {
-    //perform one iteration of curvature filter and return negative gradient of regularization energy
     const float *p, *p_pre, *p_down;
     float *p_d;
     float (CF::* Local)(int i, const float* p_pre, const float* p, const float* p_nex, const float * p_curv);
     switch(Type)
     {
+        case 0:
+        {
+            Local = &CF::Scheme_TV; cout<<"TV dm: "; break;
+        }
         case 1:
         {
-            Local = &CF::Scheme_MC; cout<<"MC gradient: "; break;
+            Local = &CF::Scheme_MC; cout<<"MC dm: "; break;
         }
         case 2:
         {
-            Local = &CF::Scheme_GC; cout<<"GC gradient: "; break;
+            Local = &CF::Scheme_GC; cout<<"GC dm: "; break;
+        }
+        case 4:
+        {
+            Local = &CF::Scheme_LS; cout<<"Bernstein dm: "; break;
         }
         default:
         {
@@ -1483,9 +1489,9 @@ void CF::NegativeGradient(const int FilterType, const int LocationType, const Ma
         }
     }
 
-    //statistically equivalent integer from benchmark
-    if(Type==1) dm *= 2;
-    if(Type==2) dm *= 30; //GC filter is super efficient
+    //statistically, following gives the gradient of curvature energy
+    // if(Type==1) dm *= 2;
+    // if(Type==2) dm *= 30; //GC filter is super efficient
  }
 
  //find the value with minimum abs value, 4 floats
