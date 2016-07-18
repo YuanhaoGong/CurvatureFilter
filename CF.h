@@ -58,6 +58,10 @@ public:
     void Filter(const int Type, double & time, const int ItNum = 10, const float stepsize=1);
     void FilterNoSplit(const int Type, double & time, const int ItNum = 10, const float stepsize=1, const bool stochastic=false);
 
+    //general kernel filter: Type = 0, only half window; Type = 1, half and quarter window; Type = 2, only quarter window
+    void HalfWindow(const int Type, double & time, int ItNum=10, 
+                    Mat kernel=getGaussianKernel(7, -1, CV_32F ).t(), const float stepsize=1);
+
     /*********************************************************************************************
     ******************* generic solver for variational models *****************************
     solve variational models by the curvature filter, just guarantee to reduce the total energy
@@ -89,6 +93,12 @@ public:
     //filter the image such that the result is close to the specified curvature
     void CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, const int ItNum = 10, const float stepsize=1);
 
+
+    /*********************************************************************************************
+    ****************************    Poisson Solver   ************************************
+    *********************************************************************************************/
+    void Poisson(const Mat & rhs, Mat & result);
+    
     /********************************************************************************************
     *********************************************************************************************
     *********************************  end of public functions   ********************************
@@ -105,6 +115,7 @@ private:
     float* p, *p_right, *p_down, *p_rd, *p_pre, *p_Corner;
     //pointer to the data
     const float* p_data;
+
 private:
     //split imgF into four sets
     void split();
@@ -120,7 +131,8 @@ private:
     void GC_LUT(const Mat & LUT, const Mat & img, Mat & GC);
     //fit coefficients for quad function
     void FiveCoefficient(const Mat & img, Mat & x2, Mat &y2, Mat & xy, Mat & x, Mat & y);
-    
+    //keep the value that has smaller absolute value
+    inline void KeepMinAbs(Mat& dm, Mat& d_other);
     //find the signed value with minimum abs value, dist contains FOUR floats
     inline float SignedMin(float * dist);
     inline float SignedMin_noSplit(float * dist);
@@ -146,6 +158,13 @@ private:
     inline float Scheme_TV(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_guide = NULL);
     inline float Scheme_DC(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_guide = NULL);
     inline float Scheme_LS(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_guide = NULL);
+
+private:
+    //using curvature to regularize the motion field
+    Mat grid_x, grid_y, motion_x, motion_y;
+    void grid(int rows, int cols, Mat & grid_x, Mat & grid_y);
+    //for solving a Poisson equation
+    void SampleDownOrUp(const Mat & src, Mat & dst, bool Forward=true);
 };
 
 /********************************************************************************************
@@ -461,6 +480,21 @@ void CF::FiveCoefficient(const Mat & img, Mat & x2, Mat &y2, Mat & xy, Mat & x, 
     sepFilter2D(img, xy, img.depth(), kernel_three_h, kernel_three_v);
     sepFilter2D(img, x, img.depth(), kernel_four_h, kernel_four_v);
     sepFilter2D(img, y, img.depth(), kernel_four_v, kernel_three_v);//reuse the same kernel
+}
+
+//keep the value that has minimum absolute value in dm
+inline void CF::KeepMinAbs(Mat& dm, Mat& d_other)
+{
+    float * p, * p_other;
+    for (int i = 0; i < dm.rows; ++i)
+    {
+        p=dm.ptr<float>(i);
+        p_other = d_other.ptr<float>(i);
+        for (int j = 0; j < dm.cols; ++j)
+        {
+            if(fabsf(p_other[j])<fabsf(p[j])) p[j] = p_other[j];
+        }
+    }
 }
 
 //compute Mean Curvature by fitting quad function
@@ -846,6 +880,115 @@ void CF::Filter(const int Type, double & time, const int ItNum, const float step
 
     //merge four sets back to imgF
     merge();
+}
+
+//Type = 0, half window regression; Type = 1, half and quarter window; Type = 2, quarter window
+void CF::HalfWindow(const int Type, double & time, int ItNum, Mat kernel, const float stepsize)
+{
+    clock_t Tstart, Tend;
+    if(kernel.cols % 2 == 0) {cout<<"The kernel size must be odd."<<endl; return;}
+    const int r = (kernel.cols-1)/2;//window radius
+    //two half kernels
+    Mat kernel_left = Mat::zeros(1,2*r+1,CV_32FC1);
+    Mat kernel_right = Mat::zeros(1,2*r+1,CV_32FC1);
+    //two distance fields
+    Mat dist_1 = Mat::zeros(M,N,CV_32FC1);
+    Mat dist_2 = Mat::zeros(M,N,CV_32FC1);
+
+    //normalize the two kernels
+    double total_left = 0; double total_right = 0;
+    for (int i = 0; i < r+1; ++i)
+    {
+        kernel_left.at<float>(0,i) = kernel.at<float>(0,i);
+        total_left += kernel.at<float>(0,i);
+
+        kernel_right.at<float>(0,i+r) = kernel.at<float>(0,i+r);
+        total_right += kernel.at<float>(0,i+r);
+    }
+    kernel_left /= total_left;
+    kernel_right /= total_right;
+    kernel /= (total_left + total_right - kernel.at<float>(0,r));
+    
+    //start the loop
+    Tstart = clock();
+    switch(Type)
+    {
+        case 0:
+                for(int it=0;it<ItNum;++it)
+                {
+                    //compute four distance fields and find the minimal projection
+                    sepFilter2D(imgF, dist_1, imgF.depth(), kernel, kernel_left);
+                    sepFilter2D(imgF, dist_2, imgF.depth(), kernel, kernel_right);
+                    dist_1 -= imgF;
+                    dist_2 -= imgF;
+                    KeepMinAbs(dist_1, dist_2);
+                    sepFilter2D(imgF, dist_2, imgF.depth(), kernel_left, kernel);
+                    dist_2 -= imgF;
+                    KeepMinAbs(dist_1, dist_2);
+                    sepFilter2D(imgF, dist_2, imgF.depth(), kernel_right, kernel);
+                    dist_2 -= imgF;
+                    KeepMinAbs(dist_1, dist_2);
+
+                    imgF += (stepsize*dist_1);
+                }
+                break;
+        case 1:
+                for(int it=0;it<ItNum;++it)
+                {
+                    //compute four distance fields and find the minimal projection
+                    sepFilter2D(imgF, dist_1, imgF.depth(), kernel, kernel_left);
+                    sepFilter2D(imgF, dist_2, imgF.depth(), kernel, kernel_right);
+                    dist_1 -= imgF;
+                    dist_2 -= imgF;
+                    KeepMinAbs(dist_1, dist_2);
+                    sepFilter2D(imgF, dist_2, imgF.depth(), kernel_left, kernel);
+                    dist_2 -= imgF;
+                    KeepMinAbs(dist_1, dist_2);
+                    sepFilter2D(imgF, dist_2, imgF.depth(), kernel_right, kernel);
+                    dist_2 -= imgF;
+                    KeepMinAbs(dist_1, dist_2);
+
+                    sepFilter2D(imgF, dist_2, imgF.depth(), kernel_left, kernel_left);
+                    dist_2 -= imgF;
+                    KeepMinAbs(dist_1, dist_2);
+                    sepFilter2D(imgF, dist_2, imgF.depth(), kernel_left, kernel_right);
+                    dist_2 -= imgF;
+                    KeepMinAbs(dist_1, dist_2);
+                    sepFilter2D(imgF, dist_2, imgF.depth(), kernel_right, kernel_left);
+                    dist_2 -= imgF;
+                    KeepMinAbs(dist_1, dist_2);
+                    sepFilter2D(imgF, dist_2, imgF.depth(), kernel_right, kernel_right);
+                    dist_2 -= imgF;
+                    KeepMinAbs(dist_1, dist_2);
+
+
+                    imgF += (stepsize*dist_1);
+                }
+                break;
+        case 2:
+                for(int it=0;it<ItNum;++it)
+                {
+                    //compute four distance fields and find the minimal projection
+                    sepFilter2D(imgF, dist_1, imgF.depth(), kernel_left, kernel_left);
+                    sepFilter2D(imgF, dist_2, imgF.depth(), kernel_left, kernel_right);
+                    dist_1 -= imgF;
+                    dist_2 -= imgF;
+                    KeepMinAbs(dist_1, dist_2);
+                    sepFilter2D(imgF, dist_2, imgF.depth(), kernel_right, kernel_left);
+                    dist_2 -= imgF;
+                    KeepMinAbs(dist_1, dist_2);
+                    sepFilter2D(imgF, dist_2, imgF.depth(), kernel_right, kernel_right);
+                    dist_2 -= imgF;
+                    KeepMinAbs(dist_1, dist_2);
+
+                    imgF += (stepsize*dist_1);
+                }
+                break;
+        default:
+                cout<<"The Type is not correct in HalfWindow."<<endl;
+    }
+    Tend = clock() - Tstart; 
+    time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
 }
 
 //this nosplit is very useful for tasks like deconvolution, where the four sets need to be merged 
@@ -1517,6 +1660,131 @@ inline float CF::SignedMin_noSplit(float * dist)
         }
     }
     return dist[index];
+}
+
+//generate the grid location
+void CF::grid(int rows, int cols, Mat & grid_x, Mat & grid_y)
+{
+    grid_x.create(rows, cols, CV_32FC1);
+    grid_y.create(rows, cols, CV_32FC1);
+    float *p;
+    for (int i = 0; i < rows; ++i)
+    {
+        p = grid_x.ptr<float>(i);
+        for (int j = 0; j < cols; ++j)
+        {
+            p[j] = j;
+        }
+    }
+    for (int i = 0; i < rows; ++i)
+    {
+        p = grid_x.ptr<float>(i);
+        for (int j = 0; j < cols; ++j)
+        {
+            p[j] = i;
+        }
+    }
+}
+
+//only take the even rows and clos
+void CF::SampleDownOrUp(const Mat & src, Mat & dst, bool Forward)
+{
+    dst.setTo(0);
+    const float * p_s;
+    float * p_d;
+    if (Forward)
+    {//take the even row and col to dst
+        for (int j = 0; j < dst.rows; ++j)
+        {
+            p_s = src.ptr<float>(2*j);
+            p_d = dst.ptr<float>(j);
+            for (int k = 0; k < dst.cols; ++k)
+            {
+                p_d[k] = p_s[2*k];
+            }
+        }
+    }else
+    {
+        //fill the even row and col from src
+        for (int j = 0; j < src.rows; ++j)
+        {
+            p_s = src.ptr<float>(j);
+            p_d = dst.ptr<float>(2*j);
+            for (int k = 0; k < src.cols; ++k)
+            {
+                p_d[2*k] = p_s[k];
+            }
+        }
+    }
+}
+
+//both rhs and result are float type
+void CF::Poisson(const Mat & rhs, Mat & result)
+{
+    //three kernels
+    Mat kernel_analysis = (Mat_<float>(1,7) << 0.0611f, 0.26177f, 0.53034f, 0.65934f, 0.53034f, 0.26177f, 0.0611f);
+    Mat kernel_synth = kernel_analysis*0.714885f;
+    Mat kernel_g = (Mat_<float>(1,5) << 0.05407f, 0.24453f, 0.5741f, 0.24453f, 0.05407f);
+
+    const int Levels = (int)ceil(log2(std::max(rhs.rows, rhs.cols)));
+    const int Pad_size = kernel_analysis.cols;
+
+    Mat * Pyr = new Mat[Levels];
+    Mat * revPyr = new Mat[Levels];
+
+    int sRow, sCols;
+    float * p_d, * p_t;
+
+    //**** analysis ****
+    //pad the first layer
+    Pyr[0] = Mat::zeros(rhs.rows+2*Pad_size,rhs.cols+2*Pad_size,CV_32FC1);
+    copyMakeBorder(rhs,Pyr[0],Pad_size,Pad_size,Pad_size,Pad_size,BORDER_CONSTANT,Scalar(0));
+
+    Mat tmp, dist, tmp2, aux;
+    for (int i = 1; i < Levels; ++i)
+    {
+        tmp = Mat::zeros(Pyr[i-1].rows,Pyr[i-1].cols, CV_32FC1);
+        dist = Mat::zeros((tmp.rows+1)/2,(tmp.cols+1)/2, CV_32FC1);
+        sepFilter2D(Pyr[i-1], tmp, CV_32F, kernel_analysis, kernel_analysis,Point(-1,-1),0,BORDER_REPLICATE);
+        //sample down
+        SampleDownOrUp(tmp, dist, true);
+
+        Pyr[i]= Mat::zeros(dist.rows+2*Pad_size,dist.cols+2*Pad_size,CV_32FC1);
+        aux = Pyr[i].colRange(Pad_size,Pad_size+dist.cols).rowRange(Pad_size,Pad_size+dist.rows); 
+        dist.copyTo(aux);
+    }
+    
+    //**** synthesis ****
+    //base layer
+    revPyr[Levels-1] = Mat::zeros(Pyr[Levels-1].rows, Pyr[Levels-1].cols, CV_32FC1);
+    sepFilter2D(Pyr[Levels-1], revPyr[Levels-1], CV_32F, kernel_g, kernel_g, Point(-1,-1),0,BORDER_REPLICATE);
+    
+    for (int i = Levels-2; i > -1; --i)
+    {
+        sRow = revPyr[i+1].rows - Pad_size;
+        sCols = revPyr[i+1].cols - Pad_size; 
+
+        dist = Mat::zeros(Pyr[i].rows,Pyr[i].cols, CV_32FC1);
+        tmp=revPyr[i+1].colRange(Pad_size,sCols).rowRange(Pad_size,sRow);
+        //sample up
+        SampleDownOrUp(tmp, dist, false);
+        
+        revPyr[i] = Mat::zeros(Pyr[i].rows,Pyr[i].cols, CV_32FC1);
+        //filt dist and Pyr[i], then add them together
+        sepFilter2D(dist,revPyr[i], CV_32F, kernel_synth, kernel_synth, Point(-1,-1),0,BORDER_REPLICATE);
+        
+        tmp2 = Mat::zeros(Pyr[i].rows, Pyr[i].cols, CV_32FC1);
+        sepFilter2D(Pyr[i],tmp2, CV_32F, kernel_g, kernel_g, Point(-1,-1),0,BORDER_REPLICATE);
+        
+        revPyr[i] += tmp2;
+    }
+    //save the result
+    sRow = revPyr[0].rows - Pad_size;
+    sCols = revPyr[0].cols - Pad_size;
+    revPyr[0].colRange(Pad_size, sCols).rowRange(Pad_size,sRow).copyTo(result);
+    //clean up the wavelet
+    delete [] Pyr;
+    delete [] revPyr;
 }
 
 //*************************** Do NOT change anything! *****************************//
