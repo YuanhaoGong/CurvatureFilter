@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <time.h>
 #include <cmath>
+#include <dirent.h>
 
 using namespace cv;
 using namespace std;
