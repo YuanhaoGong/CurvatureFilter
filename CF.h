@@ -39,8 +39,8 @@ public:
     double Naturalness(const Mat & img);
 
     /********************* curvature and energy *********************/
-    //compute TV: scheme=1, L1 norm; scheme=2, L2 norm
-    void TV(const Mat & img, Mat & T, int scheme=1);
+    //compute TV: scheme=0, L1 norm; scheme=1, L2 norm
+    void TV(const Mat & img, Mat & T, int scheme=0);
     //compute MC: 0, standard; 1, my scheme; 2, quadratic fitting; 3, my scheme; 4, isoline
     void MC(const Mat & img, Mat & MC, int scheme=0);
     //compute GC: 0, standard; 1, my scheme; 2, quadratic fitting
@@ -95,10 +95,17 @@ public:
 
 
     /*********************************************************************************************
-    ****************************    Poisson Solver   ************************************
+    ****************************    Poisson Solver         ************************************
     *********************************************************************************************/
     void Poisson(const Mat & rhs, Mat & result);
     
+    /*********************************************************************************************
+    ****************************    statistics of curvature   ********************************
+    *********************************************************************************************/
+    //the curvature statistics from the given dir_path
+    //result is a 1D distribution, we only need [0, Inf) thanks to the symmetry
+    void statistics(const int Type, const char* dir_path, Mat& result);
+
     /********************************************************************************************
     *********************************************************************************************
     *********************************  end of public functions   ********************************
@@ -161,8 +168,8 @@ private:
 
 private:
     //using curvature to regularize the motion field
-    Mat grid_x, grid_y, motion_x, motion_y;
-    void grid(int rows, int cols, Mat & grid_x, Mat & grid_y);
+    Mat grid_row, grid_col, motion_row, motion_col;
+    void grid(int rows, int cols, Mat & grid_row, Mat & grid_col);
     //for solving a Poisson equation
     void SampleDownOrUp(const Mat & src, Mat & dst, bool Forward=true);
 };
@@ -359,7 +366,7 @@ void CF::TV(const Mat & imgF, Mat & T, int type)
     float * p_t;
     switch(type)
     {
-        case 1://default using L1 norm
+        case 0://default using L1 norm
             for(int i = 1; i < imgF.rows-1; i++)
             {
                 p_row = imgF.ptr<float>(i);
@@ -371,7 +378,7 @@ void CF::TV(const Mat & imgF, Mat & T, int type)
                 }   
             }
             break;
-        case 2:
+        case 1:
             float gx, gy;
             for(int i = 1; i < imgF.rows-1; i++)
             {
@@ -1663,14 +1670,14 @@ inline float CF::SignedMin_noSplit(float * dist)
 }
 
 //generate the grid location
-void CF::grid(int rows, int cols, Mat & grid_x, Mat & grid_y)
+void CF::grid(int rows, int cols, Mat & grid_row, Mat & grid_col)
 {
-    grid_x.create(rows, cols, CV_32FC1);
-    grid_y.create(rows, cols, CV_32FC1);
+    grid_row.create(rows, cols, CV_32FC1);
+    grid_col.create(rows, cols, CV_32FC1);
     float *p;
     for (int i = 0; i < rows; ++i)
     {
-        p = grid_x.ptr<float>(i);
+        p = grid_col.ptr<float>(i);
         for (int j = 0; j < cols; ++j)
         {
             p[j] = j;
@@ -1678,7 +1685,7 @@ void CF::grid(int rows, int cols, Mat & grid_x, Mat & grid_y)
     }
     for (int i = 0; i < rows; ++i)
     {
-        p = grid_x.ptr<float>(i);
+        p = grid_row.ptr<float>(i);
         for (int j = 0; j < cols; ++j)
         {
             p[j] = i;
@@ -2256,4 +2263,104 @@ inline float CF::Scheme_DC(int i, const float * __restrict p_pre, const float * 
     if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
     return dist[0];
+}
+
+
+//the statistics from the given dir_path for the curvature
+//result is a 1D distribution, we only need [0, Inf) because of the symmetry
+void CF::statistics(const int Type, const char* dir_path, Mat& result)
+{
+    result = Mat::zeros(1, 1024, CV_64FC1);//the range is fixed
+    void (CF::* curvature_compute)(const Mat& img, Mat& curv, int scheme);
+    int scheme = 0;
+
+    Mat img, imgF, curvature, index;
+    unsigned short *p_index;
+    double * p_statistics = result.ptr<double>(0);
+
+    switch(Type)
+    {
+        case 0:
+        {
+            cout<<"TV Filter:(TVL1 by default) "; curvature_compute = &CF::TV; break;
+        }
+        case 1:
+        {
+            cout<<"MC Filter: "; curvature_compute = &CF::MC; break;
+        }
+        case 2:
+        {
+            cout<<"GC Filter: "; curvature_compute = &CF::GC; break;
+        }
+        case 3:
+        {
+            cout<<"DC Filter: "; curvature_compute = &CF::GC; break;
+        }
+        case 4:
+        {
+            cout<<"Bernstein Filter: "; curvature_compute = &CF::MC; break;
+        }
+        default:
+        {
+            cout<<"The filter type is wrong. Do nothing."<<endl;
+            return;
+        }
+    }
+    //loop the dir
+    DIR* dirFile = opendir(dir_path);
+    if ( dirFile ) 
+    {
+        struct dirent* hFile;
+        double f = 0;
+        int file_count = 0;
+        int M, N;
+        while (( hFile = readdir( dirFile )) != NULL ) 
+        {
+            if ( !strcmp( hFile->d_name, "."  )) continue;
+            if ( !strcmp( hFile->d_name, ".." )) continue;
+
+            // in linux hidden files all start with '.'
+            if (hFile->d_name[0] == '.') continue;
+
+            // dirFile.name is the name of the file. 
+            printf( "file %s\n", hFile->d_name );
+            string str(dir_path);
+            string filename(hFile->d_name);
+            str +="/";
+            str += filename;
+            img = imread(str.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+            if(!img.data ) continue; // not an image
+            M = img.rows;
+            N = img.cols;
+            imgF.create(M, N, CV_32FC1);
+            curvature.create(M, N, CV_32FC1);
+            index.create(M, N, CV_16UC1);
+            img.convertTo(imgF, CV_32FC1);
+            (this->*curvature_compute)(imgF, curvature, scheme);
+            curvature = abs(curvature);
+            curvature.convertTo(index, CV_16UC1);
+            f = 1.0/((M-2)*(N-2));//ignore the boundary
+            for (int i = 1; i < M-1; ++i)
+            {
+                p_index = index.ptr<unsigned short>(i);
+                for (int j = 1; j < N-1; ++j)
+                {
+                    if(p_index[j]>=0 && p_index[j]<1024)
+                        p_statistics[p_index[j]] += f;
+                }
+            }
+            file_count++;
+        } 
+        closedir( dirFile );
+        cout<<"Total Images: "<<file_count<<endl;
+        cout<<"Sum of the statistics: "<<sum(result)[0]<<endl;
+        //output the statistics
+        ofstream profile;
+        profile.open ("statistics.txt");
+        for (int i = 0; i < 1024; ++i)
+        {
+            profile<<p_statistics[i]<<endl;
+        }
+        profile.close();
+    }
 }
