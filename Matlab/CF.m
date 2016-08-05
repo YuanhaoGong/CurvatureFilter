@@ -40,7 +40,7 @@ switch FilterType
     case 4
         myfun = @proj_BF; mycurv = @curv_MC;
     case 5
-    	myfun = @proj_LP; mycurv = @curv_MC;
+        myfun = @proj_LP; mycurv = @curv_MC;
    otherwise
       disp('Filter Type is not correct.'), return;
 end
