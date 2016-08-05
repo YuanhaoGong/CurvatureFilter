@@ -14,7 +14,7 @@ function [result, Energy] = CF(im, FilterType, ItNum, stepsize)
 % 
 % =========================================================================
 % FilterType: 0(Total Variation), 1(Mean Curvature), 2(Gaussian Curvature)
-%             4(Bernstein Filter)
+%             4(Bernstein Filter), 5(Half Laplace Filter)
 if (nargout>1)
     if_record_energy = true;
 else
@@ -39,6 +39,8 @@ switch FilterType
         myfun = @proj_GC; mycurv = @curv_GC;
     case 4
         myfun = @proj_BF; mycurv = @curv_MC;
+    case 5
+    	myfun = @proj_LP; mycurv = @curv_MC;
    otherwise
       disp('Filter Type is not correct.'), return;
 end
@@ -121,8 +123,28 @@ dm = single(step/8)*dist(index);
 %update current pixels
 res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 
+function res = proj_LP(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
+res = im; BT2 = 2*im(BT_r,BT_c); dist = zeros([size(BT2),4],'single');
+tmp1 = 0.5*(im(BT_pre,BT_c) + im(BT_nex,BT_c)) - BT2;
+tmp2 = 0.5*(im(BT_r,BT_lef) + im(BT_r,BT_rig)) - BT2;
+%compute all possible projection distances
+dist(:,:,1) = tmp1  + im(BT_r,BT_rig);
+dist(:,:,2) = tmp1  + im(BT_r,BT_lef);
+dist(:,:,3) = tmp2  + im(BT_pre,BT_c);
+dist(:,:,4) = tmp2  + im(BT_nex,BT_c);
+%find the signed distance with minimal absolute value
+tmp = abs(dist); 
+[v,ind] = min(tmp,[],3);
+%turn sub to index, but faster than sub2ind
+dim1 = uint32(size(dist,1));
+dim2 = uint32(size(dist,1)*size(dist,2));
+index = row + uint32(col-1).*dim1+uint32(ind-1)*dim2;
+dm = single(step/2)*dist(index); 
+%update current pixels
+res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
+
 function res = proj_GC(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
-res = im; BT2 = 2*im(BT_r,BT_c); BT3 = 3*im(BT_r,BT_c);dist = zeros([size(BT2),8],'single');
+res = im; BT2 = 2*im(BT_r,BT_c); BT3 = 1.5*BT2;dist = zeros([size(BT2),8],'single');
 %compute all possible projection distances
 tmp1 = im(BT_pre,BT_c) - BT3;
 tmp2 = im(BT_nex,BT_c) - BT3;
@@ -147,7 +169,7 @@ dm = single(step/3)*dist(index);
 res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
 
 function res = proj_BF(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
-res = im; BT2 = 2*im(BT_r,BT_c); BT7 = 7*im(BT_r,BT_c); 
+res = im; BT2 = 2*im(BT_r,BT_c); BT7 = 3.5*BT2; 
 dist = zeros([size(BT2),6],'single');
 tmp1 = 3*(im(BT_nex,BT_lef) + im(BT_pre,BT_rig)) - BT7;
 tmp2 = 3*(im(BT_pre,BT_lef) + im(BT_nex,BT_rig)) - BT7;
