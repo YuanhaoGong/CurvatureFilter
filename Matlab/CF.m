@@ -40,7 +40,7 @@ switch FilterType
     case 4
         myfun = @proj_BF; mycurv = @curv_MC;
     case 5
-        myfun = @proj_LP; mycurv = @curv_MC;
+        myfun = @proj_HL; mycurv = @curv_MC;
    otherwise
       disp('Filter Type is not correct.'), return;
 end
@@ -79,107 +79,151 @@ result = result(1:orig_r,1:orig_c,1:orig_z);
 %% %%%%%%%%%%%%%%%%%%%% three projection operaters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function res = proj_TV(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; BT5 = 5*im(BT_r,BT_c); dist = zeros([size(BT5),8],'single');
-tmp1 = im(BT_pre,BT_c) + im(BT_nex,BT_c) - BT5; 
-tmp2 = im(BT_r,BT_lef) + im(BT_r,BT_rig) - BT5;
-tmp3 = im(BT_pre,BT_c) + im(BT_pre,BT_lef) + im(BT_pre,BT_rig) - BT5; 
-tmp4 = im(BT_nex,BT_c) + im(BT_nex,BT_lef) + im(BT_nex,BT_rig) - BT5;
+%eight neighbors
+im_pre_c = im(BT_pre,BT_c);
+im_nex_c = im(BT_nex,BT_c);
+im_r_lef = im(BT_r,BT_lef);
+im_r_rig = im(BT_r,BT_rig);
+im_pre_lef = im(BT_pre,BT_lef);
+im_pre_rig = im(BT_pre,BT_rig);
+im_nex_lef = im(BT_nex,BT_lef);
+im_nex_rig = im(BT_nex,BT_rig);
+%common
+tmp1 = im_pre_c + im_nex_c - BT5; 
+tmp2 = im_r_lef + im_r_rig - BT5;
+tmp3 = im_pre_c + im_pre_lef + im_pre_rig - BT5; 
+tmp4 = im_nex_c + im_nex_lef + im_nex_rig - BT5;
 %compute all possible projection distances
-dist(:,:,1) = tmp1 + im(BT_pre,BT_lef) + im(BT_r,BT_lef) + im(BT_nex,BT_lef); 
-dist(:,:,2) = tmp1 + im(BT_pre,BT_rig) + im(BT_r,BT_rig) + im(BT_nex,BT_rig);
-dist(:,:,3) = tmp2 + im(BT_pre,BT_lef) + im(BT_pre,BT_c) + im(BT_pre,BT_rig); 
-dist(:,:,4) = tmp2 + im(BT_nex,BT_lef) + im(BT_nex,BT_c) + im(BT_nex,BT_rig); 
-dist(:,:,5) = tmp3 + im(BT_r,BT_lef) + im(BT_nex,BT_lef); 
-dist(:,:,6) = tmp3 + im(BT_r,BT_rig) + im(BT_nex,BT_rig);
-dist(:,:,7) = tmp4 + im(BT_r,BT_lef) + im(BT_pre,BT_lef); 
-dist(:,:,8) = tmp4 + im(BT_r,BT_rig) + im(BT_pre,BT_rig);
+dist(:,:,1) = tmp1 + im_pre_lef + im_r_lef + im_nex_lef;
+dist(:,:,2) = tmp1 + im_pre_rig + im_r_rig + im_nex_rig;
+dist(:,:,3) = tmp2 + im_pre_lef + im_pre_c + im_pre_rig; 
+dist(:,:,4) = tmp2 + im_nex_lef + im_nex_c + im_nex_rig; 
+dist(:,:,5) = tmp3 + im_r_lef + im_nex_lef; 
+dist(:,:,6) = tmp3 + im_r_rig + im_nex_rig;
+dist(:,:,7) = tmp4 + im_r_lef + im_pre_lef; 
+dist(:,:,8) = tmp4 + im_r_rig + im_pre_rig;
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3);
 %turn sub to index, but faster than sub2ind
 dim1 = uint32(size(dist,1));
 dim2 = uint32(size(dist,1)*size(dist,2));
-index = row + uint32(col-1).*dim1+uint32(ind-1)*dim2;
+index = row + dim1.*uint32(col-1) + dim2.*uint32(ind-1);
 dm = single(step/5)*dist(index); 
 %update current pixels
-res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
+res(BT_r,BT_c) = BT5/5 + dm;
 
 function res = proj_MC(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; BT8 = 8*im(BT_r,BT_c); dist = zeros([size(BT8),4],'single');
-tmp1 = 2.5*(im(BT_pre,BT_c) + im(BT_nex,BT_c)) - BT8;
-tmp2 = 2.5*(im(BT_r,BT_lef) + im(BT_r,BT_rig)) - BT8;
+%eight neighbors
+im_pre_c = im(BT_pre,BT_c);
+im_nex_c = im(BT_nex,BT_c);
+im_r_lef = im(BT_r,BT_lef);
+im_r_rig = im(BT_r,BT_rig);
+im_pre_lef = im(BT_pre,BT_lef);
+im_pre_rig = im(BT_pre,BT_rig);
+im_nex_lef = im(BT_nex,BT_lef);
+im_nex_rig = im(BT_nex,BT_rig);
+%common
+tmp1 = 2.5*(im_pre_c + im_nex_c) - BT8;
+tmp2 = 2.5*(im_r_lef + im_r_rig) - BT8;
 %compute all possible projection distances
-dist(:,:,1) = tmp1  + 5*im(BT_r,BT_rig) - im(BT_pre,BT_rig) - im(BT_nex,BT_rig);
-dist(:,:,2) = tmp1  + 5*im(BT_r,BT_lef) - im(BT_pre,BT_lef) - im(BT_nex,BT_lef);
-dist(:,:,3) = tmp2  + 5*im(BT_pre,BT_c) - im(BT_pre,BT_lef) - im(BT_pre,BT_rig);
-dist(:,:,4) = tmp2  + 5*im(BT_nex,BT_c) - im(BT_nex,BT_lef) - im(BT_nex,BT_rig);
+dist(:,:,1) = tmp1  + 5*im_r_rig - im_pre_rig - im_nex_rig;
+dist(:,:,2) = tmp1  + 5*im_r_lef - im_pre_lef - im_nex_lef;
+dist(:,:,3) = tmp2  + 5*im_pre_c - im_pre_lef - im_pre_rig;
+dist(:,:,4) = tmp2  + 5*im_nex_c - im_nex_lef - im_nex_rig;
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3);
 %turn sub to index, but faster than sub2ind
 dim1 = uint32(size(dist,1));
 dim2 = uint32(size(dist,1)*size(dist,2));
-index = row + uint32(col-1).*dim1+uint32(ind-1)*dim2;
+index = row + dim1.*uint32(col-1) + dim2.*uint32(ind-1);
 dm = single(step/8)*dist(index); 
 %update current pixels
-res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
+res(BT_r,BT_c) = BT8/8 + dm;
 
-function res = proj_LP(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
+function res = proj_HL(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; BT2 = 2*im(BT_r,BT_c); dist = zeros([size(BT2),4],'single');
-tmp1 = 0.5*(im(BT_pre,BT_c) + im(BT_nex,BT_c)) - BT2;
-tmp2 = 0.5*(im(BT_r,BT_lef) + im(BT_r,BT_rig)) - BT2;
+%four neighbors
+im_pre_c = im(BT_pre,BT_c);
+im_nex_c = im(BT_nex,BT_c);
+im_r_lef = im(BT_r,BT_lef);
+im_r_rig = im(BT_r,BT_rig);
+%common
+tmp1 = 0.5*(im_pre_c + im_nex_c) - BT2;
+tmp2 = 0.5*(im_r_lef + im_r_rig) - BT2;
 %compute all possible projection distances
-dist(:,:,1) = tmp1  + im(BT_r,BT_rig);
-dist(:,:,2) = tmp1  + im(BT_r,BT_lef);
-dist(:,:,3) = tmp2  + im(BT_pre,BT_c);
-dist(:,:,4) = tmp2  + im(BT_nex,BT_c);
+dist(:,:,1) = tmp1  + im_r_rig;
+dist(:,:,2) = tmp1  + im_r_lef;
+dist(:,:,3) = tmp2  + im_pre_c;
+dist(:,:,4) = tmp2  + im_nex_c;
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3);
 %turn sub to index, but faster than sub2ind
 dim1 = uint32(size(dist,1));
 dim2 = uint32(size(dist,1)*size(dist,2));
-index = row + uint32(col-1).*dim1+uint32(ind-1)*dim2;
+index = row + dim1.*uint32(col-1) + dim2.*uint32(ind-1);
 dm = single(step/2)*dist(index); 
 %update current pixels
-res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
+res(BT_r,BT_c) = BT2/2 + dm;
 
 function res = proj_GC(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
-res = im; BT2 = 2*im(BT_r,BT_c); BT3 = 1.5*BT2;dist = zeros([size(BT2),8],'single');
-%compute all possible projection distances
-tmp1 = im(BT_pre,BT_c) - BT3;
-tmp2 = im(BT_nex,BT_c) - BT3;
-dist(:,:,1) = im(BT_pre,BT_c) + im(BT_nex,BT_c) - BT2; 
-dist(:,:,2) = im(BT_r,BT_lef) + im(BT_r,BT_rig) - BT2;
-dist(:,:,3) = im(BT_pre,BT_lef) + im(BT_nex,BT_rig) - BT2; 
-dist(:,:,4) = im(BT_nex,BT_lef) + im(BT_pre,BT_rig) - BT2;
-dist(:,:,5) = tmp1 + im(BT_r,BT_lef) + im(BT_pre,BT_lef); 
-dist(:,:,6) = tmp1 + im(BT_r,BT_rig) + im(BT_pre,BT_rig);
-dist(:,:,7) = tmp2 + im(BT_r,BT_lef) + im(BT_nex,BT_lef); 
-dist(:,:,8) = tmp2 + im(BT_r,BT_rig) + im(BT_nex,BT_rig);
-dist(:,:,1:4) = dist(:,:,1:4)*single(1.5); %% scale to the same level
+res = im; BT2 = 2*im(BT_r,BT_c); BT3 = 1.5*BT2; dist = zeros([size(BT2),8],'single');
+%eight neighbors
+im_pre_c = im(BT_pre,BT_c);
+im_nex_c = im(BT_nex,BT_c);
+im_r_lef = im(BT_r,BT_lef);
+im_r_rig = im(BT_r,BT_rig);
+im_pre_lef = im(BT_pre,BT_lef);
+im_pre_rig = im(BT_pre,BT_rig);
+im_nex_lef = im(BT_nex,BT_lef);
+im_nex_rig = im(BT_nex,BT_rig);
+%common
+tmp1 = im_pre_c - BT3;
+tmp2 = im_nex_c - BT3;
+dist(:,:,1) = im_pre_c + im_nex_c - BT2; 
+dist(:,:,2) = im_r_lef + im_r_rig - BT2;
+dist(:,:,3) = im_pre_lef + im_nex_rig - BT2; 
+dist(:,:,4) = im_nex_lef + im_pre_rig - BT2;
+dist(:,:,5) = tmp1 + im_r_lef + im_pre_lef; 
+dist(:,:,6) = tmp1 + im_r_rig + im_pre_rig;
+dist(:,:,7) = tmp2 + im_r_lef + im_nex_lef; 
+dist(:,:,8) = tmp2 + im_r_rig + im_nex_rig;
+dist(:,:,1:4) = 1.5*dist(:,:,1:4); %% scale to the same level
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [v,ind] = min(tmp,[],3); 
 %turn sub to index, but faster than sub2ind
 dim1 = uint32(size(dist,1));
 dim2 = uint32(size(dist,1)*size(dist,2));
-index = row + uint32(col-1).*dim1+uint32(ind-1)*dim2;
+index = row + dim1.*uint32(col-1) + dim2.*uint32(ind-1);
 dm = single(step/3)*dist(index); 
 %update current pixels
-res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
+res(BT_r,BT_c) = BT2/2 + dm;
 
 function res = proj_BF(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
-res = im; BT2 = 2*im(BT_r,BT_c); BT7 = 3.5*BT2; 
-dist = zeros([size(BT2),6],'single');
-tmp1 = 3*(im(BT_nex,BT_lef) + im(BT_pre,BT_rig)) - BT7;
-tmp2 = 3*(im(BT_pre,BT_lef) + im(BT_nex,BT_rig)) - BT7;
+res = im; BT2 = 2*im(BT_r,BT_c); BT7 = 3.5*BT2; dist = zeros([size(BT2),6],'single');
+%eight neighbors
+im_pre_c = im(BT_pre,BT_c);
+im_nex_c = im(BT_nex,BT_c);
+im_r_lef = im(BT_r,BT_lef);
+im_r_rig = im(BT_r,BT_rig);
+im_pre_lef = im(BT_pre,BT_lef);
+im_pre_rig = im(BT_pre,BT_rig);
+im_nex_lef = im(BT_nex,BT_lef);
+im_nex_rig = im(BT_nex,BT_rig);
+%common
+tmp1 = 3*(im_nex_lef + im_pre_rig) - BT7;
+tmp2 = 3*(im_pre_lef + im_nex_rig) - BT7;
 %compute all possible projection distances
-dist(:,:,1) = im(BT_pre,BT_c) + im(BT_nex,BT_c) - BT2; 
-dist(:,:,2) = im(BT_r,BT_lef) + im(BT_r,BT_rig) - BT2;
-dist(:,:,3) = im(BT_pre,BT_c) + im(BT_r,BT_lef) - im(BT_pre,BT_lef) + tmp1; 
-dist(:,:,4) = im(BT_pre,BT_c) + im(BT_r,BT_rig) - im(BT_pre,BT_rig) + tmp2;
-dist(:,:,5) = im(BT_nex,BT_c) + im(BT_r,BT_lef)- im(BT_nex,BT_lef) + tmp2; 
-dist(:,:,6) = im(BT_nex,BT_c) + im(BT_r,BT_rig) - im(BT_nex,BT_rig) +tmp1;
+dist(:,:,1) = im_pre_c + im_nex_c - BT2; 
+dist(:,:,2) = im_r_lef + im_r_rig - BT2;
+dist(:,:,3) = im_pre_c + im_r_lef - im_pre_lef + tmp1; 
+dist(:,:,4) = im_pre_c + im_r_rig - im_pre_rig + tmp2;
+dist(:,:,5) = im_nex_c + im_r_lef - im_nex_lef + tmp2; 
+dist(:,:,6) = im_nex_c + im_r_rig - im_nex_rig + tmp1;
 dist(:,:,1:2) = single(3.33333)*dist(:,:,1:2); %% scale to the same level
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
@@ -187,10 +231,10 @@ tmp = abs(dist);
 %turn sub to index, but faster than sub2ind
 dim1 = uint32(size(dist,1));
 dim2 = uint32(size(dist,1)*size(dist,2));
-index = row + uint32(col-1).*dim1+uint32(ind-1)*dim2;
+index = row + dim1.*uint32(col-1) + dim2.*uint32(ind-1);
 dm = single(step/10)*dist(index); 
 %update current pixels
-res(BT_r,BT_c) = res(BT_r,BT_c) + dm;
+res(BT_r,BT_c) = BT2/2 + dm;
 
 %% %%%%%%%%%%%%%%%%%%%% curvature energy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %these energies are just for observation (so, formula can be changed by user)
