@@ -15,10 +15,10 @@
 
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
-#include "itkRescaleIntensityImageFilter.h"
 
 #include "itkConstNeighborhoodIterator.h"
 #include "itkImageRegionIterator.h"
+#include "itkCastImageFilter.h"
 #include <time.h>
 #include "itkCurvatureFilter.h"
 
@@ -62,6 +62,8 @@ int main( int argc, char * argv[] )
     }
   ImageType::Pointer image = reader->GetOutput();
 
+  itk::Image< float, 2 >::SizeType size = image->GetLargestPossibleRegion().GetSize();
+  std::cout<<"Image size: "<<size[0]<<" "<<size[1]<<std::endl;
   /*********** curvature filter ******************/
   CurvatureFilter(image, FType, numberOfIterations);
   /*********** curvature filter ******************/
@@ -70,19 +72,15 @@ int main( int argc, char * argv[] )
   typedef unsigned char                          WritePixelType;
   typedef itk::Image< WritePixelType, 2 >        WriteImageType;
   typedef itk::ImageFileWriter< WriteImageType > WriterType;
+  typedef itk::CastImageFilter< ImageType, WriteImageType > CastFilterType;
+  CastFilterType::Pointer castFilter = CastFilterType::New();
+  castFilter->SetInput(image);
+  castFilter->Update();
 
-  typedef itk::RescaleIntensityImageFilter<
-               ImageType, WriteImageType > RescaleFilterType;
-
-  RescaleFilterType::Pointer rescaler = RescaleFilterType::New();
-
-  rescaler->SetOutputMinimum(   0 );
-  rescaler->SetOutputMaximum( 255 );
-  rescaler->SetInput(image);
 
   WriterType::Pointer writer = WriterType::New();
   writer->SetFileName( argv[2] );
-  writer->SetInput(rescaler->GetOutput());
+  writer->SetInput(castFilter->GetOutput());
   try
     {
     writer->Update();
