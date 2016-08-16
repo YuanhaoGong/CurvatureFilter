@@ -81,7 +81,7 @@ function res = proj_TV(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; 
 BT = im(BT_r,BT_c);
 BT5 = 5*BT; 
-dist = repmat(BT,[1,1,8]);
+dist = zeros([size(BT),8],'single');
 %eight neighbors
 im_pre_c = im(BT_pre,BT_c);
 im_nex_c = im(BT_nex,BT_c);
@@ -120,7 +120,7 @@ function res = proj_MC(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; 
 BT = im(BT_r,BT_c);
 BT8 = 8*BT; 
-dist = repmat(BT,[1,1,4]);
+dist = zeros([size(BT),4],'single');
 %eight neighbors
 im_pre_c = im(BT_pre,BT_c);
 im_nex_c = im(BT_nex,BT_c);
@@ -153,7 +153,7 @@ function res = proj_HL(im,BT_r,BT_c,BT_pre,BT_nex,BT_lef,BT_rig,row,col,step)
 res = im; 
 BT = im(BT_r,BT_c);
 BT2 = 2*BT; 
-dist = repmat(BT,[1,1,4]);
+dist = zeros([size(BT),4],'single');
 %four neighbors
 im_pre_c = im(BT_pre,BT_c);
 im_nex_c = im(BT_nex,BT_c);
@@ -183,7 +183,7 @@ res = im;
 BT = im(BT_r,BT_c);
 BT2 = 2*BT; 
 BT3 = 1.5*BT2; 
-dist = repmat(BT, [1,1,8]);
+dist = zeros([size(BT),8],'single');
 %eight neighbors
 im_pre_c = im(BT_pre,BT_c);
 im_nex_c = im(BT_nex,BT_c);
@@ -224,7 +224,7 @@ res = im;
 BT = im(BT_r,BT_c);
 BT2 = 2*BT; 
 BT7 = 7*BT; 
-dist = repmat(BT,[1,1,6]);
+dist = zeros([size(BT),6],'single');
 %eight neighbors
 im_pre_c = im(BT_pre,BT_c);
 im_nex_c = im(BT_nex,BT_c);
@@ -244,7 +244,8 @@ dist(:,:,3) = im_pre_c + im_r_lef - im_pre_lef + tmp1;
 dist(:,:,4) = im_pre_c + im_r_rig - im_pre_rig + tmp2;
 dist(:,:,5) = im_nex_c + im_r_lef - im_nex_lef + tmp2; 
 dist(:,:,6) = im_nex_c + im_r_rig - im_nex_rig + tmp1;
-dist(:,:,1:2) = single(3.33333)*dist(:,:,1:2); %% scale to the same level
+dist(:,:,1) = single(3.33333)*dist(:,:,1); %% scale to the same level
+dist(:,:,2) = single(3.33333)*dist(:,:,2);
 %find the signed distance with minimal absolute value
 tmp = abs(dist); 
 [~,ind] = min(tmp,[],3);
