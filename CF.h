@@ -25,7 +25,7 @@ public:
     //set one image from memory
     void set(Mat& src);
     //get the filtered image 
-    Mat get(){return imgF(Range(0,M_orig),Range(0,N_orig));};
+    Mat get();
     //write the result to disk
     void write();
     void write(const char* FileName);
@@ -341,6 +341,12 @@ void CF::set(Mat& file)
     imgF = Mat::zeros(M,N,CV_32FC1);
     image.copyTo(imgF);
 }
+
+Mat CF::get()
+{
+    return imgF(Range(0, M_orig), Range(0, N_orig));
+}
+
 void CF::write()
 {
     CF::write("CF.png");
@@ -354,7 +360,7 @@ void CF::write(const char* FileName)
 
     vector<int> params;
     params.push_back(CV_IMWRITE_PNG_COMPRESSION);
-    params.push_back(0);
+    params.push_back(9);
 
     imwrite(FileName, tmp, params);
 }
@@ -1647,27 +1653,51 @@ void CF::DM(const int FilterType, const int LocationType, const Mat & img, Mat &
  //find the value with minimum abs value, 4 floats
 inline float CF::SignedMin(float * dist)
 {
-    if (fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-    if (fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
-    if (fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
+    unsigned char index = 0;
+    unsigned char index2 = 2;
+#if defined(_WIN32) || defined(WIN32)
+    int tmp0 = (int&)(dist[0]) & 0x7FFFFFFF;
+    int tmp1 = (int&)(dist[1]) & 0x7FFFFFFF;
+    int tmp2 = (int&)(dist[2]) & 0x7FFFFFFF;
+    int tmp3 = (int&)(dist[3]) & 0x7FFFFFFF;
+    if (tmp1 < tmp0) { index = 1; tmp0 = tmp1; }
+    if (tmp3 < tmp2) { index2 = 3; tmp2 = tmp3; }
+    if (tmp2<tmp0) index = index2;
+    return dist[index];
+#else
+    if (fabsf(dist[1]) < fabsf(dist[0])) dist[0] = dist[1];
+    if (fabsf(dist[3]) < fabsf(dist[2])) dist[2] = dist[3];
+    if (fabsf(dist[2]) < fabsf(dist[0])) dist[0] = dist[2];
     return dist[0];
+#endif // defined(_WIN32) || defined(WIN32)
 }
 
 //find the value with minimum abs value, 4 floats
 inline float CF::SignedMin_noSplit(float * dist)
 {
+#if defined(_WIN32) || defined(WIN32)
+    int absMin = (int&)(dist[0]) & 0x7FFFFFFF;
+    int tmp;
+#else
     float absMin = fabsf(dist[0]);
-    unsigned char index = 0;
     float tmp;
+#endif // defined(_WIN32) || defined(WIN32)
+
+    unsigned char index = 0;
     for (unsigned char i = 1; i < 4; ++i)
     {
+#if defined(_WIN32) || defined(WIN32)
+        tmp = (int&)(dist[i]) & 0x7FFFFFFF;
+#else
         tmp = fabsf(dist[i]);
+#endif // defined(_WIN32) || defined(WIN32)
         if (tmp<absMin)
         {
             absMin = tmp;
             index = i;
         }
     }
+
     return dist[index];
 }
 
@@ -1682,7 +1712,7 @@ void CF::grid(int rows, int cols, Mat & grid_row, Mat & grid_col)
         p = grid_col.ptr<float>(i);
         for (int j = 0; j < cols; ++j)
         {
-            p[j] = j;
+            p[j] = (float)j;
         }
     }
     for (int i = 0; i < rows; ++i)
@@ -1690,7 +1720,7 @@ void CF::grid(int rows, int cols, Mat & grid_row, Mat & grid_col)
         p = grid_row.ptr<float>(i);
         for (int j = 0; j < cols; ++j)
         {
-            p[j] = i;
+            p[j] = (float)i;
         }
     }
 }
@@ -1735,14 +1765,13 @@ void CF::Poisson(const Mat & rhs, Mat & result)
     Mat kernel_synth = kernel_analysis*0.714885f;
     Mat kernel_g = (Mat_<float>(1,5) << 0.05407f, 0.24453f, 0.5741f, 0.24453f, 0.05407f);
 
-    const int Levels = (int)ceil(log2(std::max(rhs.rows, rhs.cols)));
+    const int Levels = (int)ceil(log2(max(rhs.rows, rhs.cols)));
     const int Pad_size = kernel_analysis.cols;
 
     Mat * Pyr = new Mat[Levels];
     Mat * revPyr = new Mat[Levels];
 
     int sRow, sCols;
-    float * p_d, * p_t;
 
     //**** analysis ****
     //pad the first layer
@@ -2160,9 +2189,9 @@ inline float CF::Scheme_MC(int i, const float * __restrict p_pre, const float * 
     dist[2] = com_two + 5.0f*p_nex[i] - p_nex[i-1] - p_nex[i+1];
     dist[3] = com_two + 5.0f*p_pre[i] - p_pre[i-1] - p_pre[i+1];
 
-    min_value = SignedMin_noSplit(dist)/8;
+    min_value = SignedMin_noSplit(dist);
     
-    return min_value;
+    return min_value/8;
 }
 
 inline float CF::Scheme_LS(int i, const float * __restrict p_pre, const float * __restrict p, 
@@ -2214,12 +2243,11 @@ inline float CF::Scheme_TV(int i, const float * __restrict p_pre, const float * 
     //       c   d
     // return (a+b+c+d+e)/5.0;
     register float dist[4], tmp[4];
-     //old fashion, need 5*8 times plus or minus
+    //old fashion, need 5*8 times plus or minus
     register float scaledP, min_value, min_value2;
     scaledP = 5*p[i];
     //specify the curvature if provided
     if (p_curv != NULL) scaledP = 5*(p[i] + p_curv[i]);
-
 
     tmp[0] = p_pre[i-1]+p[i-1] + p_nex[i-1] - scaledP;
     tmp[1] = p_pre[i+1]+p[i+1] + p_nex[i+1] - scaledP;
