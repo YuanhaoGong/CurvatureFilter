@@ -25,7 +25,7 @@ public:
     //set one image from memory
     void set(Mat& src);
     //get the filtered image 
-    Mat get(){return imgF;};
+    Mat get(){return imgF(Range(0,M_orig),Range(0,N_orig));};
     //write the result to disk
     void write();
     void write(const char* FileName);
@@ -1658,11 +1658,13 @@ inline float CF::SignedMin_noSplit(float * dist)
 {
     float absMin = fabsf(dist[0]);
     unsigned char index = 0;
+    float tmp;
     for (unsigned char i = 1; i < 4; ++i)
     {
-        if (fabsf(dist[i])<absMin)
+        tmp = fabsf(dist[i]);
+        if (tmp<absMin)
         {
-            absMin = fabsf(dist[i]);
+            absMin = tmp;
             index = i;
         }
     }
