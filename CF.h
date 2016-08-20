@@ -1653,13 +1653,13 @@ void CF::DM(const int FilterType, const int LocationType, const Mat & img, Mat &
  //find the value with minimum abs value, 4 floats
 inline float CF::SignedMin(float * dist)
 {
-    unsigned char index = 0;
-    unsigned char index2 = 2;
 #if defined(_WIN32) || defined(WIN32)
-    int tmp0 = (int&)(dist[0]) & 0x7FFFFFFF;
-    int tmp1 = (int&)(dist[1]) & 0x7FFFFFFF;
-    int tmp2 = (int&)(dist[2]) & 0x7FFFFFFF;
-    int tmp3 = (int&)(dist[3]) & 0x7FFFFFFF;
+    register unsigned char index = 0;
+    register unsigned char index2 = 2;
+    register int tmp0 = (int&)(dist[0]) & 0x7FFFFFFF;
+    register int tmp1 = (int&)(dist[1]) & 0x7FFFFFFF;
+    register int tmp2 = (int&)(dist[2]) & 0x7FFFFFFF;
+    register int tmp3 = (int&)(dist[3]) & 0x7FFFFFFF;
     if (tmp1 < tmp0) { index = 1; tmp0 = tmp1; }
     if (tmp3 < tmp2) { index2 = 3; tmp2 = tmp3; }
     if (tmp2<tmp0) index = index2;
@@ -1675,28 +1675,32 @@ inline float CF::SignedMin(float * dist)
 //find the value with minimum abs value, 4 floats
 inline float CF::SignedMin_noSplit(float * dist)
 {
+    register unsigned char index = 0;
 #if defined(_WIN32) || defined(WIN32)
-    int absMin = (int&)(dist[0]) & 0x7FFFFFFF;
-    int tmp;
-#else
-    float absMin = fabsf(dist[0]);
-    float tmp;
-#endif // defined(_WIN32) || defined(WIN32)
-
-    unsigned char index = 0;
+    register int absMin = (int&)(dist[0]) & 0x7FFFFFFF;
+    register int tmp;
     for (unsigned char i = 1; i < 4; ++i)
     {
-#if defined(_WIN32) || defined(WIN32)
         tmp = (int&)(dist[i]) & 0x7FFFFFFF;
-#else
-        tmp = fabsf(dist[i]);
-#endif // defined(_WIN32) || defined(WIN32)
         if (tmp<absMin)
         {
             absMin = tmp;
             index = i;
         }
     }
+#else
+    register float absMin = fabsf(dist[0]);
+    register float tmp;
+    for (unsigned char i = 1; i < 4; ++i)
+    {
+        tmp = fabsf(dist[i]);
+        if (tmp<absMin)
+        {
+            absMin = tmp;
+            index = i;
+        }
+    }
+#endif // defined(_WIN32) || defined(WIN32)
 
     return dist[index];
 }
