@@ -749,7 +749,9 @@ double CF::energy(const Mat &img, const int order)
         }
         case 2:
         {
-            Scalar tmp = sum(cv::abs(img));
+            Mat img_power = Mat::zeros(img.rows, img.cols, CV_32FC1);
+            pow(img, 2, img_power);
+            Scalar tmp = sum(img_power);
             return tmp(0);
         }
         default:
@@ -1030,11 +1032,11 @@ void CF::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
         }
         case 3:
         {
-         Local = &CF::Scheme_DC; cout<<"DC Filter: "; break;
+            Local = &CF::Scheme_DC; cout<<"DC Filter: "; break;
         }
         case 4:
         {
-         Local = &CF::Scheme_LS; cout<<"Bernstein Filter: "; break;
+            Local = &CF::Scheme_LS; cout<<"Bernstein Filter: "; break;
         }
         default:
         {
@@ -1654,8 +1656,8 @@ void CF::DM(const int FilterType, const int LocationType, const Mat & img, Mat &
 inline float CF::SignedMin(float * dist)
 {
 #if defined(_WIN32) || defined(WIN32)
-    register unsigned char index = 0;
-    register unsigned char index2 = 2;
+    unsigned char index = 0;
+    unsigned char index2 = 2;
     register int tmp0 = (int&)(dist[0]) & 0x7FFFFFFF;
     register int tmp1 = (int&)(dist[1]) & 0x7FFFFFFF;
     register int tmp2 = (int&)(dist[2]) & 0x7FFFFFFF;
@@ -1675,7 +1677,8 @@ inline float CF::SignedMin(float * dist)
 //find the value with minimum abs value, 4 floats
 inline float CF::SignedMin_noSplit(float * dist)
 {
-    register unsigned char index = 0;
+    unsigned char index = 0;
+
 #if defined(_WIN32) || defined(WIN32)
     register int absMin = (int&)(dist[0]) & 0x7FFFFFFF;
     register int tmp;
@@ -1688,6 +1691,7 @@ inline float CF::SignedMin_noSplit(float * dist)
             index = i;
         }
     }
+    return dist[index];
 #else
     register float absMin = fabsf(dist[0]);
     register float tmp;
@@ -1700,9 +1704,8 @@ inline float CF::SignedMin_noSplit(float * dist)
             index = i;
         }
     }
-#endif // defined(_WIN32) || defined(WIN32)
-
     return dist[index];
+#endif // defined(_WIN32) || defined(WIN32)
 }
 
 //generate the grid location
@@ -2025,7 +2028,7 @@ inline void CF::TV_one(float* __restrict p, const float* __restrict p_right, con
     register float dist[8], dist2[4];
     // if use 6, the scheme includes central pixel;
     // if use 5, the scheme does not include central pixel (my PhD thesis uses five)
-    register float scaled_stepsize = stepsize/6;
+    register float scaled_stepsize = stepsize/5;
     register float scaledP, min_value, min_value2;
     for (int j = 1; j < N_half; ++j)
      {
@@ -2060,7 +2063,7 @@ inline void CF::TV_two(float* __restrict p, const float* __restrict p_right, con
     register float dist[8], tmp[4];
     // if use 6, the scheme includes central pixel;
     // if use 5, the scheme does not include central pixel (my PhD thesis uses five) 
-    register float scaled_stepsize = stepsize/6;
+    register float scaled_stepsize = stepsize/5;
     register float scaledP, min_value, min_value2;
     for (int j = 0; j < N_half-1; ++j)
      {
@@ -2183,7 +2186,7 @@ inline float CF::Scheme_MC(int i, const float * __restrict p_pre, const float * 
     register float tmp, com_one, com_two, min_value;
     tmp = 8*p[i];
     //specify the curvature if provided
-    if (p_curv != NULL) tmp = 8*(p[i] + p_curv[i]);
+    //if (p_curv != NULL) tmp = 8*(p[i] + p_curv[i]);
 
     com_one = (p_pre[i]+p_nex[i])*2.5f - tmp;
     com_two = (p[i-1]+p[i+1])*2.5f - tmp;
@@ -2193,9 +2196,9 @@ inline float CF::Scheme_MC(int i, const float * __restrict p_pre, const float * 
     dist[2] = com_two + 5.0f*p_nex[i] - p_nex[i-1] - p_nex[i+1];
     dist[3] = com_two + 5.0f*p_pre[i] - p_pre[i-1] - p_pre[i+1];
 
-    min_value = SignedMin_noSplit(dist);
+    min_value = SignedMin_noSplit(dist)/8;
     
-    return min_value/8;
+    return min_value;
 }
 
 inline float CF::Scheme_LS(int i, const float * __restrict p_pre, const float * __restrict p, 
@@ -2272,10 +2275,10 @@ inline float CF::Scheme_TV(int i, const float * __restrict p_pre, const float * 
     min_value2 = SignedMin_noSplit(dist);
 
     if(fabsf(min_value2)<fabsf(min_value)) min_value = min_value2;
+
     // if use 6, the scheme includes central pixel;
     // if use 5, the scheme does not include central pixel (my PhD thesis uses five)
-
-    return min_value/6;
+    return min_value/5;
 }
 
 inline float CF::Scheme_DC(int i, const float * __restrict p_pre, const float * __restrict p, 
