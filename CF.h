@@ -22,10 +22,12 @@ public:
     /********************* basic IO *********************/
     //read one image from disk
     void read(const char* FileName);
-    //set one image from memory
+    //set one image from memory(deep copy)
     void set(Mat& src);
-    //get the filtered image 
+    //get the unpadded and filtered image 
     Mat get();
+    //get the padded and filtered image
+    Mat get_padded();
     //write the result to disk
     void write();
     void write(const char* FileName);
@@ -75,9 +77,10 @@ public:
                             float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d), const float stepsize=1);
     
     /*********************************************************************************************
-    ***** the dm at given location, which is the gradient of regularization energy ****
+    ***** the dm is the gradient of regularization energy ****
     *********************************************************************************************/
-    //Th result dm is only valid for the location type, NOT the full image
+    //The projection distance for the full image or at given location
+    void DM(const int FilterType, const Mat & img, Mat & dm);
     //LocationType        start_row         start_col
     //   0 (BC),                  1,               1;
     //   1 (BT),                  2,               2;
@@ -102,9 +105,9 @@ public:
     /*********************************************************************************************
     ****************************    statistics of curvature   ********************************
     *********************************************************************************************/
-    //the curvature statistics from the given dir_path
+    //the curvature statistics or Dm statistics for each curvature from the given dir_path
     //result is a 1D distribution, we only need [0, Inf) thanks to the symmetry
-    void statistics(const int Type, const char* dir_path, Mat& result);
+    void statistics(const int Type, const char* dir_path, Mat& result, bool CurvatureOrDm=true);
 
     /********************************************************************************************
     *********************************************************************************************
@@ -167,9 +170,6 @@ private:
     inline float Scheme_LS(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_guide = NULL);
 
 private:
-    //using curvature to regularize the motion field
-    Mat grid_row, grid_col, motion_row, motion_col;
-    void grid(int rows, int cols, Mat & grid_row, Mat & grid_col);
     //for solving a Poisson equation
     void SampleDownOrUp(const Mat & src, Mat & dst, bool Forward=true);
 };
@@ -345,6 +345,11 @@ void CF::set(Mat& file)
 Mat CF::get()
 {
     return imgF(Range(0, M_orig), Range(0, N_orig));
+}
+
+Mat CF::get_padded()
+{
+    return imgF;
 }
 
 void CF::write()
@@ -1044,8 +1049,10 @@ void CF::FilterNoSplit(const int Type, double & time, const int ItNum, const flo
             return;
         }
     }
+    register float d;
+    const int M = imgF.rows;
+    const int N = imgF.cols;
     Tstart = clock();
-    float d;
     for(int it=0;it<ItNum;++it)
     {
         //black circle
@@ -1578,28 +1585,74 @@ void CF::Solver(const int Type, double & time, const int MaxItNum, const float l
     energyProfile.close();
  }
 
+void CF::DM(const int FilterType, const Mat & img, Mat & dm)
+{
+    int M = img.rows;
+    int N = img.cols; 
+
+    const float *p, *p_pre, *p_down;
+    float *p_d;
+    float (CF::* Local)(int i, const float* p_pre, const float* p, const float* p_nex, const float * p_curv);
+    switch(FilterType)
+    {
+        case 0:
+        {
+            Local = &CF::Scheme_TV; break;
+        }
+        case 1:
+        {
+            Local = &CF::Scheme_MC; break;
+        }
+        case 2:
+        {
+            Local = &CF::Scheme_GC; break;
+        }
+        case 4:
+        {
+            Local = &CF::Scheme_LS; break;
+        }
+        default:
+        {
+            cout<<"The filter type is wrong. Do nothing."<<endl;
+            return;
+        }
+    }
+    
+    for (int i = 1; i < M-1; ++i)
+    {
+        p = img.ptr<float>(i);
+        p_pre = img.ptr<float>(i-1);
+        p_down = img.ptr<float>(i+1);
+        p_d = dm.ptr<float>(i);
+        for (int j = 1; j < N-1; ++j)
+        {
+            p_d[j] = (this->*Local)(j,p_pre,p,p_down,NULL);
+        }
+    }
+}
+
 void CF::DM(const int FilterType, const int LocationType, const Mat & img, Mat & dm)
 {
     const float *p, *p_pre, *p_down;
     float *p_d;
     float (CF::* Local)(int i, const float* p_pre, const float* p, const float* p_nex, const float * p_curv);
-    switch(Type)
+    switch(FilterType)
     {
         case 0:
         {
-            Local = &CF::Scheme_TV; cout<<"TV dm: "; break;
+            Local = &CF::Scheme_TV; break;
         }
         case 1:
         {
-            Local = &CF::Scheme_MC; cout<<"MC dm: "; break;
+            Local = &CF::Scheme_MC; break;
         }
         case 2:
         {
-            Local = &CF::Scheme_GC; cout<<"GC dm: "; break;
+            Local = &CF::Scheme_GC; break;
         }
         case 4:
         {
-            Local = &CF::Scheme_LS; cout<<"Bernstein dm: "; break;
+            Local = &CF::Scheme_LS; break;
         }
         default:
         {
@@ -1706,30 +1759,6 @@ inline float CF::SignedMin_noSplit(float * dist)
     }
     return dist[index];
 #endif // defined(_WIN32) || defined(WIN32)
-}
-
-//generate the grid location
-void CF::grid(int rows, int cols, Mat & grid_row, Mat & grid_col)
-{
-    grid_row.create(rows, cols, CV_32FC1);
-    grid_col.create(rows, cols, CV_32FC1);
-    float *p;
-    for (int i = 0; i < rows; ++i)
-    {
-        p = grid_col.ptr<float>(i);
-        for (int j = 0; j < cols; ++j)
-        {
-            p[j] = (float)j;
-        }
-    }
-    for (int i = 0; i < rows; ++i)
-    {
-        p = grid_row.ptr<float>(i);
-        for (int j = 0; j < cols; ++j)
-        {
-            p[j] = (float)i;
-        }
-    }
 }
 
 //only take the even rows and clos
@@ -2305,7 +2334,7 @@ inline float CF::Scheme_DC(int i, const float * __restrict p_pre, const float * 
 
 //the statistics from the given dir_path for the curvature
 //result is a 1D distribution, we only need [0, Inf) because of the symmetry
-void CF::statistics(const int Type, const char* dir_path, Mat& result)
+void CF::statistics(const int Type, const char* dir_path, Mat& result, bool CurvatureOrDm)
 {
     result = Mat::zeros(1, 1024, CV_64FC1);//the range is fixed
     void (CF::* curvature_compute)(const Mat& img, Mat& curv, int scheme);
@@ -2373,7 +2402,10 @@ void CF::statistics(const int Type, const char* dir_path, Mat& result)
             curvature.create(M, N, CV_32FC1);
             index.create(M, N, CV_16UC1);
             img.convertTo(imgF, CV_32FC1);
-            (this->*curvature_compute)(imgF, curvature, scheme);
+            if (CurvatureOrDm)
+                (this->*curvature_compute)(imgF, curvature, scheme);
+            else DM(Type, imgF, curvature);
+            
             curvature = abs(curvature);
             curvature.convertTo(index, CV_16UC1);
             f = 1.0/((M-2)*(N-2));//ignore the boundary
@@ -2389,6 +2421,34 @@ void CF::statistics(const int Type, const char* dir_path, Mat& result)
             file_count++;
         } 
         closedir( dirFile );
+        switch(Type)
+        {
+            case 0:
+            {
+                cout<<"TV Filter:(TVL1 by default) "; break;
+            }
+            case 1:
+            {
+                cout<<"MC Filter: "; break;
+            }
+            case 2:
+            {
+                cout<<"GC Filter: "; break;
+            }
+            case 3:
+            {
+                cout<<"DC Filter: "; break;
+            }
+            case 4:
+            {
+                cout<<"Bernstein Filter: "; break;
+            }
+            default:
+            {
+                cout<<"The filter type is wrong. Do nothing."<<endl;
+                return;
+            }
+        }
         cout<<"Total Images: "<<file_count<<endl;
         cout<<"Sum of the statistics: "<<sum(result)[0]<<endl;
         //output the statistics
