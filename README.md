@@ -64,10 +64,10 @@ Curvature filters link the variational models with image filters. Meanwhile, the
 
 ***
 ## Faster and Faster (100 or 1000 times faster than traditional diffusion)
-| Filter       | Bilateral Filter | Guided Filter | Guided Filter | MC Filter | MC Filter | GC Filter | GC Filter| Bernstein Filter |
-| ------------- |:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|
-| Lang.      | C++ | Matlab | C++ | Matlab | C++ | Matlab | C++| C++|
-| MilliSec.      | 103 | 514 | 130 | 300 | 8 | 400 | 11| 7|
+| Filter       | Bilateral Filter | Guided Filter | Guided Filter | MC Filter | GC Filter | Bernstein Filter |
+| ------------- |:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|
+| Lang.      | C++ | Matlab | C++ | C++ | C++| C++|
+| MilliSec.      | 103 | 514 | 130 | 8 | 11| 7|
 
 Running time with 10 iterations on 512X512 Lena image. Matlab version is R2015a and GCC version is 5.1. All tests are on a Thinkpad T410 with i7-620M core CPU (2.6GHz). We take the time for 100 iterations and divide it by 10. On average, curvature filters take 1 millisecond per iteration.
 ***
