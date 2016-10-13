@@ -55,14 +55,27 @@ public:
 
     /**************************** curvature filters ******************************************
     Type=0, TV; Type=1, MC; Type=2, GC; Type=3, DC; Type=4, Bernstein;
-    the stepsize parameter is in (0,1], stochastic step is in (0,stepsize)
+    the stepsize parameter is in (0,1]
+
+    ONLY For FilterNoSplit: mode=0, the same as Filter; 
+                                mode=1, stochastic, random step in [0, stepsize]
+                                mode=2, spectral regularized
     *********************************************************************************************/
     void Filter(const int Type, double & time, const int ItNum = 10, const float stepsize=1);
-    void FilterNoSplit(const int Type, double & time, const int ItNum = 10, const float stepsize=1, const bool stochastic=false);
+    void FilterNoSplit(const int Type, double & time, const int ItNum = 10, const float stepsize=1, const int mode=0);
 
-    //general kernel filter: Type = 0, only half window; Type = 1, half and quarter window; Type = 2, only quarter window
+    /**************************** Half-window Regression *************************************
+    select a half window and perform regression on it
+    *********************************************************************************************/
+    /*
+    general half window filter (not curvature filter anymore): 
+        Type = 0, only half window; 
+        Type = 1, half and quarter window; 
+        Type = 2, only quarter window
+    */
     void HalfWindow(const int Type, double & time, int ItNum=10, 
                     Mat kernel=getGaussianKernel(7, -1, CV_32F ).t(), const float stepsize=1);
+    void HalfBox(const int Type, double & time, const int radius=3);
 
     /*********************************************************************************************
     ******************* generic solver for variational models *****************************
@@ -77,7 +90,7 @@ public:
                             float (*BlackBox)(int row, int col, Mat& U, Mat & img_orig, float & d), const float stepsize=1);
     
     /*********************************************************************************************
-    ***** the dm is the gradient of regularization energy ****
+    ***** the dm is the gradient of regularization energy *****
     *********************************************************************************************/
     //The projection distance for the full image or at given location
     void DM(const int FilterType, const Mat & img, Mat & dm);
@@ -95,7 +108,6 @@ public:
     Mat GuideCurvature(const char * FileName, const int Type);
     //filter the image such that the result is close to the specified curvature
     void CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, const int ItNum = 10, const float stepsize=1);
-
 
     /*********************************************************************************************
     ****************************    Poisson Solver         ************************************
@@ -132,7 +144,7 @@ private:
     //merge four sets back to imgF
     void merge();
     //naturalness evaluation
-    double Naturalness_search(float* data, int N, int offset);
+    double Naturalness_search(float* data, const int N, const int offset);
     //computing curvature by different schemes
     void MC_fit(const Mat & img, Mat & MC);
     void GC_new(const Mat & img, Mat & GC);
@@ -144,8 +156,10 @@ private:
     //keep the value that has smaller absolute value
     inline void KeepMinAbs(Mat& dm, Mat& d_other);
     //find the signed value with minimum abs value, dist contains FOUR floats
-    inline float SignedMin(float * dist);
-    inline float SignedMin_noSplit(float * dist);
+    inline float SignedMin(float * const dist);
+    inline float SignedMin_noSplit(const float * const dist);
+    //return true if abs(d1) < abs(d2), otherwise false
+    inline bool CompareAbs(const float& d1, const float& d2);
 
     /*************************************** Split into 4 sets *********************************/
     //one is for BT and WC, two is for BC and WT
@@ -172,6 +186,11 @@ private:
 private:
     //for solving a Poisson equation
     void SampleDownOrUp(const Mat & src, Mat & dst, bool Forward=true);
+private:
+    void HalfBox(const int Type, double & time, const Mat & img, Mat & result, Mat & label, const int radius=3);
+    void HalfBoxMean(const int direction, const Mat & img, Mat & result, const int radius=3);
+private:
+    unsigned int myRand();
 };
 
 /********************************************************************************************
@@ -210,8 +229,8 @@ double CF::Naturalness(const Mat& imgF)
     const float * p_row ;
     const float * pp_row;
     int indexX, indexY;
-    int Offset = 256;
-    int N = 512;
+    const int Offset = 256;
+    const int N = 512;
     double eps = 0.0001;
     double left(0), right(1), mid_left(0), mid_right(0);
 
@@ -250,10 +269,10 @@ double CF::Naturalness(const Mat& imgF)
     double Natural_y = Naturalness_search(Grady, N, Offset);
 
     //the final naturalness factor
-    return (Natural_x+Natural_y)/(0.7508);
+    return (Natural_x+Natural_y)/0.7508f;
 }
 
-double CF::Naturalness_search(float* data, int N, int offset)
+double CF::Naturalness_search(float* data, const int N, const int offset)
 {
     //Ternary search
     float * p_d, *p_d2;
@@ -429,11 +448,11 @@ void CF::MC(const Mat& imgF, Mat & MC, int type)
                 
                 for(int j = 1; j < imgF.cols-1; j++)
                 {
-                    Ix = (p_row[j+1] - p_row[j-1])/2;
-                    Iy = (pn_row[j] - pp_row[j])/2;
+                    Ix = (p_row[j+1] - p_row[j-1])*0.5f;
+                    Iy = (pn_row[j] - pp_row[j])*0.5f;
                     Ixx = p_row[j+1] - 2*p_row[j] + p_row[j-1];
                     Iyy = pn_row[j] - 2*p_row[j] + pp_row[j];
-                    Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])/4;
+                    Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])*0.25f;
                     
                     num = (1+Ix*Ix)*Iyy - 2*Ix*Iy*Ixy + (1+Iy*Iy)*Ixx;
                     tmp = 1.0f + Ix*Ix + Iy*Iy;
@@ -464,11 +483,11 @@ void CF::MC(const Mat& imgF, Mat & MC, int type)
                 
                 for(int j = 1; j < imgF.cols-1; j++)
                 {
-                    Ix = (p_row[j+1] - p_row[j-1])/2;
-                    Iy = (pn_row[j] - pp_row[j])/2;
+                    Ix = (p_row[j+1] - p_row[j-1])*0.5f;
+                    Iy = (pn_row[j] - pp_row[j])*0.5f;
                     Ixx = p_row[j+1] - 2*p_row[j] + p_row[j-1];
                     Iyy = pn_row[j] - 2*p_row[j] + pp_row[j];
-                    Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])/4;
+                    Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])*0.25f;
                     
                     num = Ix*Ix*Iyy - 2*Ix*Iy*Ixy + Iy*Iy*Ixx;
                     den = Ix*Ix + Iy*Iy;
@@ -596,11 +615,11 @@ void CF::GC(const Mat & imgF, Mat &GC, int type)
                 
                 for(int j = 1; j < imgF.cols-1; j++)
                 {
-                    Ix = (p_row[j+1] - p_row[j-1])/2;
-                    Iy = (pn_row[j] - pp_row[j])/2;
+                    Ix = (p_row[j+1] - p_row[j-1])*0.5f;
+                    Iy = (pn_row[j] - pp_row[j])*0.5f;
                     Ixx = p_row[j+1] - 2*p_row[j] + p_row[j-1];
                     Iyy = pn_row[j] -2*p_row[j] + pp_row[j];
-                    Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])/4;
+                    Ixy = (pn_row[j-1] - pn_row[j+1]- pp_row[j-1] + pp_row[j+1])*0.25f;
 
                     num = Ixx*Iyy - Ixy*Ixy;
                     den = (1.0f + Ix*Ix + Iy*Iy);
@@ -902,6 +921,141 @@ void CF::Filter(const int Type, double & time, const int ItNum, const float step
     merge();
 }
 
+//this nosplit is very useful for tasks like deconvolution, where the four sets need to be merged 
+//every iteration if we use the split scheme.
+void CF::FilterNoSplit(const int Type, double & time, const int ItNum, const float stepsize, const int mode)
+{
+    clock_t Tstart, Tend;
+    const float Max_rand_float = stepsize/RAND_MAX;
+    float scaled_stepsize;
+
+    float (CF::* Local)(int i, const float* p_pre, const float* p, const float* p_nex, const float * p_curv);
+
+    switch(Type)
+    {
+        case 0:
+        {
+            Local = &CF::Scheme_TV; cout<<"TV Filter: "; break;
+        }
+        case 1:
+        {
+            Local = &CF::Scheme_MC; cout<<"MC Filter: "; break;
+        }
+        case 2:
+        {
+            Local = &CF::Scheme_GC; cout<<"GC Filter: "; break;
+        }
+        case 3:
+        {
+            Local = &CF::Scheme_DC; cout<<"DC Filter: "; break;
+        }
+        case 4:
+        {
+            Local = &CF::Scheme_LS; cout<<"Bernstein Filter: "; break;
+        }
+        default:
+        {
+            cout<<"The filter type is wrong. Do nothing."<<endl;
+            return;
+        }
+    }
+    register float d, d_abs;
+    int start_row_set[4]={1, 2, 1, 2};
+    int start_col_set[4]={1, 2, 2, 1};
+    const int M = imgF.rows;
+    const int N = imgF.cols;
+    Tstart = clock();
+    switch(mode)
+    {
+        case 0://standard
+        {
+            for(int it=0;it<ItNum;++it)
+            {
+                for (int set_index = 0; set_index < 4; ++set_index)
+                {
+                    for (int i = start_row_set[set_index]; i < M-1; ++i,++i)
+                    {
+                        p = imgF.ptr<float>(i);
+                        p_pre = imgF.ptr<float>(i-1);
+                        p_down = imgF.ptr<float>(i+1);
+                        for (int j = start_col_set[set_index]; j < N-1; ++j, ++j)
+                        {
+                            d = (this->*Local)(j,p_pre,p,p_down,NULL);
+                            p[j] += (stepsize*d);
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        case 1://stochastic
+        {
+            for(int it=0;it<ItNum;++it)
+            {
+                for (int set_index = 0; set_index < 4; ++set_index)
+                {
+                    for (int i = start_row_set[set_index]; i < M-1; ++i,++i)
+                    {
+                        p = imgF.ptr<float>(i);
+                        p_pre = imgF.ptr<float>(i-1);
+                        p_down = imgF.ptr<float>(i+1);
+                        for (int j = start_col_set[set_index]; j < N-1; ++j, ++j)
+                        {
+                            d = (this->*Local)(j,p_pre,p,p_down,NULL);
+                            scaled_stepsize = myRand()*Max_rand_float;
+                            p[j] += (scaled_stepsize*d);
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        case 2://spectral
+        {
+            //specify the distribution
+            unsigned int distribution[26] = {13129,8029, 3337,1945, 1291,921,689,533, 423,342, 281,234, 197,167,
+                143,123, 106,92, 81,71, 63,55, 49,44, 39,35};
+            
+            int index; 
+            for(int it=0;it<ItNum;++it)
+            {
+                for (int set_index = 0; set_index < 4; ++set_index)
+                {
+                    for (int i = start_row_set[set_index]; i < M-1; ++i,++i)
+                    {
+                        p = imgF.ptr<float>(i);
+                        p_pre = imgF.ptr<float>(i-1);
+                        p_down = imgF.ptr<float>(i+1);
+                        for (int j = start_col_set[set_index]; j < N-1; ++j, ++j)
+                        {
+                            d = (this->*Local)(j,p_pre,p,p_down,NULL);
+                            d_abs = fabsf(d);
+                            index = int(d_abs*255);
+                            if(index > 25) p[j] += (stepsize*d);
+                            else
+                            {
+                                if (myRand()>distribution[index])
+                                {
+                                    p[j] += (stepsize*d);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        default:
+        {
+            cout<<"The mode in FilterNoSplit is wrong. Do nothing."<<endl;
+            return;
+        }
+    }
+    
+    Tend = clock() - Tstart;   
+    time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
+}
+
 //Type = 0, half window regression; Type = 1, half and quarter window; Type = 2, quarter window
 void CF::HalfWindow(const int Type, double & time, int ItNum, Mat kernel, const float stepsize)
 {
@@ -1011,124 +1165,94 @@ void CF::HalfWindow(const int Type, double & time, int ItNum, Mat kernel, const 
     time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
 }
 
-//this nosplit is very useful for tasks like deconvolution, where the four sets need to be merged 
-//every iteration if we use the split scheme.
-void CF::FilterNoSplit(const int Type, double & time, const int ItNum, const float stepsize, const bool stochastic)
+void CF::HalfBox(const int Type, double & time, const int radius)
+{
+    Mat label = Mat::zeros(M, N, CV_8UC1);
+    HalfBox(Type, time, image, imgF, label, radius);
+}
+
+void CF::HalfBox(const int Type, double & time, const Mat & img, Mat & result, Mat & label, const int radius)
 {
     clock_t Tstart, Tend;
-    const float Max_rand_float = stepsize/RAND_MAX;
-    float scaled_stepsize;
+    Mat sq = img.mul(img);
+    Mat mean_sq = Mat::zeros(img.size(), CV_32FC1);
+    Mat mean_half = Mat::zeros(img.size(), CV_32FC1);
+    Mat criterion = Mat::ones(img.size(), CV_32FC1)*(4*radius*radius+512); //init large number
+    Mat tmp = Mat::zeros(img.size(), CV_32FC1);
+    float *p, *p_criterion, *p_value, *p_mean;
+    unsigned char *p_label;
 
-    float (CF::* Local)(int i, const float* p_pre, const float* p, const float* p_nex, const float * p_curv);
-
-    switch(Type)
-    {
-        case 0:
-        {
-            Local = &CF::Scheme_TV; cout<<"TV Filter: "; break;
-        }
-        case 1:
-        {
-            Local = &CF::Scheme_MC; cout<<"MC Filter: "; break;
-        }
-        case 2:
-        {
-            Local = &CF::Scheme_GC; cout<<"GC Filter: "; break;
-        }
-        case 3:
-        {
-            Local = &CF::Scheme_DC; cout<<"DC Filter: "; break;
-        }
-        case 4:
-        {
-            Local = &CF::Scheme_LS; cout<<"Bernstein Filter: "; break;
-        }
-        default:
-        {
-            cout<<"The filter type is wrong. Do nothing."<<endl;
-            return;
-        }
-    }
-    register float d;
-    const int M = imgF.rows;
-    const int N = imgF.cols;
     Tstart = clock();
-    for(int it=0;it<ItNum;++it)
+    for (int d = 0; d < 4; ++d)
     {
-        //black circle
-        for (int i = 1; i < M-1; ++i,++i)
+        HalfBoxMean(d, sq, mean_sq, radius);
+        HalfBoxMean(d, img, mean_half, radius);
+        switch(Type)
         {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            for (int j = 1; j < N-1; ++j, ++j)
-            {
-                d = (this->*Local)(j,p_pre,p,p_down,NULL);
-                if (stochastic)
-                {
-                    scaled_stepsize = rand()*Max_rand_float;
-                    p[j] += (scaled_stepsize*d);
-                }
-                else p[j] += (stepsize*d);
-            }
+            case 0: //intensity
+            tmp = abs(mean_half - img); break;
+            case 1: //hybrid the two
+            tmp = mean_half - img;
+            tmp = tmp.mul(tmp);
+            tmp += (mean_sq - mean_half.mul(mean_half)); break;
+            case 2: //var
+            tmp = mean_sq - mean_half.mul(mean_half); break;
+            default:
+            cout<<"The Type in HalfBox is not correct."<<endl; return;
         }
-
-        //black triangle
-        for (int i = 2; i < M-1; ++i,++i)
+        for (int i = 0; i < img.rows; ++i)
         {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            for (int j = 2; j < N-1; ++j, ++j)
+            p = tmp.ptr<float>(i);
+            p_criterion = criterion.ptr<float>(i);
+            p_label = label.ptr<unsigned char>(i);
+            p_mean = mean_half.ptr<float>(i);
+            p_value = result.ptr<float>(i);
+            for (int j = 0; j < img.cols; ++j)
             {
-                d = (this->*Local)(j,p_pre,p,p_down,NULL);
-                if (stochastic)
+                if (p[j] < p_criterion[j])
                 {
-                    scaled_stepsize = rand()*Max_rand_float;
-                    p[j] += (scaled_stepsize*d);
+                    p_criterion[j] = p[j];
+                    p_label[j] = d;
+                    p_value[j] = p_mean[j];
                 }
-                else p[j] += (stepsize*d);
-            }
-        }
-
-        //white circle
-        for (int i = 1; i < M-1; ++i,++i)
-        {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            for (int j = 2; j < N-1; ++j, ++j)
-            {
-                d = (this->*Local)(j,p_pre,p,p_down,NULL);
-                if (stochastic)
-                {
-                    scaled_stepsize = rand()*Max_rand_float;
-                    p[j] += (scaled_stepsize*d);
-                }
-                else p[j] += (stepsize*d);
-            }
-        }
-
-        //white triangle
-        for (int i = 2; i < M-1; ++i,++i)
-        {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            for (int j = 1; j < N-1; ++j, ++j)
-            {
-                d = (this->*Local)(j,p_pre,p,p_down,NULL);
-                if (stochastic)
-                {
-                    scaled_stepsize = rand()*Max_rand_float;
-                    p[j] += (scaled_stepsize*d);
-                }
-                else p[j] += (stepsize*d);
             }
         }
     }
-    Tend = clock() - Tstart;   
+
+    Tend = clock() - Tstart;
     time = double(Tend)/(CLOCKS_PER_SEC/1000.0);
+}
+
+void CF::HalfBoxMean(const int direction, const Mat & img, Mat & result, const int radius)
+{
+    const int w = 2*radius + 1;
+    //two separable kernels
+    Mat k_h=Mat::ones(1,w,CV_32FC1);
+    Mat k_v=Mat::ones(1,w,CV_32FC1);
+    switch(direction)
+    {
+        case 0://left half box
+            k_v.colRange(radius+1,w) = 0.0f;
+            k_v /= (radius + 1);
+            k_h /= w;
+            break;
+        case 1://right half box
+            k_v.colRange(0,radius) = 0.0f;
+            k_v /= (radius + 1);
+            k_h /= w;
+            break;
+        case 2://top half box
+            k_h.colRange(radius+1,w) = 0.0f;
+            k_h /= (radius + 1);
+            k_v /= w;
+            break;
+        case 3://bottom half box
+            k_h.colRange(0,radius) = 0.0f;
+            k_h /= (radius + 1);
+            k_v /= w;
+            break;
+    }
+    sepFilter2D(img, result, img.depth(), k_h, k_v);
 }
 
 //compute the guide curvature from a given image
@@ -1202,64 +1326,27 @@ void CF::CurvatureGuidedFilter(const Mat & curv, const int Type, double & time, 
             return;
         }
     }
-    Tstart = clock();
+    int start_row_set[4]={1, 2, 1, 2};
+    int start_col_set[4]={1, 2, 2, 1};
     float d;
     const float * p_curv;
+
+    Tstart = clock();
     for(int it=0;it<ItNum;++it)
     {
-        //black circle
-        for (int i = 1; i < M-1; ++i,++i)
+        for (int set_index=0; set_index<4; ++set_index)
         {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            p_curv = curv.ptr<float>(i);
-            for (int j = 1; j < N-1; ++j, ++j)
+            for (int i = start_row_set[set_index]; i < M-1; ++i,++i)
             {
-                d = (this->*Local)(j,p_pre,p,p_down,p_curv);
-                p[j] += (stepsize*d);
-            }
-        }
-
-        //black triangle
-        for (int i = 2; i < M-1; ++i,++i)
-        {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            p_curv = curv.ptr<float>(i);
-            for (int j = 2; j < N-1; ++j, ++j)
-            {
-                d = (this->*Local)(j,p_pre,p,p_down,p_curv);
-                p[j] += (stepsize*d);
-            }
-        }
-
-        //white circle
-        for (int i = 1; i < M-1; ++i,++i)
-        {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            p_curv = curv.ptr<float>(i);
-            for (int j = 2; j < N-1; ++j, ++j)
-            {
-                d = (this->*Local)(j,p_pre,p,p_down,p_curv);
-                p[j] += (stepsize*d);
-            }
-        }
-
-        //white triangle
-        for (int i = 2; i < M-1; ++i,++i)
-        {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            p_curv = curv.ptr<float>(i);
-            for (int j = 1; j < N-1; ++j, ++j)
-            {
-                d = (this->*Local)(j,p_pre,p,p_down,p_curv);
-                p[j] += (stepsize*d);
+                p = imgF.ptr<float>(i);
+                p_pre = imgF.ptr<float>(i-1);
+                p_down = imgF.ptr<float>(i+1);
+                p_curv = curv.ptr<float>(i);
+                for (int j = start_col_set[set_index]; j < N-1; ++j, ++j)
+                {
+                    d = (this->*Local)(j,p_pre,p,p_down,p_curv);
+                    p[j] += (stepsize*d);
+                }
             }
         }
     }
@@ -1320,6 +1407,8 @@ void CF::Solver(const int Type, double & time, const int MaxItNum, const float l
     
     float d, energy_increase, dist_orig, dist_proj_orig;
     int count = 0;
+    int start_row_set[4]={1, 2, 1, 2};
+    int start_col_set[4]={1, 2, 2, 1};
 
     Tstart = clock();
     for(int it=0;it<MaxItNum;++it)
@@ -1332,73 +1421,25 @@ void CF::Solver(const int Type, double & time, const int MaxItNum, const float l
         //if the energy starts to increase, stop the loop
         if(count>1 && (energyRecord_DataFit[it] + energyRecord_Curvature[it] > energyRecord_DataFit[it-1] + energyRecord_Curvature[it-1])) break;
 
-        //black circle
-        for (int i = 1; i < M-1; ++i,++i)
+        for (int set_index = 0; set_index < 4; ++set_index)
         {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            p_data = image.ptr<float>(i);
-            for (int j = 1; j < N-1; ++j, ++j)
+            for (int i = start_row_set[set_index]; i < M-1; ++i,++i)
             {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
-                dist_orig = fabsf(p[j] - p_data[j]);
-                dist_proj_orig = fabsf(p[j] + d - p_data[j]);
-                energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
-                if (energy_increase <= lambda*abs(d)) p[j] += d;
+                p = imgF.ptr<float>(i);
+                p_pre = imgF.ptr<float>(i-1);
+                p_down = imgF.ptr<float>(i+1);
+                p_data = image.ptr<float>(i);
+                for (int j = start_col_set[set_index]; j < N-1; ++j, ++j)
+                {
+                    d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
+                    dist_orig = fabsf(p[j] - p_data[j]);
+                    dist_proj_orig = fabsf(p[j] + d - p_data[j]);
+                    energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
+                    if (energy_increase <= lambda*abs(d)) p[j] += d;
+                }
             }
         }
 
-        //black triangle
-        for (int i = 2; i < M-1; ++i,++i)
-        {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            p_data = image.ptr<float>(i);
-            for (int j = 2; j < N-1; ++j, ++j)
-            {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
-                dist_orig = fabsf(p[j] - p_data[j]);
-                dist_proj_orig = fabsf(p[j] + d - p_data[j]);
-                energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
-                if (energy_increase <= lambda*abs(d)) p[j] += d;
-            }
-        }
-
-        //white circle
-        for (int i = 1; i < M-1; ++i,++i)
-        {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            p_data = image.ptr<float>(i);
-            for (int j = 2; j < N-1; ++j, ++j)
-            {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
-                dist_orig = fabsf(p[j] - p_data[j]);
-                dist_proj_orig = fabsf(p[j] + d - p_data[j]);
-                energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
-                if (energy_increase <= lambda*abs(d)) p[j] += d;
-            }
-        }
-
-        //white triangle
-        for (int i = 2; i < M-1; ++i,++i)
-        {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            p_data = image.ptr<float>(i);
-            for (int j = 1; j < N-1; ++j, ++j)
-            {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
-                dist_orig = fabsf(p[j] - p_data[j]);
-                dist_proj_orig = fabsf(p[j] + d - p_data[j]);
-                energy_increase = powf(dist_proj_orig, DataFitOrder) - powf(dist_orig, DataFitOrder);
-                if (energy_increase <= lambda*abs(d)) p[j] += d;
-            }
-        }
         count++;
     }
     Tend = clock() - Tstart;   
@@ -1417,11 +1458,10 @@ void CF::Solver(const int Type, double & time, const int MaxItNum, const float l
     energyProfile<<"### Iteration TotalEnergy DataFitEnergy RegularizationEnergy"<<endl;
     for (int i = 0; i <= count; ++i)
     {
-    energyProfile<<i<<" "<<energyRecord_DataFit[i] + energyRecord_Curvature[i]<<" "<<energyRecord_DataFit[i]<<" "<<energyRecord_Curvature[i]<<endl;
+        energyProfile<<i<<" "<<energyRecord_DataFit[i] + energyRecord_Curvature[i]<<" "<<energyRecord_DataFit[i]<<" "<<energyRecord_Curvature[i]<<endl;
     }
     energyProfile.close();
 }
-
 
 //solve BlackBox() + lambda * |curvature(U)|
  void CF::BlackBoxSolver(const int Type, double & time, const int MaxItNum, const float lambda, 
@@ -1476,6 +1516,8 @@ void CF::Solver(const int Type, double & time, const int MaxItNum, const float l
     
     float d, energy_increase, dist_orig, dist_proj_orig;
     int count = 0; float zero = 0.0f;
+    int start_row_set[4]={1, 2, 1, 2};
+    int start_col_set[4]={1, 2, 2, 1};
 
     Tstart = clock();
     for(int it=0;it<MaxItNum;++it)
@@ -1493,67 +1535,21 @@ void CF::Solver(const int Type, double & time, const int MaxItNum, const float l
         //if the energy starts to increase, stop the loop
         if(count>1 && (energy_DataFit[it] + energy_Curvature[it] > energy_DataFit[it-1] + energy_Curvature[it-1])) break;
 
-        //black circle
-        for (int i = 1; i < M-1; ++i,++i)
+        for (int set_index = 0; set_index < 4; ++set_index)
         {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            for (int j = 1; j < N-1; ++j, ++j)
+            for (int i = start_row_set[set_index]; i < M-1; ++i,++i)
             {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
-                dist_orig = BlackBox(i,j,imgF,image,zero);
-                dist_proj_orig = BlackBox(i,j,imgF,image,d);
-                energy_increase = dist_proj_orig - dist_orig;
-                if (energy_increase <= lambda*abs(d)) p[j] += d;
-            }
-        }
-
-        //black triangle
-        for (int i = 2; i < M-1; ++i,++i)
-        {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            for (int j = 2; j < N-1; ++j, ++j)
-            {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
-                dist_orig = BlackBox(i,j,imgF,image,zero);
-                dist_proj_orig = BlackBox(i,j,imgF,image,d);
-                energy_increase = dist_proj_orig - dist_orig;
-                if (energy_increase <= lambda*abs(d)) p[j] += d;
-            }
-        }
-
-        //white circle
-        for (int i = 1; i < M-1; ++i,++i)
-        {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            for (int j = 2; j < N-1; ++j, ++j)
-            {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
-                dist_orig = BlackBox(i,j,imgF,image,zero);
-                dist_proj_orig = BlackBox(i,j,imgF,image,d);
-                energy_increase = dist_proj_orig - dist_orig;
-                if (energy_increase <= lambda*abs(d)) p[j] += d;
-            }
-        }
-
-        //white triangle
-        for (int i = 2; i < M-1; ++i,++i)
-        {
-            p = imgF.ptr<float>(i);
-            p_pre = imgF.ptr<float>(i-1);
-            p_down = imgF.ptr<float>(i+1);
-            for (int j = 1; j < N-1; ++j, ++j)
-            {
-                d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
-                dist_orig = BlackBox(i,j,imgF,image,zero);
-                dist_proj_orig = BlackBox(i,j,imgF,image,d);
-                energy_increase = dist_proj_orig - dist_orig;
-                if (energy_increase <= lambda*abs(d)) p[j] += d;
+                p = imgF.ptr<float>(i);
+                p_pre = imgF.ptr<float>(i-1);
+                p_down = imgF.ptr<float>(i+1);
+                for (int j = start_col_set[set_index]; j < N-1; ++j, ++j)
+                {
+                    d = stepsize*(this->*Local)(j,p_pre,p,p_down,NULL);
+                    dist_orig = BlackBox(i,j,imgF,image,zero);
+                    dist_proj_orig = BlackBox(i,j,imgF,image,d);
+                    energy_increase = dist_proj_orig - dist_orig;
+                    if (energy_increase <= lambda*abs(d)) p[j] += d;
+                }
             }
         }
         count++;
@@ -1580,7 +1576,7 @@ void CF::Solver(const int Type, double & time, const int MaxItNum, const float l
     energyProfile<<"### Iteration TotalEnergy DataFitEnergy RegularizationEnergy"<<endl;
     for (int i = 0; i <= count; ++i)
     {
-    energyProfile<<i<<" "<<energy_DataFit[i] + energy_Curvature[i]<<" "<<energy_DataFit[i]<<" "<<energy_Curvature[i]<<endl;
+        energyProfile<<i<<" "<<energy_DataFit[i] + energy_Curvature[i]<<" "<<energy_DataFit[i]<<" "<<energy_Curvature[i]<<endl;
     }
     energyProfile.close();
  }
@@ -1699,25 +1695,21 @@ void CF::DM(const int FilterType, const int LocationType, const Mat & img, Mat &
             p_d[j] = (this->*Local)(j,p_pre,p,p_down,NULL);
         }
     }
-
-    //statistically, following gives the gradient of curvature energy
-    // if(Type==1) dm *= 2;
-    // if(Type==2) dm *= 30; //GC filter is super efficient
  }
 
  //find the value with minimum abs value, 4 floats
-inline float CF::SignedMin(float * dist)
+inline float CF::SignedMin(float * const dist)
 {
 #if defined(_WIN32) || defined(WIN32)
     unsigned char index = 0;
     unsigned char index2 = 2;
-    register int tmp0 = (int&)(dist[0]) & 0x7FFFFFFF;
-    register int tmp1 = (int&)(dist[1]) & 0x7FFFFFFF;
-    register int tmp2 = (int&)(dist[2]) & 0x7FFFFFFF;
-    register int tmp3 = (int&)(dist[3]) & 0x7FFFFFFF;
+    register float tmp0 = (float&)((int&)(dist[0]) & 0x7FFFFFFF);
+    register float tmp1 = (float&)((int&)(dist[1]) & 0x7FFFFFFF);
+    register float tmp2 = (float&)((int&)(dist[2]) & 0x7FFFFFFF);
+    register float tmp3 = (float&)((int&)(dist[3]) & 0x7FFFFFFF);
     if (tmp1 < tmp0) { index = 1; tmp0 = tmp1; }
     if (tmp3 < tmp2) { index2 = 3; tmp2 = tmp3; }
-    if (tmp2<tmp0) index = index2;
+    if (tmp2 < tmp0) index = index2;
     return dist[index];
 #else
     if (fabsf(dist[1]) < fabsf(dist[0])) dist[0] = dist[1];
@@ -1728,36 +1720,58 @@ inline float CF::SignedMin(float * dist)
 }
 
 //find the value with minimum abs value, 4 floats
-inline float CF::SignedMin_noSplit(float * dist)
+inline float CF::SignedMin_noSplit(const float * const dist)
 {
     unsigned char index = 0;
-
 #if defined(_WIN32) || defined(WIN32)
-    register int absMin = (int&)(dist[0]) & 0x7FFFFFFF;
-    register int tmp;
-    for (unsigned char i = 1; i < 4; ++i)
+    register float absMin = (float&)((int&)(dist[0]) & 0x7FFFFFFF);
+    register float tmp = (float&)((int&)(dist[1]) & 0x7FFFFFFF);
+    if (tmp<absMin)
     {
-        tmp = (int&)(dist[i]) & 0x7FFFFFFF;
-        if (tmp<absMin)
-        {
-            absMin = tmp;
-            index = i;
-        }
+        absMin = tmp;
+        index = 1;
     }
+    tmp = (float&)((int&)(dist[2]) & 0x7FFFFFFF);
+    if (tmp<absMin)
+    {
+        absMin = tmp;
+        index = 2;
+    }
+    tmp = (float&)((int&)(dist[3]) & 0x7FFFFFFF);
+    if (tmp<absMin) index = 3;
+    
     return dist[index];
 #else
     register float absMin = fabsf(dist[0]);
-    register float tmp;
-    for (unsigned char i = 1; i < 4; ++i)
+    register float tmp1 = fabsf(dist[1]);
+    register float tmp2 = fabsf(dist[2]);
+    register float tmp3 = fabsf(dist[3]);
+    if (tmp1<absMin)
     {
-        tmp = fabsf(dist[i]);
-        if (tmp<absMin)
-        {
-            absMin = tmp;
-            index = i;
-        }
+        absMin = tmp1;
+        index = 1;
     }
+    if (tmp2<absMin)
+    {
+        absMin = tmp2;
+        index = 2;
+    }
+    if (tmp3<absMin) index = 3;
+
     return dist[index];
+#endif // defined(_WIN32) || defined(WIN32)
+}
+
+inline bool CompareAbs(const float& d1, const float& d2)
+{
+#if defined(_WIN32) || defined(WIN32)
+    if((float&)((int&)(d1) & 0x7FFFFFFF) < (float&)((int&)(d2) & 0x7FFFFFFF))
+        return true;
+    else
+        return false;
+#else
+    if (fabsf(d1) < fabsf(d2)) return true;
+    else return false;
 #endif // defined(_WIN32) || defined(WIN32)
 }
 
@@ -2197,9 +2211,8 @@ inline float CF::Scheme_GC(int i, const float * __restrict p_pre, const float * 
     min_value2 = SignedMin_noSplit(dist);
 
     if(fabsf(min_value2)<fabsf(min_value)) min_value = min_value2;
-    min_value /= 3;
     
-    return min_value;
+    return min_value/3;
 }
 
 inline float CF::Scheme_MC(int i, const float * __restrict p_pre, const float * __restrict p, 
@@ -2215,19 +2228,19 @@ inline float CF::Scheme_MC(int i, const float * __restrict p_pre, const float * 
     register float tmp, com_one, com_two, min_value;
     tmp = 8*p[i];
     //specify the curvature if provided
-    //if (p_curv != NULL) tmp = 8*(p[i] + p_curv[i]);
+    if (p_curv != NULL) tmp = 8*(p[i] + p_curv[i]);
 
     com_one = (p_pre[i]+p_nex[i])*2.5f - tmp;
     com_two = (p[i-1]+p[i+1])*2.5f - tmp;
 
-    dist[0] = com_one + 5.0f*p[i+1] - p_pre[i+1] - p_nex[i+1];
+    dist[0] = com_one + 5.0f*p[i+1] - p_nex[i+1] - p_pre[i+1];
     dist[1] = com_one + 5.0f*p[i-1] - p_pre[i-1] - p_nex[i-1];
     dist[2] = com_two + 5.0f*p_nex[i] - p_nex[i-1] - p_nex[i+1];
     dist[3] = com_two + 5.0f*p_pre[i] - p_pre[i-1] - p_pre[i+1];
 
-    min_value = SignedMin_noSplit(dist)/8;
+    min_value = SignedMin_noSplit(dist);
     
-    return min_value;
+    return min_value/8;
 }
 
 inline float CF::Scheme_LS(int i, const float * __restrict p_pre, const float * __restrict p, 
@@ -2421,34 +2434,6 @@ void CF::statistics(const int Type, const char* dir_path, Mat& result, bool Curv
             file_count++;
         } 
         closedir( dirFile );
-        switch(Type)
-        {
-            case 0:
-            {
-                cout<<"TV Filter:(TVL1 by default) "; break;
-            }
-            case 1:
-            {
-                cout<<"MC Filter: "; break;
-            }
-            case 2:
-            {
-                cout<<"GC Filter: "; break;
-            }
-            case 3:
-            {
-                cout<<"DC Filter: "; break;
-            }
-            case 4:
-            {
-                cout<<"Bernstein Filter: "; break;
-            }
-            default:
-            {
-                cout<<"The filter type is wrong. Do nothing."<<endl;
-                return;
-            }
-        }
         cout<<"Total Images: "<<file_count<<endl;
         cout<<"Sum of the statistics: "<<sum(result)[0]<<endl;
         //output the statistics
@@ -2460,4 +2445,16 @@ void CF::statistics(const int Type, const char* dir_path, Mat& result, bool Curv
         }
         profile.close();
     }
+}
+
+unsigned int CF::myRand()
+{
+    static uint32_t x = 123456789;
+    static uint32_t y = 362436069;
+    static uint32_t z = 521288629;
+    static uint32_t w = 88675123;
+    uint32_t t;
+    t = x ^ (x << 11);   
+    x = y; y = z; z = w;   
+    return w = w ^ (w >> 19) ^ (t ^ (t >> 8));
 }
