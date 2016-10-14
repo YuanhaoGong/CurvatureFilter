@@ -15,7 +15,6 @@
 
  *=========================================================================*/
 
-//Curvature Filter
 class CF
 {
 public:
@@ -1702,14 +1701,15 @@ inline float CF::SignedMin(float * const dist)
 {
 #if defined(_WIN32) || defined(WIN32)
     unsigned char index = 0;
-    unsigned char index2 = 2;
-    register float tmp0 = (float&)((int&)(dist[0]) & 0x7FFFFFFF);
-    register float tmp1 = (float&)((int&)(dist[1]) & 0x7FFFFFFF);
-    register float tmp2 = (float&)((int&)(dist[2]) & 0x7FFFFFFF);
-    register float tmp3 = (float&)((int&)(dist[3]) & 0x7FFFFFFF);
-    if (tmp1 < tmp0) { index = 1; tmp0 = tmp1; }
-    if (tmp3 < tmp2) { index2 = 3; tmp2 = tmp3; }
-    if (tmp2 < tmp0) index = index2;
+    register int tmp[4];
+    tmp[0] = (int&)(dist[0]) & 0x7FFFFFFF;
+    tmp[1] = (int&)(dist[1]) & 0x7FFFFFFF;
+    tmp[2] = (int&)(dist[2]) & 0x7FFFFFFF;
+    tmp[3] = (int&)(dist[3]) & 0x7FFFFFFF;
+
+    if (tmp[1] < tmp[0]) index = 1; 
+    if (tmp[2] < tmp[index]) index = 2; 
+    if (tmp[3] < tmp[index]) index = 3;
     return dist[index];
 #else
     if (fabsf(dist[1]) < fabsf(dist[0])) dist[0] = dist[1];
@@ -1724,39 +1724,32 @@ inline float CF::SignedMin_noSplit(const float * const dist)
 {
     unsigned char index = 0;
 #if defined(_WIN32) || defined(WIN32)
-    register float absMin = (float&)((int&)(dist[0]) & 0x7FFFFFFF);
-    register float tmp = (float&)((int&)(dist[1]) & 0x7FFFFFFF);
+    register int absMin = (int&)(dist[0]) & 0x7FFFFFFF;
+    register int tmp = (int&)(dist[1]) & 0x7FFFFFFF;
     if (tmp<absMin)
     {
         absMin = tmp;
         index = 1;
     }
-    tmp = (float&)((int&)(dist[2]) & 0x7FFFFFFF);
+    tmp = (int&)(dist[2]) & 0x7FFFFFFF;
     if (tmp<absMin)
     {
         absMin = tmp;
         index = 2;
     }
-    tmp = (float&)((int&)(dist[3]) & 0x7FFFFFFF);
+    tmp = (int&)(dist[3]) & 0x7FFFFFFF;
     if (tmp<absMin) index = 3;
     
     return dist[index];
 #else
-    register float absMin = fabsf(dist[0]);
-    register float tmp1 = fabsf(dist[1]);
-    register float tmp2 = fabsf(dist[2]);
-    register float tmp3 = fabsf(dist[3]);
-    if (tmp1<absMin)
-    {
-        absMin = tmp1;
-        index = 1;
-    }
-    if (tmp2<absMin)
-    {
-        absMin = tmp2;
-        index = 2;
-    }
-    if (tmp3<absMin) index = 3;
+    register float tmp[4];
+    tmp[0] = fabsf(dist[0]);
+    tmp[1] = fabsf(dist[1]);
+    tmp[2] = fabsf(dist[2]);
+    tmp[3] = fabsf(dist[3]);
+    if (tmp[1]<tmp[0]) index = 1;
+    if (tmp[2]<tmp[index]) index = 2;
+    if (tmp[3]<tmp[index]) index = 3;
 
     return dist[index];
 #endif // defined(_WIN32) || defined(WIN32)
@@ -1765,7 +1758,7 @@ inline float CF::SignedMin_noSplit(const float * const dist)
 inline bool CompareAbs(const float& d1, const float& d2)
 {
 #if defined(_WIN32) || defined(WIN32)
-    if((float&)((int&)(d1) & 0x7FFFFFFF) < (float&)((int&)(d2) & 0x7FFFFFFF))
+    if(((int&)(d1) & 0x7FFFFFFF) < ((int&)(d2) & 0x7FFFFFFF))
         return true;
     else
         return false;
