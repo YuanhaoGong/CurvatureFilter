@@ -1699,23 +1699,27 @@ void CF::DM(const int FilterType, const int LocationType, const Mat & img, Mat &
  //find the value with minimum abs value, 4 floats
 inline float CF::SignedMin(float * const dist)
 {
-#if defined(_WIN32) || defined(WIN32)
     unsigned char index = 0;
+    unsigned char index2 = 2;
+#if defined(_WIN32) || defined(WIN32)
+    
     register int tmp[4];
     tmp[0] = (int&)(dist[0]) & 0x7FFFFFFF;
     tmp[1] = (int&)(dist[1]) & 0x7FFFFFFF;
     tmp[2] = (int&)(dist[2]) & 0x7FFFFFFF;
     tmp[3] = (int&)(dist[3]) & 0x7FFFFFFF;
 
-    if (tmp[1] < tmp[0]) index = 1; 
-    if (tmp[2] < tmp[index]) index = 2; 
-    if (tmp[3] < tmp[index]) index = 3;
+    index = (tmp[1] < tmp[0]) ? 1:0; 
+    index2 = (tmp[3] < tmp[2]) ? 3:2; 
+    if (tmp[index2] < tmp[index]) index = index2;
+
     return dist[index];
 #else
     if (fabsf(dist[1]) < fabsf(dist[0])) dist[0] = dist[1];
     if (fabsf(dist[3]) < fabsf(dist[2])) dist[2] = dist[3];
     if (fabsf(dist[2]) < fabsf(dist[0])) dist[0] = dist[2];
     return dist[0];
+
 #endif // defined(_WIN32) || defined(WIN32)
 }
 
@@ -1741,6 +1745,7 @@ inline float CF::SignedMin_noSplit(const float * const dist)
     if (tmp<absMin) index = 3;
     
     return dist[index];
+    
 #else
     register float tmp[4];
     tmp[0] = fabsf(dist[0]);
@@ -1990,7 +1995,7 @@ inline void CF::LS_one(float* __restrict p, const float* __restrict p_right, con
 {
     //one is for BT and WC, two is for BC and WT
     register float dist[4];
-    register float scaled_stepsize = stepsize/10;
+    register float scaled_stepsize = stepsize/7;
     register float tmp;
     for (int j = 1; j < N_half; ++j)
     {
@@ -2001,7 +2006,7 @@ inline void CF::LS_one(float* __restrict p, const float* __restrict p_right, con
         if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
         tmp *= 3.5f;
-        dist[0] *= 3.3333f;
+        dist[0] *= 3.5f;
 
         dist[2] = 3*(p_Corner[j] + p_rd[j-1]) - tmp;
         dist[3] = 3*(p_Corner[j-1] + p_rd[j]) - tmp;
@@ -2027,7 +2032,7 @@ inline void CF::LS_two(float* __restrict p, const float* __restrict p_right, con
 {
     //one is for BT and WC, two is for BC and WT
     register float dist[4];
-    register float scaled_stepsize = stepsize/10;
+    register float scaled_stepsize = stepsize/7;
     register float tmp;
     for (int j = 0; j < N_half-1; ++j)
     {
@@ -2037,7 +2042,7 @@ inline void CF::LS_two(float* __restrict p, const float* __restrict p_right, con
         if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
         tmp *= 3.5f;
-        dist[0] *= 3.3333f;
+        dist[0] *= 3.5f;
 
         dist[2] = 3*(p_Corner[j+1] + p_rd[j]) - tmp;
         dist[3] = 3*(p_Corner[j] + p_rd[j+1]) - tmp;
@@ -2259,7 +2264,7 @@ inline float CF::Scheme_LS(int i, const float * __restrict p_pre, const float * 
     if(fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
     
     tmp *= 3.5f;
-    min_value *= 3.3333f;
+    min_value *= 3.5f;
 
     tmp_one = 3*(p_nex[i-1] + p_pre[i+1]) - tmp;
     tmp_two = 3*(p_pre[i-1] + p_nex[i+1]) - tmp;
@@ -2274,7 +2279,7 @@ inline float CF::Scheme_LS(int i, const float * __restrict p_pre, const float * 
     if(fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
     if(fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
 
-    return min_value/10;//here 10 means including central pixel while 7 means exclusion
+    return min_value/7;//here 10 means including central pixel while 7 means exclusion
 }
 
 inline float CF::Scheme_TV(int i, const float * __restrict p_pre, const float * __restrict p, 
