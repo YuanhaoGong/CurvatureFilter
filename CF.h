@@ -157,8 +157,6 @@ private:
     //find the signed value with minimum abs value, dist contains FOUR floats
     inline float SignedMin(float * const dist);
     inline float SignedMin_noSplit(const float * const dist);
-    //return true if abs(d1) < abs(d2), otherwise false
-    inline bool CompareAbs(const float& d1, const float& d2);
 
     /*************************************** Split into 4 sets *********************************/
     //one is for BT and WC, two is for BC and WT
@@ -182,14 +180,16 @@ private:
     inline float Scheme_DC(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_guide = NULL);
     inline float Scheme_LS(int i, const float * p_pre, const float * p, const float * p_nex, const float * p_guide = NULL);
 
+//some useful functions
 private:
     //for solving a Poisson equation
     void SampleDownOrUp(const Mat & src, Mat & dst, bool Forward=true);
-private:
     void HalfBox(const int Type, double & time, const Mat & img, Mat & result, Mat & label, const int radius=3);
     void HalfBoxMean(const int direction, const Mat & img, Mat & result, const int radius=3);
-private:
     unsigned int myRand();
+    //return true if abs(d1) < abs(d2), otherwise false
+    inline bool myCompareAbs(const float& d1, const float& d2);
+    float myFastInvSqrt(float x);
 };
 
 /********************************************************************************************
@@ -1760,7 +1760,7 @@ inline float CF::SignedMin_noSplit(const float * const dist)
 #endif // defined(_WIN32) || defined(WIN32)
 }
 
-inline bool CompareAbs(const float& d1, const float& d2)
+inline bool myCompareAbs(const float& d1, const float& d2)
 {
 #if defined(_WIN32) || defined(WIN32)
     if(((int&)(d1) & 0x7FFFFFFF) < ((int&)(d2) & 0x7FFFFFFF))
@@ -2455,4 +2455,15 @@ unsigned int CF::myRand()
     t = x ^ (x << 11);   
     x = y; y = z; z = w;   
     return w = w ^ (w >> 19) ^ (t ^ (t >> 8));
+}
+
+float CF::myFastInvSqrt(float x)
+{
+    //fast compute 1/sqrt(x), 
+    float xhalf = 0.5f * x;
+    int i = *(int*)&x;
+    i = 0x5f3759df - (i >> 1);  
+    x = *(float*)&i;
+    x = x*(1.5f-(xhalf*x*x));
+    return x;
 }
