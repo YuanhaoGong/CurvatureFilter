@@ -1,7 +1,7 @@
 ### Curvature filters are efficient solvers for variational models.
 Curvature filter was developed by Yuanhao Gong during his PhD at MOSAIC Group. Please cite following papers if you use curvature filter in your work. Thank you!
 
-:books: Chapter **Six** in **<a href="http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf" target="_blank">PhD thesis</a>** (downloaded **2300+** since June, 2015, from **40** different countries), Gaussian Curvature Filter (Talk Slides): **<a href="https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0" target="_blank">Dropbox</a>** or **<a href="http://pan.baidu.com/s/1qWrcfqG" target="_blank">Baidu</a>**, **[Bernstein Filter(poster)](images/BernsteinFilter.pdf)**, **source code** in **C++** and **Java** can also be found at **<a href="http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters", target="_blank">MOSAIC group</a>**(:de:), a short introduction in Chinese: **<a href="http://www.zhihu.com/question/35499791" target="_blank">Zhihu</a>** or **<a href="http://blog.csdn.net/jorg_zhao/article/details/51328966" target="_blank">Blog</a>**. 
+:books: Chapter **Six** in **<a href="http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf" target="_blank">PhD thesis</a>** (downloaded **2400+** since June, 2015, from **40** different countries), Gaussian Curvature Filter (Talk Slides): **<a href="https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0" target="_blank">Dropbox</a>** or **<a href="http://pan.baidu.com/s/1qWrcfqG" target="_blank">Baidu</a>**, **[Bernstein Filter(poster)](images/BernsteinFilter.pdf)**, **source code** in **C++** and **Java** can also be found at **<a href="http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters", target="_blank">MOSAIC group</a>**(:de:), a short introduction in Chinese: **<a href="http://www.zhihu.com/question/35499791" target="_blank">Zhihu</a>** or **<a href="http://blog.csdn.net/jorg_zhao/article/details/51328966" target="_blank">Blog</a>**. 
 
 The kernels summary and one example how to get the kernel can be found **[here](images/CF_Kernels.pdf)**.
 
@@ -14,19 +14,6 @@ The kernels summary and one example how to get the kernel can be found **[here](
   year={2015}, 
   school={ETH Zurich, Nr. 22616},
   note={http://dx.doi.org/10.3929/ethz-a-010438292}}
-
-@ARTICLE{gong:gdp, 
-  author={Gong, Y. and Sbalzarini, I.F.}, 
-  journal={Selected Topics in Signal Processing, IEEE Journal of}, 
-  title={A Natural-Scene Gradient Distribution Prior and 
-  its Application in Light-Microscopy Image Processing}, 
-  year={2016}, 
-  volume={10}, 
-  number={1}, 
-  pages={99-114}, 
-  doi={10.1109/JSTSP.2015.2506122}, 
-  ISSN={1932-4553}, 
-  month={Feb}}
 
 @article{gong:Bernstein,
 	Author = {Yuanhao Gong},
