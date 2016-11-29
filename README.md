@@ -5,7 +5,7 @@ Curvature filter was developed by Yuanhao Gong during his PhD at MOSAIC Group. P
 
 The kernels summary and one example how to get the kernel can be found **[here](images/CF_Kernels.pdf)**.
 
-:e-mail: gongyuanhao@gmail.com, or join the **<a href="https://groups.google.com/forum/?hl=en#!forum/curvaturefilter" target="_blank">Curvature Filter Forum</a>**
+:e-mail: gongyuanhao@gmail.com (not available for invited talk any more) or join the **<a href="https://groups.google.com/forum/?hl=en#!forum/curvaturefilter" target="_blank">Curvature Filter Forum</a>**
 ***
 ```text
 @phdthesis{gong:phd, 
