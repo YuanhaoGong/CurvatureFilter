@@ -77,12 +77,6 @@ The noise free test image can be downloaded **[here](images/developable.png)**
 ### 5) Registration
 from left to right: original reference image, distorted source image, registered results by TV filter, MC filter and GC filter.
 ![image](images/lena_circ.png)
-### 6) Curvature Guided Filter
-| Original image      | Guided Curvature | Result |
-| ------------- |:-------------:|:-------------:|
-| ![image ](images/lena.png)      | ![image ](images/CGF_MC.png) | ![image ](images/CGF.gif) |
-### 7) Multi Resolution Analysis
-![image](images/scaleSpace.png)
 
 ***
 ## FAQ:
