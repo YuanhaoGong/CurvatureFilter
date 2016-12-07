@@ -77,7 +77,10 @@ The noise free test image can be downloaded **[here](images/developable.png)**
 ### 5) Registration
 from left to right: original reference image, distorted source image, registered results by TV filter, MC filter and GC filter.
 ![image](images/lena_circ.png)
-
+***
+## On Triangular Meshes (preliminary results)
+original mesh (left) and processed mesh (right), the energy profile is shown in the middle.
+![image](images/GC_mesh.jpg)
 ***
 ## FAQ:
 1) Why dual mesh (DM) structure is needed?
