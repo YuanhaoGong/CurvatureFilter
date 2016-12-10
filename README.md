@@ -1,9 +1,17 @@
 ### Curvature filters are efficient solvers for variational models.
 These curvature filters are slightly different from the original ones that were also developed by Yuanhao Gong during his PhD. But the theory is the same. Please cite following papers if you use curvature filter in your work. Thank you!
 
-:books: Chapter **Six** in **<a href="http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf" target="_blank">PhD thesis</a>** (downloaded **2500+** since June, 2015, from **40** different countries), Gaussian Curvature Filter: **<a href="http://www.slideshare.net/YuanhaoGong/a-fast-implicit-gaussian-curvature-filter" target=" blank">LinkedIn</a>**, **<a href="https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0" target="_blank">Dropbox</a>** or **<a href="https://pan.baidu.com/s/1geS2EXH" target="_blank">Baidu</a>**. Bernstein Filter can be found **[here](images/BernsteinFilter.pdf)**. **source code** in **C++** and **Java** can also be found at **<a href="http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters", target="_blank">MOSAIC group</a>**(:de:), a short introduction in Chinese: **<a href="http://www.zhihu.com/question/35499791" target="_blank">Zhihu</a>** or **<a href="http://blog.csdn.net/jorg_zhao/article/details/51328966" target="_blank">Blog</a>**. 
+:books: The general theory is in Chapter **Six** of **<a href="http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf" target="_blank">PhD thesis</a>** (downloaded **2500+** since June, 2015, from **40** different countries)
 
-The kernels summary and one example how to get the kernel can be found **[here](images/CF_Kernels.pdf)**.
+:closed_book: Presentation of Gaussian Curvature Filter: **<a href="http://www.slideshare.net/YuanhaoGong/a-fast-implicit-gaussian-curvature-filter" target=" blank">LinkedIn</a>**, **<a href="https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0" target="_blank">Dropbox</a>** or **<a href="https://pan.baidu.com/s/1geS2EXH" target="_blank">Baidu</a>**. 
+
+:blue_book: Poster of Bernstein Filter can be found **[here](images/BernsteinFilter.pdf)**. 
+
+:gift: a short introduction in Chinese: **<a href="http://www.zhihu.com/question/35499791" target="_blank">Zhihu</a>** or this **<a href="http://blog.csdn.net/jorg_zhao/article/details/51328966" target="_blank">Blog</a>**
+
+:trophy: **source code** in **C++** and **Java** can also be found at **<a href="http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters", target="_blank">MOSAIC group</a>**(:de:). 
+
+:bell: The kernels summary and one example how to get the kernel can be found **[here](images/CF_Kernels.pdf)**.
 
 :e-mail: gongyuanhao@gmail.com (not available for invited talk any more) or join the **<a href="https://groups.google.com/forum/?hl=en#!forum/curvaturefilter" target="_blank">Curvature Filter Forum</a>**
 ***
