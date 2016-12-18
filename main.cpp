@@ -21,7 +21,10 @@
 #include <assert.h>
 #include <time.h>
 #include <cmath>
-#include <dirent.h>
+//only needed by studying curvature statistics
+#if defined(statistics) 
+    #include <dirent.h>
+#endif
 
 using namespace cv;
 using namespace std;
