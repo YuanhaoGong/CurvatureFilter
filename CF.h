@@ -118,7 +118,9 @@ public:
     *********************************************************************************************/
     //the curvature statistics or Dm statistics for each curvature from the given dir_path
     //result is a 1D distribution, we only need [0, Inf) thanks to the symmetry
+    #if defined(statistics)
     void statistics(const int Type, const char* dir_path, Mat& result, bool CurvatureOrDm=true);
+    #endif
 
     /********************************************************************************************
     *********************************************************************************************
@@ -2345,6 +2347,7 @@ inline float CF::Scheme_DC(int i, const float * __restrict p_pre, const float * 
 
 //the statistics from the given dir_path for the curvature
 //result is a 1D distribution, we only need [0, Inf) because of the symmetry
+#if defined(statistics)
 void CF::statistics(const int Type, const char* dir_path, Mat& result, bool CurvatureOrDm)
 {
     result = Mat::zeros(1, 1024, CV_64FC1);//the range is fixed
@@ -2444,17 +2447,14 @@ void CF::statistics(const int Type, const char* dir_path, Mat& result, bool Curv
         profile.close();
     }
 }
+#endif
 
 unsigned int CF::myRand()
 {
-    static uint32_t x = 123456789;
-    static uint32_t y = 362436069;
-    static uint32_t z = 521288629;
-    static uint32_t w = 88675123;
-    uint32_t t;
-    t = x ^ (x << 11);   
-    x = y; y = z; z = w;   
-    return w = w ^ (w >> 19) ^ (t ^ (t >> 8));
+    static uint32_t x = 1;
+    x ^= (x << 13);
+    x ^= (x >> 9);
+    return x ^= (x << 7);
 }
 
 float CF::myFastInvSqrt(float x)
