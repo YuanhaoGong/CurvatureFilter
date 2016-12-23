@@ -1,7 +1,7 @@
 ### Curvature filters are efficient solvers for variational models.
 These curvature filters are slightly different from the original ones that were also developed by Yuanhao Gong during his PhD. But the theory is the same. Please cite following papers if you use curvature filter in your work. Thank you!
 
-:books: The general theory is in Chapter **Six** of **<a href="http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf" target="_blank">PhD thesis</a>** (downloaded **2600+** since June, 2015, from **40** different countries)
+:books: The general theory is in Chapter **Six** of **<a href="http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf" target="_blank">PhD thesis</a>** (downloaded **2700+** since June, 2015, from **40** different countries)
 
 :closed_book: Presentation of Gaussian Curvature Filter: **<a href="http://www.slideshare.net/YuanhaoGong/a-fast-implicit-gaussian-curvature-filter" target=" blank">LinkedIn</a>**, **<a href="https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0" target="_blank">Dropbox</a>** or **<a href="https://pan.baidu.com/s/1geS2EXH" target="_blank">Baidu</a>**. 
 
