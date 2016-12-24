@@ -1701,8 +1701,8 @@ void CF::DM(const int FilterType, const int LocationType, const Mat & img, Mat &
  //find the value with minimum abs value, 4 floats
 inline float CF::SignedMin(float * const dist)
 {
-    unsigned char index = 0;
-    unsigned char index2 = 2;
+    unsigned char index = 1;
+    unsigned char index2 = 3;
 #if defined(_WIN32) || defined(WIN32)
     
     register int tmp[4];
@@ -1711,8 +1711,8 @@ inline float CF::SignedMin(float * const dist)
     tmp[2] = (int&)(dist[2]) & 0x7FFFFFFF;
     tmp[3] = (int&)(dist[3]) & 0x7FFFFFFF;
 
-    index = (tmp[1] < tmp[0]) ? 1:0; 
-    index2 = (tmp[3] < tmp[2]) ? 3:2; 
+    if (tmp[0] < tmp[1]) index = 0; 
+    if (tmp[2] < tmp[3]) index2 = 2; 
     if (tmp[index2] < tmp[index]) index = index2;
 
     return dist[index];
@@ -1996,33 +1996,22 @@ inline void CF::LS_one(float* __restrict p, const float* __restrict p_right, con
     const float * __restrict p_rd, const float* __restrict p_pre, const float* __restrict p_Corner, const float& stepsize)
 {
     //one is for BT and WC, two is for BC and WT
-    register float dist[4];
-    register float scaled_stepsize = stepsize/7;
+    register float dist[2];
+    // if use 2, the scheme excludes the central pixel
+    // if use 3, the scheme includes the central pixel
+    register float scaled_stepsize = stepsize/3;
     register float tmp;
     for (int j = 1; j < N_half; ++j)
     {
          
-        tmp = p[j]*2;
-        dist[0] = (p_pre[j]+p_down[j]) - tmp;
-        dist[1] = (p_right[j-1]+p_right[j]) - tmp;
+        tmp = p[j]*2.0f;
+        dist[0] = p_pre[j]+p_down[j] - tmp;
+        dist[1] = p_right[j-1]+p_right[j] - tmp;
         if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-        tmp *= 3.5f;
-        dist[0] *= 3.5f;
-
-        dist[2] = 3*(p_Corner[j] + p_rd[j-1]) - tmp;
-        dist[3] = 3*(p_Corner[j-1] + p_rd[j]) - tmp;
-
-        dist[1] = p_right[j-1] + p_pre[j] - p_Corner[j-1] + dist[2];
+        dist[1] = p_Corner[j] + p_rd[j-1] - tmp;
         if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-
-        dist[1] = p_right[j] + p_pre[j] - p_Corner[j] + dist[3];
-        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-
-        dist[1] = p_right[j] + p_down[j] - p_rd[j] + dist[2];
-        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-
-        dist[1] = p_right[j-1] + p_down[j]  - p_rd[j-1] + dist[3];
+        dist[1] = p_Corner[j-1] + p_rd[j] - tmp;
         if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
         p[j] += (scaled_stepsize*dist[0]);
@@ -2033,32 +2022,21 @@ inline void CF::LS_two(float* __restrict p, const float* __restrict p_right, con
     const float * __restrict p_rd, const float* __restrict p_pre, const float* __restrict p_Corner, const float& stepsize)
 {
     //one is for BT and WC, two is for BC and WT
-    register float dist[4];
-    register float scaled_stepsize = stepsize/7;
+    register float dist[2];
+    // if use 2, the scheme excludes the central pixel
+    // if use 3, the scheme includes the central pixel
+    register float scaled_stepsize = stepsize/3;
     register float tmp;
     for (int j = 0; j < N_half-1; ++j)
     {
-        tmp = p[j]*2;
+        tmp = p[j]*2.0f;
         dist[0] = p_pre[j]+p_down[j] - tmp;
         dist[1] = p_right[j]+p_right[j+1] - tmp;
         if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
-        tmp *= 3.5f;
-        dist[0] *= 3.5f;
-
-        dist[2] = 3*(p_Corner[j+1] + p_rd[j]) - tmp;
-        dist[3] = 3*(p_Corner[j] + p_rd[j+1]) - tmp;
-
-        dist[0] = p_right[j] + p_pre[j] - p_Corner[j] + dist[2];
+        dist[1] = p_Corner[j+1] + p_rd[j] - tmp;
         if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-
-        dist[0] = p_right[j+1] + p_pre[j] - p_Corner[j+1] + dist[3];
-        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-
-        dist[0] = p_right[j+1] + p_down[j] - p_rd[j+1] + dist[2];
-        if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-
-        dist[0] = p_right[j] + p_down[j] - p_rd[j] + dist[3];
+        dist[1] = p_Corner[j] + p_rd[j+1] - tmp;
         if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
 
         p[j] += (scaled_stepsize*dist[0]);
@@ -2226,7 +2204,7 @@ inline float CF::Scheme_MC(int i, const float * __restrict p_pre, const float * 
 
     register float dist[4];
     register float tmp, com_one, com_two, min_value;
-    tmp = 8*p[i];
+    tmp = 8.0f*p[i];
     //specify the curvature if provided
     if (p_curv != NULL) tmp = 8*(p[i] + p_curv[i]);
 
@@ -2247,41 +2225,27 @@ inline float CF::Scheme_LS(int i, const float * __restrict p_pre, const float * 
                             const float * __restrict p_nex, const float * p_curv)
 {
     //compute the movement according to half window
-    //   f   a   b            0 1/2 0               3/7 1/7 -1/7
-    //       I   e               -1 0                    -1  1/7
-    //       c   d              1/2 0                        3/7
-    // or (include central pixel)
-    //   f   a   b            0 1/3 0               3/10 1/10 -1/10
-    //       I   e              -2/3 0                   -7/10  1/10
-    //       c   d              1/3 0                        3/10
+    //   f   a   b            0 1/2 0               1/2 0 0
+    //       I   e               -1 0                   -1  0
+    //       c   d              1/2 0                       1/2
 
-    register float dist[4];
-    register float tmp, min_value, tmp_one, tmp_two;
-    tmp = 2*p[i];
+    register float dist;
+    register float tmp, min_value;
+    tmp = 2.0f*p[i];
     //specify the curvature if provided
     if (p_curv != NULL) tmp = 2*(p[i] + p_curv[i]);
 
     min_value = p_pre[i]+p_nex[i] - tmp;
-    dist[0] = p[i-1] + p[i+1] - tmp;
-    if(fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
+    dist = p[i-1] + p[i+1] - tmp;
+    if(fabsf(dist)<fabsf(min_value)) min_value = dist;
     
-    tmp *= 3.5f;
-    min_value *= 3.5f;
+    dist = p_nex[i-1] + p_pre[i+1] - tmp;
+    if(fabsf(dist)<fabsf(min_value)) min_value = dist;
 
-    tmp_one = 3*(p_nex[i-1] + p_pre[i+1]) - tmp;
-    tmp_two = 3*(p_pre[i-1] + p_nex[i+1]) - tmp;
+    dist = p_pre[i-1] + p_nex[i+1] - tmp;
+    if(fabsf(dist)<fabsf(min_value)) min_value = dist;
 
-    dist[0] = p_pre[i] - p_pre[i-1] + p[i-1] + tmp_one;
-    dist[1] = p_pre[i] - p_pre[i+1] + p[i+1] + tmp_two;
-    dist[2] = p_nex[i] - p_nex[i+1] + p[i+1] + tmp_one;
-    dist[3] = p_nex[i] - p_nex[i-1] + p[i-1] + tmp_two;
-    
-    if(fabsf(dist[1])<fabsf(dist[0])) dist[0] = dist[1];
-    if(fabsf(dist[3])<fabsf(dist[2])) dist[2] = dist[3];
-    if(fabsf(dist[2])<fabsf(dist[0])) dist[0] = dist[2];
-    if(fabsf(dist[0])<fabsf(min_value)) min_value = dist[0];
-
-    return min_value/7;//here 10 means including central pixel while 7 means exclusion
+    return min_value/3.0f; //3 means including the center pixel, 2 indicate exclude
 }
 
 inline float CF::Scheme_TV(int i, const float * __restrict p_pre, const float * __restrict p, 
