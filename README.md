@@ -17,7 +17,7 @@ These curvature filters are slightly different from the original ones that were 
 ***
 ```text
 @ARTICLE{gong:cf, 
-author={Y. Gong and I. Sbalzarini}, 
+author={Yuanhao Gong and Ivo F. Sbalzarini}, 
 journal={IEEE Transactions on Image Processing}, 
 title={Curvature filters efficiently reduce certain variational energies}, 
 year={2017}, 
