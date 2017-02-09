@@ -7,7 +7,7 @@ These curvature filters are slightly different from the original ones that were 
 
 :blue_book: Poster of Bernstein Filter can be found **[here](images/BernsteinFilter.pdf)**. 
 
-:gift: a short introduction in Chinese: **<a href="https://zhuanlan.zhihu.com/p/22971865" target="_blank">Zhihu</a>**, **<a href="http://www.zhihu.com/question/35499791" target="_blank">Zhihu</a>** or this **<a href="http://blog.csdn.net/jorg_zhao/article/details/51328966" target="_blank">Blog</a>**
+:gift: a short introduction in Chinese: **<a href="https://zhuanlan.zhihu.com/p/22971865" target="_blank">Zhihu</a>**(Editors' Choice), **<a href="http://www.zhihu.com/question/35499791" target="_blank">Zhihu</a>** or this **<a href="http://blog.csdn.net/jorg_zhao/article/details/51328966" target="_blank">Blog</a>**
 
 :trophy: **source code** in **C++** and **Java** can also be found at **<a href="http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters", target="_blank">MOSAIC group</a>**(:de:). 
 
