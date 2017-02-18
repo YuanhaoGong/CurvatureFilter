@@ -17,39 +17,40 @@ These curvature filters are slightly different from the original ones that were 
 ***
 ```text
 @ARTICLE{gong:cf, 
-author={Yuanhao Gong and Ivo F. Sbalzarini}, 
-journal={IEEE Transactions on Image Processing}, 
-title={Curvature filters efficiently reduce certain variational energies}, 
-year={2017}, 
-volume={PP}, 
-number={99}, 
-pages={1-1}, 
-doi={10.1109/TIP.2017.2658954}, 
-ISSN={1057-7149}, 
-month={},}
+    author={Yuanhao Gong and Ivo F. Sbalzarini}, 
+    journal={IEEE Transactions on Image Processing}, 
+    title={Curvature filters efficiently reduce certain variational energies}, 
+    year={2017}, 
+    volume={PP}, 
+    number={99}, 
+    pages={1-1}, 
+    doi={10.1109/TIP.2017.2658954}, 
+    ISSN={1057-7149}, 
+    month={},}
 
 @phdthesis{gong:phd, 
-  title={Spectrally regularized surfaces}, 
-  author={Gong, Yuanhao}, 
-  year={2015}, 
-  school={ETH Zurich, Nr. 22616},
-  note={http://dx.doi.org/10.3929/ethz-a-010438292}}
+    title={Spectrally regularized surfaces}, 
+    author={Gong, Yuanhao}, 
+    year={2015}, 
+    school={ETH Zurich, Nr. 22616},
+    note={http://dx.doi.org/10.3929/ethz-a-010438292}}
 
-@article{gong:Bernstein,
-	Author = {Yuanhao Gong},
-	Journal = {ICASSP},
-	Month = {March},
-	Pages = {1701--1705},
-	Title = {Bernstein Filter: a new solver for mean curvature regularized models},
-	Year = {2016}}
+@INPROCEEDINGS{gong:Bernstein,
+    author={Yuanhao Gong}, 
+    booktitle={2016 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 
+    title={Bernstein filter: A new solver for mean curvature regularized models}, 
+    year={2016}, 
+    pages={1701-1705}, 
+    doi={10.1109/ICASSP.2016.7471967}, 
+    month={March},}
 	
 @article{gong:gc,
-	Author = {Yuanhao Gong and Ivo F. Sbalzarini},
-	Journal = {Intl. Conf. Image Proc. (ICIP)},
-	Month = {September},
-	Pages = {534--538},
-	Title = {Local weighted {G}aussian curvature for image processing},
-	Year = {2013}}
+    Author = {Yuanhao Gong and Ivo F. Sbalzarini},
+    Journal = {Intl. Conf. Image Proc. (ICIP)},
+    Month = {September},
+    Pages = {534--538},
+    Title = {Local weighted {G}aussian curvature for image processing},
+    Year = {2013}}
 ```
 ***
 ## Curvature filters' philosophy 
