@@ -21,12 +21,12 @@ These curvature filters are slightly different from the original ones that were 
     journal={IEEE Transactions on Image Processing}, 
     title={Curvature filters efficiently reduce certain variational energies}, 
     year={2017}, 
-    volume={PP}, 
-    number={99}, 
-    pages={1-1}, 
+    volume={26}, 
+    number={4}, 
+    pages={1786-1798}, 
     doi={10.1109/TIP.2017.2658954}, 
     ISSN={1057-7149}, 
-    month={},}
+    month={April},}
 
 @phdthesis{gong:phd, 
     title={Spectrally regularized surfaces}, 
