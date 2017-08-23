@@ -1,7 +1,7 @@
 ### Curvature filters are efficient solvers for variational models.
 These curvature filters are slightly different from the original ones that were also developed by Yuanhao Gong during his PhD. But the theory is the same. Please cite following papers if you use curvature filter in your work. Thank you!
 
-:books: **<a href="http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7835193" target="_blank">The Paper</a>**. The general theory is in Chapter **Six** of **<a href="http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf" target="_blank">PhD thesis</a>** (downloaded **3500+** since June, 2015)
+:books: **<a href="http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7835193" target="_blank">The Paper</a>**. The general theory is in Chapter **Six** of **<a href="http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf" target="_blank">PhD thesis</a>** (downloaded **3500+** between June, 2015 and Dec, 2016)
 
 :closed_book: Presentation of Gaussian Curvature Filter: **<a href="http://www.slideshare.net/YuanhaoGong/a-fast-implicit-gaussian-curvature-filter" target=" blank">LinkedIn</a>**, **<a href="https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0" target="_blank">Dropbox</a>** or **<a href="https://pan.baidu.com/s/1geS2EXH" target="_blank">Baidu</a>**. 
 
@@ -13,7 +13,7 @@ These curvature filters are slightly different from the original ones that were 
 
 :bell: The kernels summary and one example how to get the kernel can be found **[here](images/CF_Kernels.pdf)**.
 
-:e-mail: gongyuanhao@gmail.com (NOT available for invited talk any more) or join the **<a href="https://groups.google.com/forum/?hl=en#!forum/curvaturefilter" target="_blank">Curvature Filter Forum</a>**
+:e-mail: gongyuanhao@gmail.com or join the **<a href="https://groups.google.com/forum/?hl=en#!forum/curvaturefilter" target="_blank">Curvature Filter Forum</a>**
 ***
 ```text
 @ARTICLE{gong:cf, 
@@ -109,7 +109,6 @@ original mesh (left) and processed mesh (right), the energy profile is shown in 
 There are two reasons. First, these four sets guarantee the convergence. Second, 
 we can use the updated neighbors for current position. Therefore, it is more computational efficient.
 
-====
 2) What is the difference between these three filters?
 
 In general, GC filter is better in preserving details, compared with the other two. And
@@ -118,7 +117,6 @@ TV filter is better in removing noise as well as details. MC filter is between t
 These three filters are correspond to three types of variational models. User should decide
 which prior is to be assumed about the ground truth. 
 
-====
 3) What is the difference between split and nosplit scheme?
 
 In general, splitting the image into four sets and looping on them is computational faster.
