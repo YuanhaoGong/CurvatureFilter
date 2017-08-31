@@ -71,13 +71,16 @@ Curvature filters link the variational models with image filters. Meanwhile, the
 | **Convergence**: theoretically guaranteed ![ image ](images/theory.png) | **Implementation**: 40 lines in Matlab and 100 lines in C++ ![ image ](images/easy.png) |
 
 ***
-## Faster and Faster (100 or 1000 times faster than traditional diffusion)
+## Faster and Faster 
 | Filter       | Bilateral Filter | Guided Filter | Guided Filter | MC Filter | GC Filter | Bernstein Filter |
 | ------------- |:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|
 | Lang.      | C++ | Matlab | C++ | C++ | C++| C++|
-| MilliSec.      | 103 | 514 | 130 | 8 | 11| 7|
+| MilliSec.      | 103 | 514 | 130 | 8 (or **32.7 MPixels/sec**) | 11| 7|
 
 Running time with 10 iterations on 512X512 Lena image. Matlab version is R2015a and GCC version is 5.1. All tests are on a Thinkpad T410 with i7-620M core CPU (2.6GHz). We take the time for 100 iterations and divide it by 10. On average, curvature filters take 1 millisecond per iteration.
+
+On my new taptop(Thinkpad T470p, NVIDIA GeForce 940MX), GPU version of MC filter can achieve **1143 MPixels/Second** with single precision. Another implementation of MC filter, based on ArrayFire library, can achieve **88 MPixels/Second** with single precision. 
+
 ***
 ## Example Applications
 ### 1) Only minimize the regularization 
