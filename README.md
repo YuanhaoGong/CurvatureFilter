@@ -79,7 +79,7 @@ Curvature filters link the variational models with image filters. Meanwhile, the
 
 Running time with 10 iterations on 512X512 Lena image. Matlab version is R2015a and GCC version is 5.1. All tests are on a Thinkpad T410 with i7-620M core CPU (2.6GHz). We take the time for 100 iterations and divide it by 10. On average, curvature filters take 1 millisecond per iteration.
 
-On my new taptop(Thinkpad T470p, NVIDIA GeForce 940MX), GPU version of MC filter can achieve**2200 MPixels/Second** with shared memory and single precision, **1143 MPixels/Second** with single precision but without shared memory. Another implementation of MC filter, based on ArrayFire library, can achieve **88 MPixels/Second** with single precision. Better performance can be achieved with better GPUs. 
+On my new taptop(Thinkpad T470p, NVIDIA GeForce 940MX), GPU version of MC filter can achieve **2200 MPixels/Second** with shared memory and single precision, **1143 MPixels/Second** with single precision but without shared memory. Another implementation of MC filter, based on ArrayFire library, can achieve **88 MPixels/Second** with single precision. 
 
 ***
 ## Example Applications
