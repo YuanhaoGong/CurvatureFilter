@@ -34,15 +34,6 @@ These curvature filters are slightly different from the original ones that were 
     year={2015}, 
     school={ETH Zurich, Nr. 22616},
     note={http://dx.doi.org/10.3929/ethz-a-010438292}}
-
-@INPROCEEDINGS{gong:Bernstein,
-    author={Yuanhao Gong}, 
-    booktitle={2016 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 
-    title={Bernstein filter: A new solver for mean curvature regularized models}, 
-    year={2016}, 
-    pages={1701-1705}, 
-    doi={10.1109/ICASSP.2016.7471967}, 
-    month={March},}
 	
 @article{gong:gc,
     Author = {Yuanhao Gong and Ivo F. Sbalzarini},
@@ -60,9 +51,7 @@ Traditional solvers, such as gradient descent or Euler Lagrange Euqation, start 
 Therefore, **Curvature filters focus on minimizing the regularization term,** whose minimizers are already known. For example, if the regularization is Gaussian curvature, the developable surfaces minimize this energy. Therefore, in curvature filter, developable surfaces are used to approximate the data. **As long as the decreased amount in the regularization part is larger than the increased amount in the data fitting energy, the total energy is reduced.**
 
 ![image](images/phs.PNG)
-***
-## The role of curvature filters
-Curvature filters link the variational models with image filters. Meanwhile, they implicitly impose differential geometry.                                                              ![ image ](images/role.png)
+
 ***
 ## Features
 | Theoretical  | Practical |
@@ -75,11 +64,13 @@ Curvature filters link the variational models with image filters. Meanwhile, the
 | Filter       | Bilateral Filter | Guided Filter | Guided Filter | MC Filter | GC Filter | Bernstein Filter |
 | ------------- |:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|
 | Lang.      | C++ | Matlab | C++ | C++ | C++| C++|
-| MilliSec.      | 103 | 514 | 130 | 8 (or **32.7 MPixels/sec**) | 11| 7|
+| MilliSec.      | 103 | 514 | 130 | 8 (or **327 MPixels/sec**) | 11| 7|
 
 Running time with 10 iterations on 512X512 Lena image. Matlab version is R2015a and GCC version is 5.1. All tests are on a Thinkpad T410 with i7-620M core CPU (2.6GHz). We take the time for 100 iterations and divide it by 10. On average, curvature filters take 1 millisecond per iteration.
 
-On my new taptop(Thinkpad T470p, NVIDIA GeForce 940MX), GPU version of MC filter can achieve **2200 MPixels/Second** with shared memory and single precision, **1143 MPixels/Second** with single precision but without shared memory. Another implementation of MC filter, based on ArrayFire library, can achieve **88 MPixels/Second** with single precision. 
+On my new taptop(Thinkpad T470p, NVIDIA GeForce 940MX, 384 CUDA cores), GPU version of MC filter can achieve **2200 MPixels/Second** with shared memory and single precision. 
+
+On the Tesla K40c card (2880 cores), MC filter can achieve **8090 MPixels/Second** with shared memory and single precision. 
 
 ***
 ## Example Applications
