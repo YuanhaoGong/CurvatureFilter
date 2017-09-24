@@ -60,27 +60,6 @@ figure, imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorb
 title('original(left), MCFilter(mid), difference(right)')
 figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Mean Curvature Energy'),title('Energy profile')
 
-%% ************************* Bernstein Filter also minimizes mean curvature *********************************************
-im = imread(im_name);
-if size(im,3)>1
-    im = rgb2gray(im);
-end
-
-FilterType = 4;
-Iteration = 60;
-
-tic
-[result,energy]=CF(im, FilterType, Iteration);
-mytime = toc;
-
-%% show the running time and the result
-mystr = strcat('BF filter performance: ', num2str(mytime/size(energy,1)),' seconds per iteration (', num2str(size(im,1)),'X', num2str(size(im,2)), ' image)');
-disp(mystr)
-
-figure, imagesc([double(im),result,double(im)-result]), daspect([1,1,1]), colorbar
-title('original(left), BFilter(mid), difference(right)')
-figure,plot(energy,'linewidth',4),xlabel('Iteration'), ylabel('Mean Curvature Energy'),title('Energy profile')
-
 %% ************************* TV Filter minimizes Total Variation *********************************************
 im = imread(im_name);
 if size(im,3)>1
