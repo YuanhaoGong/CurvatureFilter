@@ -68,7 +68,7 @@ Therefore, **Curvature filters focus on minimizing the regularization term,** wh
 
 Running time with 10 iterations on 512X512 Lena image. Matlab version is R2015a and GCC version is 5.1. All tests are on a Thinkpad T410 with i7-620M core CPU (2.6GHz). We take the time for 100 iterations and divide it by 10. On average, curvature filters take 1 millisecond per iteration.
 
-On my new taptop(Thinkpad T470p, NVIDIA GeForce 940MX, 384 CUDA cores), GPU version of MC filter can achieve **2200 MPixels/Second** with shared memory and single precision. 
+On my new taptop(Thinkpad T470p, NVIDIA GeForce 940MX, 384 CUDA cores), GPU version of MC filter can achieve **2500 MPixels/Second** with shared memory and single precision. 
 
 On the Tesla K40c card (2880 cores), MC filter can achieve **8090 MPixels/Second** with shared memory and single precision. 
 
