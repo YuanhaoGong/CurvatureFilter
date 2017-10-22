@@ -74,19 +74,18 @@ On the Tesla K40c card (2880 cores), MC filter can achieve **8090 MPixels/Second
 
 ***
 ## Example Applications
-### 1) Only minimize the regularization 
+### 1) Denoising
+![image](images/denoise.PNG)
+The noise free test image can be downloaded **[here](images/developable.png)**
+### 2) Only minimize the regularization 
 GC = Gaussian Curvature, MC = Mean Curvature, TV = Total Variation
 ![image](images/curvatureFilters.png)
-### 2) Minimize a variational model, showing the line profile
+### 3) Minimize a variational model, showing the line profile
 We show three lines' profiles during minimizing a mean curvature regularized model (MC filter used). 
 
 | ![ image](images/Lena_three_lines.png)      | ![image ](images/MC_line1_small.gif) |
 | ------------- |:-------------:|
 | ![image ](images/MC_line2_small.gif)      | ![image ](images/MC_line3_small.gif) |
-
-### 3) Denoising
-![image](images/denoise.PNG)
-The noise free test image can be downloaded **[here](images/developable.png)**
 ### 4) Cartoon Texture Decomposition
 ![image](images/decomposition.png)
 ### 5) Registration
