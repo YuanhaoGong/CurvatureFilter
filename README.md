@@ -70,7 +70,7 @@ Running time with 10 iterations on 512X512 Lena image. Matlab version is R2015a 
 
 On my new taptop(Thinkpad T470p, NVIDIA GeForce 940MX, 384 CUDA cores), GPU version of MC filter can achieve **2500 MPixels/Second** with shared memory and single precision. 
 
-On the Tesla K40c card (2880 cores), MC filter can achieve **8090 MPixels/Second** with shared memory and single precision. 
+On the TITAN Xp card, MC filter can achieve **33.2 Giga Pixels/Second** with shared memory and single precision. On the Tesla K40c card (2880 cores), MC filter can achieve **8090 MPixels/Second** with shared memory and single precision. 
 
 ***
 ## Example Applications
