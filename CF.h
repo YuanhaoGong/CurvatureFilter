@@ -5,7 +5,18 @@
  *                             Yuanhao Gong
  *                        gongyuanhao@gmail.com
  **************************************************************************  
- 
+ @ARTICLE{gong:cf, 
+    author={Yuanhao Gong and Ivo F. Sbalzarini}, 
+    journal={IEEE Transactions on Image Processing}, 
+    title={Curvature filters efficiently reduce certain variational energies}, 
+    year={2017}, 
+    volume={26}, 
+    number={4}, 
+    pages={1786-1798}, 
+    doi={10.1109/TIP.2017.2658954}, 
+    ISSN={1057-7149}, 
+    month={April},}
+    
 @phdthesis{gong:phd, 
  title={Spectrally regularized surfaces}, 
  author={Gong, Yuanhao}, 
