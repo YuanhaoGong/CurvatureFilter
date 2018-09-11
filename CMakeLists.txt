@@ -5,7 +5,7 @@ find_package( OpenCV REQUIRED )
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "set build type to release")
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 add_executable( CF main.cpp )
-target_link_libraries( CF ${OpenCV_LIBS} )
+target_link_libraries( cf ${OpenCV_LIBS} )
 set(CMAKE_BUILD_TYPE Release)
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native")        ## Optimize
