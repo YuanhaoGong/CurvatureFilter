@@ -1,13 +1,13 @@
 ### Curvature filters are efficient solvers for variational models.
-These curvature filters are slightly different from the original ones that were also developed by Yuanhao Gong during his PhD. But the theory is the same. Please cite following papers if you use curvature filter in your work. Thank you!
+These curvature filters are developed by Yuanhao Gong during his PhD. MC filter and TV filter are exactly the same as described in the paper. But the GC filter is slightly modified. Please cite following papers if you use curvature filter in your work. Thank you!
 
-:books: **<a href="http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7835193" target="_blank">The Paper</a>**. The general theory is in Chapter **Six** of **<a href="http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf" target="_blank">PhD thesis</a>** (downloaded **3500+** between June, 2015 and Dec, 2016)
+:books: **<a href="http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7835193" target="_blank">The Paper</a>**. The general theory is in Chapter **Six** of **<a href="http://e-collection.library.ethz.ch/eserv/eth:47737/eth-47737-02.pdf" target="_blank">PhD thesis</a>** (downloaded **17,000+**)
 
 :closed_book: Presentation of Gaussian Curvature Filter: **<a href="http://www.slideshare.net/YuanhaoGong/a-fast-implicit-gaussian-curvature-filter" target=" blank">LinkedIn</a>**, **<a href="https://www.dropbox.com/s/ax73park0popi4x/GCFilter_small.pdf?dl=0" target="_blank">Dropbox</a>** or **<a href="https://pan.baidu.com/s/1geS2EXH" target="_blank">Baidu</a>**. 
 
 :blue_book: Poster of Bernstein Filter can be found **[here](images/BernsteinFilter.pdf)**. 
 
-:gift: a short introduction in Chinese: **<a href="https://zhuanlan.zhihu.com/p/22971865" target="_blank">Zhihu(Editors' Choice)</a>**, **<a href="http://www.zhihu.com/question/35499791" target="_blank">Zhihu</a>** or this **<a href="http://blog.csdn.net/jorg_zhao/article/details/51328966" target="_blank">Blog</a>**
+:gift: a short introduction in Chinese (中文): **<a href="https://zhuanlan.zhihu.com/p/22971865" target="_blank">Zhihu(Editors' Choice)</a>** or this **<a href="http://www.zhihu.com/question/35499791" target="_blank">Zhihu</a>**
 
 :trophy: **source code** in **C++** and **Java** can also be found from **<a href="http://mosaic.mpi-cbg.de/?q=downloads/curvaturefilters" target="_blank">MOSAIC group</a>**
 
